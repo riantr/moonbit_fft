@@ -1,0 +1,11 @@
+name = "riantr/moonbit_fft2"
+
+version = "0.1.0"
+
+readme = "README.md"
+
+license = "Apache-2.0"
+
+description = "MoonBit port of the imglib2-fft2 N-dimensional FFT algorithm"
+
+keywords = [ "fft", "dft", "image", "signal-processing" ]

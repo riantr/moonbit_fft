@@ -1,0 +1,113 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "riantr/moonbit_fft2"
+
+// Values
+pub fn complex_conjugate(ComplexImage) -> Unit
+
+pub fn complex_to_complex(ComplexImage, Int, Bool, Bool) -> Bool
+
+pub fn complex_to_real(ComplexImage, RealImage, Interval?, Int, Bool) -> Bool
+
+pub fn dimensions_complex_to_complex_fast(Array[Int], Array[Int]) -> Unit
+
+pub fn dimensions_complex_to_complex_small(Array[Int], Array[Int]) -> Unit
+
+pub fn dimensions_complex_to_real_fast(Array[Int], Array[Int], Array[Int]) -> Unit
+
+pub fn dimensions_complex_to_real_small(Array[Int], Array[Int], Array[Int]) -> Unit
+
+pub fn dimensions_equal(Array[Int], Array[Int]) -> Bool
+
+pub fn dimensions_equal_interval(Interval, Array[Int]) -> Bool
+
+pub fn dimensions_real_to_complex_fast(Array[Int], Array[Int], Array[Int]) -> Unit
+
+pub fn dimensions_real_to_complex_small(Array[Int], Array[Int], Array[Int]) -> Unit
+
+pub fn fft_complex_to_complex_forward(ComplexImage) -> Unit
+
+pub fn fft_complex_to_complex_inverse(ComplexImage) -> Unit
+
+pub fn fft_complex_to_real(ComplexImage) -> RealImage
+
+pub fn fft_complex_to_real_inplace(ComplexImage, RealImage) -> Unit
+
+pub fn fft_complex_to_real_supported(Array[Int]) -> Bool
+
+pub fn fft_complex_to_real_unpad(ComplexImage, Array[Int]) -> RealImage
+
+pub fn fft_real_to_complex(RealImage) -> ComplexImage
+
+pub fn fft_real_to_complex_with_fill(RealImage, Float) -> ComplexImage
+
+pub fn linear_strides(Array[Int]) -> Array[Int]
+
+pub fn nfft_fast(Int) -> Int
+
+pub fn nfft_fast_real(Int) -> Int
+
+pub fn nfft_small(Int) -> Int
+
+pub fn nfft_small_real(Int) -> Int
+
+pub fn nfft_valid(Int) -> Bool
+
+pub fn nfft_valid_real(Int) -> Bool
+
+pub fn padding_interval_centered(Interval, Array[Int]) -> Interval
+
+pub fn real_to_complex(RealImage, ComplexImage, Interval?, Int, Bool) -> Bool
+
+pub fn total_size(Array[Int]) -> Int
+
+pub fn unpadding_interval_centered(Interval, Array[Int]) -> Interval
+
+pub fn verify_complex_to_complex_fft_dimensions(Int, Int) -> Bool
+
+pub fn verify_real_to_complex_fft_dimensions(Int, Int) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct ComplexImage {
+  dims : Array[Int]
+  data : Array[Float]
+}
+pub fn ComplexImage::from_data(Array[Int], Array[Float]) -> Self
+pub fn ComplexImage::imag_part(Self) -> Array[Float]
+pub fn ComplexImage::new(Array[Int]) -> Self
+pub fn ComplexImage::real_part(Self) -> Array[Float]
+
+pub struct FftComplex {
+  n : Int
+}
+pub fn FftComplex::complex_to_complex(Self, Int, Array[Float], Array[Float]) -> Unit
+pub fn FftComplex::new(Int) -> Self
+pub fn FftComplex::nfft(Self) -> Int
+
+pub struct FftReal {
+  nfft : Int
+}
+pub fn FftReal::complex_to_real(Self, Int, Array[Float], Array[Float]) -> Unit
+pub fn FftReal::new(Int) -> Self
+pub fn FftReal::nfft(Self) -> Int
+pub fn FftReal::real_to_complex(Self, Int, Array[Float], Array[Float]) -> Unit
+
+pub struct Interval {
+  min : Array[Int]
+  max : Array[Int]
+}
+pub fn Interval::dimension(Self, Int) -> Int
+pub fn Interval::dims(Self) -> Array[Int]
+pub fn Interval::new(Array[Int]) -> Self
+
+pub struct RealImage {
+  dims : Array[Int]
+  data : Array[Float]
+}
+pub fn RealImage::from_data(Array[Int], Array[Float]) -> Self
+pub fn RealImage::new(Array[Int]) -> Self
+
+// Type aliases
+
+// Traits

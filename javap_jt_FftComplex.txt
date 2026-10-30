@@ -1,0 +1,541 @@
+﻿Compiled from "FftComplex.java"
+public class edu.mines.jtk.dsp.FftComplex {
+  private int _nfft;
+    descriptor: I
+
+  public edu.mines.jtk.dsp.FftComplex(int);
+    descriptor: (I)V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: iload_1
+       5: invokestatic  #2                  // Method edu/mines/jtk/dsp/Pfacc.nfftValid:(I)Z
+       8: new           #3                  // class java/lang/StringBuilder
+      11: dup
+      12: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V
+      15: ldc           #5                  // String nfft=
+      17: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      20: iload_1
+      21: invokevirtual #7                  // Method java/lang/StringBuilder.append:(I)Ljava/lang/StringBuilder;
+      24: ldc           #8                  // String  is valid FFT length
+      26: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      29: invokevirtual #9                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      32: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      35: aload_0
+      36: iload_1
+      37: putfield      #11                 // Field _nfft:I
+      40: return
+
+  public static int nfftSmall(int);
+    descriptor: (I)I
+    Code:
+       0: iload_0
+       1: ldc           #12                 // int 720720
+       3: if_icmpgt     10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: ldc           #13                 // String n does not exceed 720720
+      13: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      16: iload_0
+      17: invokestatic  #14                 // Method edu/mines/jtk/dsp/Pfacc.nfftSmall:(I)I
+      20: ireturn
+
+  public static int nfftFast(int);
+    descriptor: (I)I
+    Code:
+       0: iload_0
+       1: ldc           #12                 // int 720720
+       3: if_icmpgt     10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: ldc           #13                 // String n does not exceed 720720
+      13: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      16: iload_0
+      17: invokestatic  #15                 // Method edu/mines/jtk/dsp/Pfacc.nfftFast:(I)I
+      20: ireturn
+
+  public int getNfft();
+    descriptor: ()I
+    Code:
+       0: aload_0
+       1: getfield      #11                 // Field _nfft:I
+       4: ireturn
+
+  public void complexToComplex(int, float[], float[]);
+    descriptor: (I[F[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: aload_0
+       6: getfield      #11                 // Field _nfft:I
+       9: imul
+      10: aload_2
+      11: ldc           #17                 // String cx
+      13: invokestatic  #18                 // Method checkArray:(I[FLjava/lang/String;)V
+      16: iconst_2
+      17: aload_0
+      18: getfield      #11                 // Field _nfft:I
+      21: imul
+      22: aload_3
+      23: ldc           #19                 // String cy
+      25: invokestatic  #18                 // Method checkArray:(I[FLjava/lang/String;)V
+      28: aload_2
+      29: aload_3
+      30: if_acmpeq     42
+      33: aload_0
+      34: getfield      #11                 // Field _nfft:I
+      37: aload_2
+      38: aload_3
+      39: invokestatic  #20                 // Method edu/mines/jtk/util/ArrayMath.ccopy:(I[F[F)V
+      42: iload_1
+      43: aload_0
+      44: getfield      #11                 // Field _nfft:I
+      47: aload_3
+      48: invokestatic  #21                 // Method edu/mines/jtk/dsp/Pfacc.transform:(II[F)V
+      51: return
+
+  public void complexToComplex1(int, int, float[][], float[][]);
+    descriptor: (II[[F[[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: aload_0
+       6: getfield      #11                 // Field _nfft:I
+       9: imul
+      10: iload_2
+      11: aload_3
+      12: ldc           #17                 // String cx
+      14: invokestatic  #22                 // Method checkArray:(II[[FLjava/lang/String;)V
+      17: iconst_2
+      18: aload_0
+      19: getfield      #11                 // Field _nfft:I
+      22: imul
+      23: iload_2
+      24: aload         4
+      26: ldc           #19                 // String cy
+      28: invokestatic  #22                 // Method checkArray:(II[[FLjava/lang/String;)V
+      31: iconst_0
+      32: istore        5
+      34: iload         5
+      36: iload_2
+      37: if_icmpge     60
+      40: aload_0
+      41: iload_1
+      42: aload_3
+      43: iload         5
+      45: aaload
+      46: aload         4
+      48: iload         5
+      50: aaload
+      51: invokevirtual #23                 // Method complexToComplex:(I[F[F)V
+      54: iinc          5, 1
+      57: goto          34
+      60: return
+
+  public void complexToComplex2(int, int, float[][], float[][]);
+    descriptor: (II[[F[[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: iload_2
+       6: imul
+       7: aload_0
+       8: getfield      #11                 // Field _nfft:I
+      11: aload_3
+      12: ldc           #17                 // String cx
+      14: invokestatic  #22                 // Method checkArray:(II[[FLjava/lang/String;)V
+      17: iconst_2
+      18: iload_2
+      19: imul
+      20: aload_0
+      21: getfield      #11                 // Field _nfft:I
+      24: aload         4
+      26: ldc           #19                 // String cy
+      28: invokestatic  #22                 // Method checkArray:(II[[FLjava/lang/String;)V
+      31: aload_3
+      32: aload         4
+      34: if_acmpeq     48
+      37: iload_2
+      38: aload_0
+      39: getfield      #11                 // Field _nfft:I
+      42: aload_3
+      43: aload         4
+      45: invokestatic  #24                 // Method edu/mines/jtk/util/ArrayMath.ccopy:(II[[F[[F)V
+      48: iload_1
+      49: iload_2
+      50: aload_0
+      51: getfield      #11                 // Field _nfft:I
+      54: aload         4
+      56: invokestatic  #25                 // Method edu/mines/jtk/dsp/Pfacc.transform2a:(III[[F)V
+      59: return
+
+  public void complexToComplex1(int, int, int, float[][][], float[][][]);
+    descriptor: (III[[[F[[[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: aload_0
+       6: getfield      #11                 // Field _nfft:I
+       9: imul
+      10: iload_2
+      11: iload_3
+      12: aload         4
+      14: ldc           #17                 // String cx
+      16: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      19: iconst_2
+      20: aload_0
+      21: getfield      #11                 // Field _nfft:I
+      24: imul
+      25: iload_2
+      26: iload_3
+      27: aload         5
+      29: ldc           #19                 // String cy
+      31: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      34: iconst_0
+      35: istore        6
+      37: iload         6
+      39: iload_3
+      40: if_icmpge     65
+      43: aload_0
+      44: iload_1
+      45: iload_2
+      46: aload         4
+      48: iload         6
+      50: aaload
+      51: aload         5
+      53: iload         6
+      55: aaload
+      56: invokevirtual #27                 // Method complexToComplex1:(II[[F[[F)V
+      59: iinc          6, 1
+      62: goto          37
+      65: return
+
+  public void complexToComplex2(int, int, int, float[][][], float[][][]);
+    descriptor: (III[[[F[[[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: iload_2
+       6: imul
+       7: aload_0
+       8: getfield      #11                 // Field _nfft:I
+      11: iload_3
+      12: aload         4
+      14: ldc           #17                 // String cx
+      16: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      19: iconst_2
+      20: iload_2
+      21: imul
+      22: aload_0
+      23: getfield      #11                 // Field _nfft:I
+      26: iload_3
+      27: aload         5
+      29: ldc           #19                 // String cy
+      31: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      34: iconst_0
+      35: istore        6
+      37: iload         6
+      39: iload_3
+      40: if_icmpge     65
+      43: aload_0
+      44: iload_1
+      45: iload_2
+      46: aload         4
+      48: iload         6
+      50: aaload
+      51: aload         5
+      53: iload         6
+      55: aaload
+      56: invokevirtual #28                 // Method complexToComplex2:(II[[F[[F)V
+      59: iinc          6, 1
+      62: goto          37
+      65: return
+
+  public void complexToComplex3(int, int, int, float[][][], float[][][]);
+    descriptor: (III[[[F[[[F)V
+    Code:
+       0: iload_1
+       1: invokestatic  #16                 // Method checkSign:(I)V
+       4: iconst_2
+       5: iload_2
+       6: imul
+       7: iload_3
+       8: aload_0
+       9: getfield      #11                 // Field _nfft:I
+      12: aload         4
+      14: ldc           #17                 // String cx
+      16: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      19: iconst_2
+      20: iload_2
+      21: imul
+      22: iload_3
+      23: aload_0
+      24: getfield      #11                 // Field _nfft:I
+      27: aload         5
+      29: ldc           #19                 // String cy
+      31: invokestatic  #26                 // Method checkArray:(III[[[FLjava/lang/String;)V
+      34: aload_0
+      35: getfield      #11                 // Field _nfft:I
+      38: anewarray     #29                 // class "[F"
+      41: astore        6
+      43: aload_0
+      44: getfield      #11                 // Field _nfft:I
+      47: anewarray     #29                 // class "[F"
+      50: astore        7
+      52: iconst_0
+      53: istore        8
+      55: iload         8
+      57: iload_3
+      58: if_icmpge     121
+      61: iconst_0
+      62: istore        9
+      64: iload         9
+      66: aload_0
+      67: getfield      #11                 // Field _nfft:I
+      70: if_icmpge     105
+      73: aload         6
+      75: iload         9
+      77: aload         4
+      79: iload         9
+      81: aaload
+      82: iload         8
+      84: aaload
+      85: aastore
+      86: aload         7
+      88: iload         9
+      90: aload         5
+      92: iload         9
+      94: aaload
+      95: iload         8
+      97: aaload
+      98: aastore
+      99: iinc          9, 1
+     102: goto          64
+     105: aload_0
+     106: iload_1
+     107: iload_2
+     108: aload         6
+     110: aload         7
+     112: invokevirtual #28                 // Method complexToComplex2:(II[[F[[F)V
+     115: iinc          8, 1
+     118: goto          55
+     121: return
+
+  public void scale(int, float[]);
+    descriptor: (I[F)V
+    Code:
+       0: fconst_1
+       1: aload_0
+       2: getfield      #11                 // Field _nfft:I
+       5: i2f
+       6: fdiv
+       7: fstore_3
+       8: iconst_2
+       9: iload_1
+      10: imul
+      11: istore        4
+      13: iinc          4, -1
+      16: iload         4
+      18: iflt          32
+      21: aload_2
+      22: iload         4
+      24: dup2
+      25: faload
+      26: fload_3
+      27: fmul
+      28: fastore
+      29: goto          13
+      32: return
+
+  public void scale(int, int, float[][]);
+    descriptor: (II[[F)V
+    Code:
+       0: iconst_0
+       1: istore        4
+       3: iload         4
+       5: iload_2
+       6: if_icmpge     24
+       9: aload_0
+      10: iload_1
+      11: aload_3
+      12: iload         4
+      14: aaload
+      15: invokevirtual #30                 // Method scale:(I[F)V
+      18: iinc          4, 1
+      21: goto          3
+      24: return
+
+  public void scale(int, int, int, float[][][]);
+    descriptor: (III[[[F)V
+    Code:
+       0: iconst_0
+       1: istore        5
+       3: iload         5
+       5: iload_3
+       6: if_icmpge     26
+       9: aload_0
+      10: iload_1
+      11: iload_2
+      12: aload         4
+      14: iload         5
+      16: aaload
+      17: invokevirtual #31                 // Method scale:(II[[F)V
+      20: iinc          5, 1
+      23: goto          3
+      26: return
+
+  private static void checkSign(int);
+    descriptor: (I)V
+    Code:
+       0: iload_0
+       1: iconst_1
+       2: if_icmpeq     10
+       5: iload_0
+       6: iconst_m1
+       7: if_icmpne     14
+      10: iconst_1
+      11: goto          15
+      14: iconst_0
+      15: ldc           #32                 // String sign equals 1 or -1
+      17: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      20: return
+
+  private static void checkArray(int, float[], java.lang.String);
+    descriptor: (I[FLjava/lang/String;)V
+    Code:
+       0: aload_1
+       1: arraylength
+       2: iload_0
+       3: if_icmplt     10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: new           #3                  // class java/lang/StringBuilder
+      14: dup
+      15: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V
+      18: ldc           #33                 // String dimensions of
+      20: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      23: aload_2
+      24: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      27: ldc           #34                 // String  are valid
+      29: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      32: invokevirtual #9                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      35: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      38: return
+
+  private static void checkArray(int, int, float[][], java.lang.String);
+    descriptor: (II[[FLjava/lang/String;)V
+    Code:
+       0: aload_2
+       1: arraylength
+       2: iload_1
+       3: if_icmplt     10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: istore        4
+      13: iconst_0
+      14: istore        5
+      16: iload         5
+      18: iload_1
+      19: if_icmpge     49
+      22: iload         4
+      24: ifeq          49
+      27: aload_2
+      28: iload         5
+      30: aaload
+      31: arraylength
+      32: iload_0
+      33: if_icmplt     40
+      36: iconst_1
+      37: goto          41
+      40: iconst_0
+      41: istore        4
+      43: iinc          5, 1
+      46: goto          16
+      49: iload         4
+      51: new           #3                  // class java/lang/StringBuilder
+      54: dup
+      55: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V
+      58: ldc           #33                 // String dimensions of
+      60: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      63: aload_3
+      64: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      67: ldc           #34                 // String  are valid
+      69: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      72: invokevirtual #9                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      75: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+      78: return
+
+  private static void checkArray(int, int, int, float[][][], java.lang.String);
+    descriptor: (III[[[FLjava/lang/String;)V
+    Code:
+       0: aload_3
+       1: arraylength
+       2: iload_2
+       3: if_icmplt     10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: istore        5
+      13: iconst_0
+      14: istore        6
+      16: iload         6
+      18: iload_2
+      19: if_icmpge     88
+      22: iload         5
+      24: ifeq          88
+      27: aload_3
+      28: iload         6
+      30: aaload
+      31: arraylength
+      32: iload_1
+      33: if_icmplt     40
+      36: iconst_1
+      37: goto          41
+      40: iconst_0
+      41: istore        5
+      43: iconst_0
+      44: istore        7
+      46: iload         7
+      48: iload_1
+      49: if_icmpge     82
+      52: iload         5
+      54: ifeq          82
+      57: aload_3
+      58: iload         6
+      60: aaload
+      61: iload         7
+      63: aaload
+      64: arraylength
+      65: iload_0
+      66: if_icmplt     73
+      69: iconst_1
+      70: goto          74
+      73: iconst_0
+      74: istore        5
+      76: iinc          7, 1
+      79: goto          46
+      82: iinc          6, 1
+      85: goto          16
+      88: iload         5
+      90: new           #3                  // class java/lang/StringBuilder
+      93: dup
+      94: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V
+      97: ldc           #33                 // String dimensions of
+      99: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     102: aload         4
+     104: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     107: ldc           #34                 // String  are valid
+     109: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     112: invokevirtual #9                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+     115: invokestatic  #10                 // Method edu/mines/jtk/util/Check.argument:(ZLjava/lang/String;)V
+     118: return
+}

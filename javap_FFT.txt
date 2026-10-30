@@ -1,0 +1,677 @@
+﻿Compiled from "FFT.java"
+public class net.imglib2.algorithm.fft2.FFT {
+  public net.imglib2.algorithm.fft2.FFT();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: invokestatic  #2                  // Method net/imglib2/util/Util.getTypeFromInterval:(Lnet/imglib2/Interval;)Ljava/lang/Object;
+       5: checkcast     #3                  // class net/imglib2/type/numeric/RealType
+       8: invokeinterface #4,  1            // InterfaceMethod net/imglib2/type/numeric/RealType.createVariable:()Lnet/imglib2/type/Type;
+      13: invokestatic  #5                  // Method net/imglib2/view/Views.extendValue:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/type/Type;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+      16: aload_0
+      17: aload_1
+      18: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      21: dup
+      22: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      25: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+      28: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      31: invokestatic  #10                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+      34: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;I)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: invokestatic  #2                  // Method net/imglib2/util/Util.getTypeFromInterval:(Lnet/imglib2/Interval;)Ljava/lang/Object;
+       5: checkcast     #3                  // class net/imglib2/type/numeric/RealType
+       8: invokeinterface #4,  1            // InterfaceMethod net/imglib2/type/numeric/RealType.createVariable:()Lnet/imglib2/type/Type;
+      13: invokestatic  #5                  // Method net/imglib2/view/Views.extendValue:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/type/Type;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+      16: aload_0
+      17: aload_1
+      18: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      21: dup
+      22: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      25: iload_2
+      26: invokestatic  #10                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+      29: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: invokestatic  #2                  // Method net/imglib2/util/Util.getTypeFromInterval:(Lnet/imglib2/Interval;)Ljava/lang/Object;
+       5: checkcast     #3                  // class net/imglib2/type/numeric/RealType
+       8: invokeinterface #4,  1            // InterfaceMethod net/imglib2/type/numeric/RealType.createVariable:()Lnet/imglib2/type/Type;
+      13: invokestatic  #5                  // Method net/imglib2/view/Views.extendValue:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/type/Type;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+      16: aload_0
+      17: aload_1
+      18: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      21: dup
+      22: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      25: aload_2
+      26: invokestatic  #11                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      29: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.outofbounds.OutOfBoundsFactory<R, net.imglib2.RandomAccessibleInterval<R>>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;Lnet/imglib2/img/ImgFactory;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #12                 // Method net/imglib2/view/Views.extend:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+       5: aload_0
+       6: aload_2
+       7: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      10: dup
+      11: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      14: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+      17: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      20: invokestatic  #10                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+      23: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.outofbounds.OutOfBoundsFactory<R, net.imglib2.RandomAccessibleInterval<R>>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;Lnet/imglib2/img/ImgFactory;I)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #12                 // Method net/imglib2/view/Views.extend:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+       5: aload_0
+       6: aload_2
+       7: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      10: dup
+      11: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      14: iload_3
+      15: invokestatic  #10                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+      18: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<net.imglib2.type.numeric.complex.ComplexFloatType> realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.outofbounds.OutOfBoundsFactory<R, net.imglib2.RandomAccessibleInterval<R>>, net.imglib2.img.ImgFactory<net.imglib2.type.numeric.complex.ComplexFloatType>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #12                 // Method net/imglib2/view/Views.extend:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/outofbounds/OutOfBoundsFactory;)Lnet/imglib2/view/ExtendedRandomAccessibleInterval;
+       5: aload_0
+       6: aload_2
+       7: new           #6                  // class net/imglib2/type/numeric/complex/ComplexFloatType
+      10: dup
+      11: invokespecial #7                  // Method net/imglib2/type/numeric/complex/ComplexFloatType."<init>":()V
+      14: aload_3
+      15: invokestatic  #11                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      18: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> net.imglib2.img.Img<C> realToComplex(net.imglib2.RandomAccessible<R>, net.imglib2.Interval, net.imglib2.img.ImgFactory<C>, C);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       7: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      10: invokestatic  #10                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+      13: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> net.imglib2.img.Img<C> realToComplex(net.imglib2.RandomAccessible<R>, net.imglib2.Interval, net.imglib2.img.ImgFactory<C>, C, int);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;I)Lnet/imglib2/img/Img;
+    Code:
+       0: iload         4
+       2: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       5: astore        5
+       7: aload_0
+       8: aload_1
+       9: aload_2
+      10: aload_3
+      11: aload         5
+      13: invokestatic  #11                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      16: astore        6
+      18: aload         5
+      20: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      25: aload         6
+      27: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> net.imglib2.img.Img<C> realToComplex(net.imglib2.RandomAccessible<R>, net.imglib2.Interval, net.imglib2.img.ImgFactory<C>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: invokeinterface #15,  1           // InterfaceMethod net/imglib2/RandomAccessible.numDimensions:()I
+       6: newarray       long
+       8: astore        4
+      10: aload_0
+      11: invokeinterface #15,  1           // InterfaceMethod net/imglib2/RandomAccessible.numDimensions:()I
+      16: newarray       long
+      18: astore        5
+      20: aload_1
+      21: aload         4
+      23: aload         5
+      25: invokestatic  #16                 // Method net/imglib2/algorithm/fft2/FFTMethods.dimensionsRealToComplexFast:(Lnet/imglib2/Dimensions;[J[J)V
+      28: aload_2
+      29: aload         5
+      31: invokevirtual #17                 // Method net/imglib2/img/ImgFactory.create:([J)Lnet/imglib2/img/Img;
+      34: astore        6
+      36: aload_1
+      37: aload         4
+      39: invokestatic  #18                 // Method net/imglib2/algorithm/fft2/FFTMethods.dimensionsEqual:(Lnet/imglib2/Interval;[J)Z
+      42: ifne          55
+      45: aload_1
+      46: aload         4
+      48: invokestatic  #19                 // Method net/imglib2/FinalDimensions.wrap:([J)Lnet/imglib2/FinalDimensions;
+      51: invokestatic  #20                 // Method net/imglib2/algorithm/fft2/FFTMethods.paddingIntervalCentered:(Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+      54: astore_1
+      55: aload_0
+      56: aload_1
+      57: invokestatic  #21                 // Method net/imglib2/view/Views.interval:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;)Lnet/imglib2/view/IntervalView;
+      60: aload         6
+      62: aload_3
+      63: invokestatic  #22                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      66: aload         6
+      68: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.img.ImgFactory<R>, R);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aconst_null
+       3: aload_1
+       4: aload_2
+       5: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       8: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      11: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      14: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.img.ImgFactory<R>, R, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aconst_null
+       3: aload_1
+       4: aload_2
+       5: iload_3
+       6: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+       9: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.img.ImgFactory<R>, R, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aconst_null
+       3: aload_1
+       4: aload_2
+       5: aload_3
+       6: invokestatic  #24                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+       9: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aload_1
+       3: aload_2
+       4: aload_3
+       5: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       8: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      11: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      14: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aload_1
+       3: aload_2
+       4: aload_3
+       5: iload         4
+       7: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      10: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: aload_1
+       3: aload_2
+       4: aload_3
+       5: aload         4
+       7: invokestatic  #24                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      10: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aconst_null
+       3: aload_2
+       4: aload_3
+       5: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       8: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      11: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      14: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, int);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aconst_null
+       3: aload_2
+       4: aload_3
+       5: iload         4
+       7: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      10: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aconst_null
+       3: aload_2
+       4: aload_3
+       5: aload         4
+       7: invokestatic  #24                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      10: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: aload         4
+       6: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       9: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+      12: invokestatic  #23                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+      15: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, int);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;I)Lnet/imglib2/img/Img;
+    Code:
+       0: iload         5
+       2: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       5: astore        6
+       7: aload_0
+       8: aload_1
+       9: aload_2
+      10: aload_3
+      11: aload         4
+      13: aload         6
+      15: invokestatic  #24                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      18: astore        7
+      20: aload         6
+      22: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      27: aload         7
+      29: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: invokeinterface #15,  1           // InterfaceMethod net/imglib2/RandomAccessible.numDimensions:()I
+       6: istore        5
+       8: iload         5
+      10: newarray       long
+      12: astore        6
+      14: iload         5
+      16: newarray       long
+      18: astore        7
+      20: aload_1
+      21: aload         6
+      23: aload         7
+      25: invokestatic  #25                 // Method net/imglib2/algorithm/fft2/FFTMethods.dimensionsComplexToRealFast:(Lnet/imglib2/Dimensions;[J[J)V
+      28: aload_1
+      29: aload         6
+      31: invokestatic  #18                 // Method net/imglib2/algorithm/fft2/FFTMethods.dimensionsEqual:(Lnet/imglib2/Interval;[J)Z
+      34: ifne          55
+      37: getstatic     #26                 // Field java/lang/System.out:Ljava/io/PrintStream;
+      40: ldc           #27                 // String adjusting complex input
+      42: invokevirtual #28                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      45: aload_1
+      46: aload         6
+      48: invokestatic  #19                 // Method net/imglib2/FinalDimensions.wrap:([J)Lnet/imglib2/FinalDimensions;
+      51: invokestatic  #20                 // Method net/imglib2/algorithm/fft2/FFTMethods.paddingIntervalCentered:(Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+      54: astore_1
+      55: aload_0
+      56: aload_1
+      57: invokestatic  #21                 // Method net/imglib2/view/Views.interval:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;)Lnet/imglib2/view/IntervalView;
+      60: astore        8
+      62: aload_2
+      63: ifnonnull     115
+      66: aload_3
+      67: aload         7
+      69: invokevirtual #17                 // Method net/imglib2/img/ImgFactory.create:([J)Lnet/imglib2/img/Img;
+      72: astore        9
+      74: iload         5
+      76: iconst_1
+      77: isub
+      78: istore        10
+      80: iload         10
+      82: ifle          100
+      85: aload         8
+      87: iload         10
+      89: iconst_0
+      90: invokestatic  #29                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZ)Z
+      93: pop
+      94: iinc          10, -1
+      97: goto          80
+     100: aload         8
+     102: aload         9
+     104: iconst_0
+     105: iconst_1
+     106: aload         4
+     108: invokestatic  #30                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZLjava/util/concurrent/ExecutorService;)Z
+     111: pop
+     112: aload         9
+     114: areturn
+     115: aload_3
+     116: aload_2
+     117: invokevirtual #31                 // Method net/imglib2/img/ImgFactory.create:(Lnet/imglib2/Dimensions;)Lnet/imglib2/img/Img;
+     120: astore        9
+     122: iload         5
+     124: iconst_1
+     125: isub
+     126: istore        10
+     128: iload         10
+     130: ifle          151
+     133: aload         8
+     135: iload         10
+     137: iconst_0
+     138: iconst_1
+     139: aload         4
+     141: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+     144: pop
+     145: iinc          10, -1
+     148: goto          128
+     151: aload         8
+     153: aload         9
+     155: aload_1
+     156: aload_2
+     157: invokestatic  #33                 // Method net/imglib2/algorithm/fft2/FFTMethods.unpaddingIntervalCentered:(Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+     160: iconst_0
+     161: iconst_1
+     162: aload         4
+     164: invokestatic  #34                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+     167: pop
+     168: aload         9
+     170: areturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> void realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       5: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+       8: invokestatic  #35                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+      11: return
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> void realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+    Code:
+       0: iload_2
+       1: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       4: astore_3
+       5: aload_0
+       6: aload_1
+       7: aload_3
+       8: invokestatic  #22                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      11: aload_3
+      12: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      17: return
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> void realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iconst_0
+       3: iconst_0
+       4: aload_2
+       5: invokestatic  #36                 // Method net/imglib2/algorithm/fft2/FFTMethods.realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZLjava/util/concurrent/ExecutorService;)Z
+       8: pop
+       9: iconst_1
+      10: istore_3
+      11: iload_3
+      12: aload_0
+      13: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+      18: if_icmpge     36
+      21: aload_1
+      22: iload_3
+      23: iconst_1
+      24: iconst_0
+      25: aload_2
+      26: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      29: pop
+      30: iinc          3, 1
+      33: goto          11
+      36: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexForward(net.imglib2.RandomAccessibleInterval<C>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       4: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+       7: invokestatic  #38                 // Method complexToComplexForward:(Lnet/imglib2/RandomAccessibleInterval;I)V
+      10: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexForward(net.imglib2.RandomAccessibleInterval<C>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;I)V
+    Code:
+       0: iload_1
+       1: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       4: astore_2
+       5: aload_0
+       6: aload_2
+       7: invokestatic  #39                 // Method complexToComplexForward:(Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      10: aload_2
+      11: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      16: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexForward(net.imglib2.RandomAccessibleInterval<C>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       9: if_icmpge     27
+      12: aload_0
+      13: iload_2
+      14: iconst_1
+      15: iconst_0
+      16: aload_1
+      17: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      20: pop
+      21: iinc          2, 1
+      24: goto          2
+      27: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexInverse(net.imglib2.RandomAccessibleInterval<C>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       4: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+       7: invokestatic  #40                 // Method complexToComplexInverse:(Lnet/imglib2/RandomAccessibleInterval;I)V
+      10: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexInverse(net.imglib2.RandomAccessibleInterval<C>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;I)V
+    Code:
+       0: iload_1
+       1: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       4: astore_2
+       5: aload_0
+       6: aload_2
+       7: invokestatic  #41                 // Method complexToComplexInverse:(Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      10: aload_2
+      11: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      16: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> void complexToComplexInverse(net.imglib2.RandomAccessibleInterval<C>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       9: if_icmpge     27
+      12: aload_0
+      13: iload_2
+      14: iconst_0
+      15: iconst_1
+      16: aload_1
+      17: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      20: pop
+      21: iinc          2, 1
+      24: goto          2
+      27: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       5: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+       8: invokestatic  #42                 // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+      11: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+    Code:
+       0: iload_2
+       1: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       4: astore_3
+       5: aload_0
+       6: aload_1
+       7: aload_3
+       8: invokestatic  #43                 // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      11: aload_3
+      12: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      17: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+    Code:
+       0: iconst_1
+       1: istore_3
+       2: iload_3
+       3: aload_0
+       4: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       9: if_icmpge     27
+      12: aload_0
+      13: iload_3
+      14: iconst_0
+      15: iconst_1
+      16: aload_2
+      17: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      20: pop
+      21: iinc          3, 1
+      24: goto          2
+      27: aload_0
+      28: aload_1
+      29: iconst_0
+      30: iconst_1
+      31: aload_2
+      32: invokestatic  #30                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZLjava/util/concurrent/ExecutorService;)Z
+      35: pop
+      36: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToRealUnpad(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #8                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       5: invokevirtual #9                  // Method java/lang/Runtime.availableProcessors:()I
+       8: invokestatic  #44                 // Method complexToRealUnpad:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+      11: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToRealUnpad(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)V
+    Code:
+       0: iload_2
+       1: invokestatic  #13                 // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       4: astore_3
+       5: aload_0
+       6: aload_1
+       7: aload_3
+       8: invokestatic  #45                 // Method complexToRealUnpad:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+      11: aload_3
+      12: invokeinterface #14,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      17: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void complexToRealUnpad(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Ljava/util/concurrent/ExecutorService;)V
+    Code:
+       0: iconst_1
+       1: istore_3
+       2: iload_3
+       3: aload_0
+       4: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       9: if_icmpge     27
+      12: aload_0
+      13: iload_3
+      14: iconst_0
+      15: iconst_1
+      16: aload_2
+      17: invokestatic  #32                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      20: pop
+      21: iinc          3, 1
+      24: goto          2
+      27: aload_0
+      28: aload_1
+      29: aload_0
+      30: aload_1
+      31: invokestatic  #33                 // Method net/imglib2/algorithm/fft2/FFTMethods.unpaddingIntervalCentered:(Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+      34: iconst_0
+      35: iconst_1
+      36: aload_2
+      37: invokestatic  #34                 // Method net/imglib2/algorithm/fft2/FFTMethods.complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+      40: pop
+      41: return
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> net.imglib2.img.Img<C> realToComplex(net.imglib2.RandomAccessible<R>, net.imglib2.Interval, net.imglib2.img.ImgFactory<C>, C, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/ComplexType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: invokevirtual #46                 // Method net/imglib2/img/ImgFactory.imgFactory:(Ljava/lang/Object;)Lnet/imglib2/img/ImgFactory;
+       7: aload         4
+       9: invokestatic  #47                 // Method realToComplex:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      12: areturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> net.imglib2.img.Img<R> complexToReal(net.imglib2.RandomAccessible<C>, net.imglib2.Interval, net.imglib2.Interval, net.imglib2.img.ImgFactory<R>, R, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Lnet/imglib2/type/numeric/RealType;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: aload         4
+       6: invokevirtual #46                 // Method net/imglib2/img/ImgFactory.imgFactory:(Ljava/lang/Object;)Lnet/imglib2/img/ImgFactory;
+       9: aload         5
+      11: invokestatic  #48                 // Method complexToReal:(Lnet/imglib2/RandomAccessible;Lnet/imglib2/Interval;Lnet/imglib2/Interval;Lnet/imglib2/img/ImgFactory;Ljava/util/concurrent/ExecutorService;)Lnet/imglib2/img/Img;
+      14: areturn
+}

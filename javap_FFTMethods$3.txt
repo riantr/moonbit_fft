@@ -1,0 +1,207 @@
+﻿Compiled from "FFTMethods.java"
+final class net.imglib2.algorithm.fft2.FFTMethods$3 implements java.util.concurrent.Callable<java.lang.Void> {
+  final java.util.concurrent.atomic.AtomicInteger val$ai;
+    descriptor: Ljava/util/concurrent/atomic/AtomicInteger;
+
+  final int val$size;
+    descriptor: I
+
+  final net.imglib2.RandomAccessibleInterval val$data;
+    descriptor: Lnet/imglib2/RandomAccessibleInterval;
+
+  final int val$numDimensions;
+    descriptor: I
+
+  final int val$dim;
+    descriptor: I
+
+  final int[] val$dataSize;
+    descriptor: [I
+
+  final int val$numThreads;
+    descriptor: I
+
+  final boolean val$forward;
+    descriptor: Z
+
+  final boolean val$scale;
+    descriptor: Z
+
+  net.imglib2.algorithm.fft2.FFTMethods$3(java.util.concurrent.atomic.AtomicInteger, int, net.imglib2.RandomAccessibleInterval, int, int, int[], int, boolean, boolean);
+    descriptor: (Ljava/util/concurrent/atomic/AtomicInteger;ILnet/imglib2/RandomAccessibleInterval;II[IIZZ)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #1                  // Field val$ai:Ljava/util/concurrent/atomic/AtomicInteger;
+       5: aload_0
+       6: iload_2
+       7: putfield      #2                  // Field val$size:I
+      10: aload_0
+      11: aload_3
+      12: putfield      #3                  // Field val$data:Lnet/imglib2/RandomAccessibleInterval;
+      15: aload_0
+      16: iload         4
+      18: putfield      #4                  // Field val$numDimensions:I
+      21: aload_0
+      22: iload         5
+      24: putfield      #5                  // Field val$dim:I
+      27: aload_0
+      28: aload         6
+      30: putfield      #6                  // Field val$dataSize:[I
+      33: aload_0
+      34: iload         7
+      36: putfield      #7                  // Field val$numThreads:I
+      39: aload_0
+      40: iload         8
+      42: putfield      #8                  // Field val$forward:Z
+      45: aload_0
+      46: iload         9
+      48: putfield      #9                  // Field val$scale:Z
+      51: aload_0
+      52: invokespecial #10                 // Method java/lang/Object."<init>":()V
+      55: return
+
+  public java.lang.Void call() throws java.lang.Exception;
+    descriptor: ()Ljava/lang/Void;
+    Code:
+       0: aload_0
+       1: getfield      #1                  // Field val$ai:Ljava/util/concurrent/atomic/AtomicInteger;
+       4: invokevirtual #11                 // Method java/util/concurrent/atomic/AtomicInteger.getAndIncrement:()I
+       7: istore_1
+       8: aload_0
+       9: getfield      #2                  // Field val$size:I
+      12: iconst_2
+      13: imul
+      14: newarray       float
+      16: astore_2
+      17: aload_0
+      18: getfield      #2                  // Field val$size:I
+      21: iconst_2
+      22: imul
+      23: newarray       float
+      25: astore_3
+      26: new           #12                 // class edu/mines/jtk/dsp/FftComplex
+      29: dup
+      30: aload_0
+      31: getfield      #2                  // Field val$size:I
+      34: invokespecial #13                 // Method edu/mines/jtk/dsp/FftComplex."<init>":(I)V
+      37: astore        4
+      39: aload_0
+      40: getfield      #3                  // Field val$data:Lnet/imglib2/RandomAccessibleInterval;
+      43: invokeinterface #14,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+      48: astore        5
+      50: aload_0
+      51: getfield      #4                  // Field val$numDimensions:I
+      54: iconst_1
+      55: isub
+      56: newarray       int
+      58: astore        6
+      60: aload_0
+      61: getfield      #4                  // Field val$numDimensions:I
+      64: newarray       int
+      66: astore        7
+      68: iconst_0
+      69: istore        8
+      71: iconst_0
+      72: istore        9
+      74: iload         9
+      76: aload_0
+      77: getfield      #4                  // Field val$numDimensions:I
+      80: if_icmpge     113
+      83: iload         9
+      85: aload_0
+      86: getfield      #5                  // Field val$dim:I
+      89: if_icmpeq     107
+      92: aload         6
+      94: iload         8
+      96: iinc          8, 1
+      99: aload_0
+     100: getfield      #6                  // Field val$dataSize:[I
+     103: iload         9
+     105: iaload
+     106: iastore
+     107: iinc          9, 1
+     110: goto          74
+     113: new           #15                 // class net/imglib2/iterator/LocalizingZeroMinIntervalIterator
+     116: dup
+     117: aload         6
+     119: invokespecial #16                 // Method net/imglib2/iterator/LocalizingZeroMinIntervalIterator."<init>":([I)V
+     122: astore        9
+     124: aload         9
+     126: invokevirtual #17                 // Method net/imglib2/iterator/LocalizingZeroMinIntervalIterator.hasNext:()Z
+     129: ifeq          269
+     132: aload         9
+     134: invokevirtual #18                 // Method net/imglib2/iterator/LocalizingZeroMinIntervalIterator.fwd:()V
+     137: aload         9
+     139: iconst_0
+     140: invokevirtual #19                 // Method net/imglib2/iterator/LocalizingZeroMinIntervalIterator.getIntPosition:(I)I
+     143: aload_0
+     144: getfield      #7                  // Field val$numThreads:I
+     147: irem
+     148: iload_1
+     149: if_icmpne     124
+     152: aload         9
+     154: aload         6
+     156: invokevirtual #20                 // Method net/imglib2/iterator/LocalizingZeroMinIntervalIterator.localize:([I)V
+     159: aload         7
+     161: aload_0
+     162: getfield      #5                  // Field val$dim:I
+     165: aload_0
+     166: getfield      #3                  // Field val$data:Lnet/imglib2/RandomAccessibleInterval;
+     169: aload_0
+     170: getfield      #5                  // Field val$dim:I
+     173: invokeinterface #21,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     178: l2i
+     179: iastore
+     180: iconst_0
+     181: istore        8
+     183: iconst_0
+     184: istore        10
+     186: iload         10
+     188: aload_0
+     189: getfield      #4                  // Field val$numDimensions:I
+     192: if_icmpge     236
+     195: iload         10
+     197: aload_0
+     198: getfield      #5                  // Field val$dim:I
+     201: if_icmpeq     230
+     204: aload         7
+     206: iload         10
+     208: aload         6
+     210: iload         8
+     212: iinc          8, 1
+     215: iaload
+     216: aload_0
+     217: getfield      #3                  // Field val$data:Lnet/imglib2/RandomAccessibleInterval;
+     220: iload         10
+     222: invokeinterface #21,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     227: l2i
+     228: iadd
+     229: iastore
+     230: iinc          10, 1
+     233: goto          186
+     236: aload         5
+     238: aload         7
+     240: invokeinterface #22,  2           // InterfaceMethod net/imglib2/RandomAccess.setPosition:([I)V
+     245: aload         4
+     247: aload_0
+     248: getfield      #8                  // Field val$forward:Z
+     251: aload         5
+     253: aload_0
+     254: getfield      #5                  // Field val$dim:I
+     257: aload_2
+     258: aload_3
+     259: aload_0
+     260: getfield      #9                  // Field val$scale:Z
+     263: invokestatic  #23                 // Method net/imglib2/algorithm/fft2/FFTMethods.access$200:(Ledu/mines/jtk/dsp/FftComplex;ZLnet/imglib2/RandomAccess;I[F[FZ)V
+     266: goto          124
+     269: aconst_null
+     270: areturn
+
+  public java.lang.Object call() throws java.lang.Exception;
+    descriptor: ()Ljava/lang/Object;
+    Code:
+       0: aload_0
+       1: invokevirtual #24                 // Method call:()Ljava/lang/Void;
+       4: areturn
+}

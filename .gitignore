@@ -1,0 +1,16 @@
+# generated artefacts: compiled oracle, test cases, golden data, decompiled sources
+build/
+# MoonBit build cache
+moonbit_fft2/_build/
+
+# third party jars that are kept locally for reference but are not used by the
+# verification pipeline: the original depends on edu.mines:mines-jtk, not on
+# JTransforms, and mines-jtk-20151123 is superseded by mines-jtk-20151125
+tools/lib/JTransforms-*.jar
+tools/lib/jtransforms-*.jar
+tools/lib/mines-jtk-20151123.jar
+
+# upstream sources and archives of imglib2-fft, fetched for comparison only.
+# They are not tracked, because the upstream sources do not match the shipped
+# bytecode that this port is written against.
+tools/_tmp/

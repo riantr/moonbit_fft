@@ -1,0 +1,1731 @@
+﻿Compiled from "FFTMethods.java"
+public class net.imglib2.algorithm.fft2.FFTMethods {
+  public net.imglib2.algorithm.fft2.FFTMethods();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #4                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iconst_1
+       5: invokestatic  #5                  // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+       8: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, net.imglib2.Interval, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;I)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: iload_3
+       4: iconst_1
+       5: invokestatic  #5                  // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+       8: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, net.imglib2.Interval, int, boolean);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: iload_3
+       4: iload         4
+       6: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       9: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+      12: invokestatic  #8                  // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+      15: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, int, boolean, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZI)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iload_3
+       5: iload         4
+       7: invokestatic  #8                  // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+      10: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, net.imglib2.Interval, int, boolean, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+    Code:
+       0: iload         5
+       2: invokestatic  #9                  // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       5: astore        6
+       7: aload_0
+       8: aload_1
+       9: aload_2
+      10: iload_3
+      11: iload         4
+      13: aload         6
+      15: invokestatic  #10                 // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+      18: istore        7
+      20: aload         6
+      22: invokeinterface #11,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      27: iload         7
+      29: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, int, boolean, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZLjava/util/concurrent/ExecutorService;)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iload_3
+       5: aload         4
+       7: invokestatic  #10                 // Method complexToReal:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+      10: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> boolean complexToReal(net.imglib2.RandomAccessibleInterval<C>, net.imglib2.RandomAccessibleInterval<R>, net.imglib2.Interval, int, boolean, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+    Code:
+       0: aload_0
+       1: invokeinterface #12,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       6: istore        6
+       8: iload         6
+      10: newarray       int
+      12: astore        7
+      14: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+      17: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+      20: istore        8
+      22: iload         8
+      24: iconst_1
+      25: if_icmple     35
+      28: iload         8
+      30: iconst_4
+      31: imul
+      32: goto          36
+      35: iconst_1
+      36: istore        9
+      38: iconst_0
+      39: istore        10
+      41: iload         10
+      43: iload         6
+      45: if_icmpge     68
+      48: aload         7
+      50: iload         10
+      52: aload_0
+      53: iload         10
+      55: invokeinterface #13,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.dimension:(I)J
+      60: l2i
+      61: iastore
+      62: iinc          10, 1
+      65: goto          41
+      68: aload         7
+      70: iload_3
+      71: iaload
+      72: istore        10
+      74: iload         10
+      76: iconst_1
+      77: isub
+      78: iconst_2
+      79: imul
+      80: istore        11
+      82: iload         11
+      84: iload         10
+      86: invokestatic  #14                 // Method verifyRealToComplexfftDimensions:(II)Z
+      89: ifne          102
+      92: getstatic     #15                 // Field java/lang/System.out:Ljava/io/PrintStream;
+      95: ldc           #16                 // String Unsupported combination of dimensionality of input and output
+      97: invokevirtual #17                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+     100: iconst_0
+     101: ireturn
+     102: iload         6
+     104: iconst_1
+     105: if_icmple     248
+     108: new           #18                 // class java/util/ArrayList
+     111: dup
+     112: invokespecial #19                 // Method java/util/ArrayList."<init>":()V
+     115: astore        12
+     117: new           #20                 // class java/util/concurrent/atomic/AtomicInteger
+     120: dup
+     121: iconst_0
+     122: invokespecial #21                 // Method java/util/concurrent/atomic/AtomicInteger."<init>":(I)V
+     125: astore        13
+     127: iconst_0
+     128: istore        14
+     130: iload         14
+     132: iload         9
+     134: if_icmpge     185
+     137: new           #22                 // class net/imglib2/algorithm/fft2/FFTMethods$1
+     140: dup
+     141: aload         13
+     143: iload         10
+     145: iload         11
+     147: aload_0
+     148: aload_1
+     149: iload         6
+     151: iload_3
+     152: aload         7
+     154: iload         8
+     156: aload_2
+     157: iload         4
+     159: invokespecial #23                 // Method net/imglib2/algorithm/fft2/FFTMethods$1."<init>":(Ljava/util/concurrent/atomic/AtomicInteger;IILnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;II[IILnet/imglib2/Interval;Z)V
+     162: astore        15
+     164: aload         12
+     166: aload         5
+     168: aload         15
+     170: invokeinterface #24,  2           // InterfaceMethod java/util/concurrent/ExecutorService.submit:(Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
+     175: invokevirtual #25                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+     178: pop
+     179: iinc          14, 1
+     182: goto          130
+     185: aload         12
+     187: invokevirtual #26                 // Method java/util/ArrayList.iterator:()Ljava/util/Iterator;
+     190: astore        14
+     192: aload         14
+     194: invokeinterface #27,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+     199: ifeq          245
+     202: aload         14
+     204: invokeinterface #28,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     209: checkcast     #29                 // class java/util/concurrent/Future
+     212: astore        15
+     214: aload         15
+     216: invokeinterface #30,  1           // InterfaceMethod java/util/concurrent/Future.get:()Ljava/lang/Object;
+     221: pop
+     222: goto          242
+     225: astore        16
+     227: aload         16
+     229: invokevirtual #32                 // Method java/lang/InterruptedException.printStackTrace:()V
+     232: goto          242
+     235: astore        16
+     237: aload         16
+     239: invokevirtual #34                 // Method java/util/concurrent/ExecutionException.printStackTrace:()V
+     242: goto          192
+     245: goto          338
+     248: iload         10
+     250: iconst_2
+     251: imul
+     252: newarray       float
+     254: astore        12
+     256: iload         11
+     258: newarray       float
+     260: astore        13
+     262: new           #35                 // class edu/mines/jtk/dsp/FftReal
+     265: dup
+     266: iload         11
+     268: invokespecial #36                 // Method edu/mines/jtk/dsp/FftReal."<init>":(I)V
+     271: astore        14
+     273: aload_0
+     274: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+     279: astore        15
+     281: aload_1
+     282: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+     287: astore        16
+     289: aload         15
+     291: aload_0
+     292: iconst_0
+     293: invokeinterface #38,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     298: l2i
+     299: iconst_0
+     300: invokeinterface #39,  3           // InterfaceMethod net/imglib2/RandomAccess.setPosition:(II)V
+     305: aload         16
+     307: aload_1
+     308: iconst_0
+     309: invokeinterface #38,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     314: l2i
+     315: iconst_0
+     316: invokeinterface #39,  3           // InterfaceMethod net/imglib2/RandomAccess.setPosition:(II)V
+     321: aload         14
+     323: aload         15
+     325: aload         16
+     327: aload_2
+     328: iconst_0
+     329: aload         12
+     331: aload         13
+     333: iload         4
+     335: invokestatic  #3                  // Method computeComplexToReal1dFFT:(Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+     338: iconst_1
+     339: ireturn
+    Exception table:
+       from    to  target type
+         214   222   225   Class java/lang/InterruptedException
+         214   222   235   Class java/util/concurrent/ExecutionException
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;I)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iconst_0
+       5: invokestatic  #40                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+       8: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;I)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_3
+       3: iconst_0
+       4: invokestatic  #41                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZ)Z
+       7: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, int, boolean);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZ)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iload_3
+       5: invokestatic  #40                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+       8: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, int, boolean);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZ)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: iload_3
+       4: iload         4
+       6: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       9: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+      12: invokestatic  #42                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+      15: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, int, boolean, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZI)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iload_3
+       5: iload         4
+       7: invokestatic  #42                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+      10: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, int, boolean, int);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZI)Z
+    Code:
+       0: iload         5
+       2: invokestatic  #9                  // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       5: astore        6
+       7: aload_0
+       8: aload_1
+       9: aload_2
+      10: iload_3
+      11: iload         4
+      13: aload         6
+      15: invokestatic  #43                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+      18: istore        7
+      20: aload         6
+      22: invokeinterface #11,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      27: iload         7
+      29: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, int, boolean, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;IZLjava/util/concurrent/ExecutorService;)Z
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_1
+       3: iload_2
+       4: iload_3
+       5: aload         4
+       7: invokestatic  #43                 // Method realToComplex:(Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+      10: ireturn
+
+  public static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> boolean realToComplex(net.imglib2.RandomAccessibleInterval<R>, net.imglib2.RandomAccessibleInterval<C>, net.imglib2.Interval, int, boolean, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/Interval;IZLjava/util/concurrent/ExecutorService;)Z
+    Code:
+       0: aload_0
+       1: invokeinterface #12,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       6: istore        6
+       8: iload         6
+      10: newarray       int
+      12: astore        7
+      14: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+      17: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+      20: istore        8
+      22: iconst_0
+      23: istore        9
+      25: iload         9
+      27: iload         6
+      29: if_icmpge     52
+      32: aload         7
+      34: iload         9
+      36: aload_0
+      37: iload         9
+      39: invokeinterface #13,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.dimension:(I)J
+      44: l2i
+      45: iastore
+      46: iinc          9, 1
+      49: goto          25
+      52: aload         7
+      54: iload_3
+      55: iaload
+      56: istore        9
+      58: iload         9
+      60: iconst_2
+      61: idiv
+      62: iconst_1
+      63: iadd
+      64: istore        10
+      66: iload         9
+      68: iload         10
+      70: invokestatic  #14                 // Method verifyRealToComplexfftDimensions:(II)Z
+      73: ifne          86
+      76: getstatic     #15                 // Field java/lang/System.out:Ljava/io/PrintStream;
+      79: ldc           #44                 // String Input dimensions not supported by FFT.
+      81: invokevirtual #17                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      84: iconst_0
+      85: ireturn
+      86: iload         6
+      88: iconst_1
+      89: if_icmple     232
+      92: new           #18                 // class java/util/ArrayList
+      95: dup
+      96: invokespecial #19                 // Method java/util/ArrayList."<init>":()V
+      99: astore        11
+     101: new           #20                 // class java/util/concurrent/atomic/AtomicInteger
+     104: dup
+     105: iconst_0
+     106: invokespecial #21                 // Method java/util/concurrent/atomic/AtomicInteger."<init>":(I)V
+     109: astore        12
+     111: iconst_0
+     112: istore        13
+     114: iload         13
+     116: iload         8
+     118: if_icmpge     169
+     121: new           #45                 // class net/imglib2/algorithm/fft2/FFTMethods$2
+     124: dup
+     125: aload         12
+     127: iload         9
+     129: iload         10
+     131: aload_0
+     132: aload_1
+     133: iload         6
+     135: iload_3
+     136: aload         7
+     138: iload         8
+     140: aload_2
+     141: iload         4
+     143: invokespecial #46                 // Method net/imglib2/algorithm/fft2/FFTMethods$2."<init>":(Ljava/util/concurrent/atomic/AtomicInteger;IILnet/imglib2/RandomAccessibleInterval;Lnet/imglib2/RandomAccessibleInterval;II[IILnet/imglib2/Interval;Z)V
+     146: astore        14
+     148: aload         11
+     150: aload         5
+     152: aload         14
+     154: invokeinterface #24,  2           // InterfaceMethod java/util/concurrent/ExecutorService.submit:(Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
+     159: invokevirtual #25                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+     162: pop
+     163: iinc          13, 1
+     166: goto          114
+     169: aload         11
+     171: invokevirtual #26                 // Method java/util/ArrayList.iterator:()Ljava/util/Iterator;
+     174: astore        13
+     176: aload         13
+     178: invokeinterface #27,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+     183: ifeq          229
+     186: aload         13
+     188: invokeinterface #28,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     193: checkcast     #29                 // class java/util/concurrent/Future
+     196: astore        14
+     198: aload         14
+     200: invokeinterface #30,  1           // InterfaceMethod java/util/concurrent/Future.get:()Ljava/lang/Object;
+     205: pop
+     206: goto          226
+     209: astore        15
+     211: aload         15
+     213: invokevirtual #32                 // Method java/lang/InterruptedException.printStackTrace:()V
+     216: goto          226
+     219: astore        15
+     221: aload         15
+     223: invokevirtual #34                 // Method java/util/concurrent/ExecutionException.printStackTrace:()V
+     226: goto          176
+     229: goto          322
+     232: iload         9
+     234: newarray       float
+     236: astore        11
+     238: iload         10
+     240: iconst_2
+     241: imul
+     242: newarray       float
+     244: astore        12
+     246: new           #35                 // class edu/mines/jtk/dsp/FftReal
+     249: dup
+     250: iload         9
+     252: invokespecial #36                 // Method edu/mines/jtk/dsp/FftReal."<init>":(I)V
+     255: astore        13
+     257: aload_0
+     258: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+     263: astore        14
+     265: aload_1
+     266: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+     271: astore        15
+     273: aload         14
+     275: aload_0
+     276: iconst_0
+     277: invokeinterface #38,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     282: l2i
+     283: iconst_0
+     284: invokeinterface #39,  3           // InterfaceMethod net/imglib2/RandomAccess.setPosition:(II)V
+     289: aload         15
+     291: aload_1
+     292: iconst_0
+     293: invokeinterface #38,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     298: l2i
+     299: iconst_0
+     300: invokeinterface #39,  3           // InterfaceMethod net/imglib2/RandomAccess.setPosition:(II)V
+     305: aload         13
+     307: aload         14
+     309: aload         15
+     311: aload_2
+     312: iconst_0
+     313: aload         11
+     315: aload         12
+     317: iload         4
+     319: invokestatic  #2                  // Method computeRealToComplex1dFFT:(Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+     322: iconst_1
+     323: ireturn
+    Exception table:
+       from    to  target type
+         198   206   209   Class java/lang/InterruptedException
+         198   206   219   Class java/util/concurrent/ExecutionException
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> boolean complexToComplex(net.imglib2.RandomAccessibleInterval<C>, int, boolean);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;IZ)Z
+    Code:
+       0: iload_2
+       1: ifeq          12
+       4: aload_0
+       5: iload_1
+       6: iload_2
+       7: iconst_0
+       8: invokestatic  #47                 // Method complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZ)Z
+      11: ireturn
+      12: aload_0
+      13: iload_1
+      14: iload_2
+      15: iconst_1
+      16: invokestatic  #47                 // Method complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZ)Z
+      19: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> boolean complexToComplex(net.imglib2.RandomAccessibleInterval<C>, int, boolean, boolean);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;IZZ)Z
+    Code:
+       0: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+       3: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+       6: invokestatic  #9                  // Method java/util/concurrent/Executors.newFixedThreadPool:(I)Ljava/util/concurrent/ExecutorService;
+       9: astore        4
+      11: aload_0
+      12: iload_1
+      13: iload_2
+      14: iload_3
+      15: aload         4
+      17: invokestatic  #48                 // Method complexToComplex:(Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+      20: istore        5
+      22: aload         4
+      24: invokeinterface #11,  1           // InterfaceMethod java/util/concurrent/ExecutorService.shutdown:()V
+      29: iload         5
+      31: ireturn
+
+  public static final <C extends net.imglib2.type.numeric.ComplexType<C>> boolean complexToComplex(net.imglib2.RandomAccessibleInterval<C>, int, boolean, boolean, java.util.concurrent.ExecutorService);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;IZZLjava/util/concurrent/ExecutorService;)Z
+    Code:
+       0: aload_0
+       1: invokeinterface #12,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.numDimensions:()I
+       6: istore        5
+       8: iload         5
+      10: newarray       int
+      12: astore        6
+      14: invokestatic  #6                  // Method java/lang/Runtime.getRuntime:()Ljava/lang/Runtime;
+      17: invokevirtual #7                  // Method java/lang/Runtime.availableProcessors:()I
+      20: istore        7
+      22: iconst_0
+      23: istore        8
+      25: iload         8
+      27: iload         5
+      29: if_icmpge     52
+      32: aload         6
+      34: iload         8
+      36: aload_0
+      37: iload         8
+      39: invokeinterface #13,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.dimension:(I)J
+      44: l2i
+      45: iastore
+      46: iinc          8, 1
+      49: goto          25
+      52: aload         6
+      54: iload_1
+      55: iaload
+      56: aload         6
+      58: iload_1
+      59: iaload
+      60: invokestatic  #49                 // Method verifyComplexToComplexfftDimensions:(II)Z
+      63: ifne          76
+      66: getstatic     #15                 // Field java/lang/System.out:Ljava/io/PrintStream;
+      69: ldc           #16                 // String Unsupported combination of dimensionality of input and output
+      71: invokevirtual #17                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      74: iconst_0
+      75: ireturn
+      76: aload         6
+      78: iload_1
+      79: iaload
+      80: istore        8
+      82: iload         5
+      84: iconst_1
+      85: if_icmple     224
+      88: new           #18                 // class java/util/ArrayList
+      91: dup
+      92: invokespecial #19                 // Method java/util/ArrayList."<init>":()V
+      95: astore        9
+      97: new           #20                 // class java/util/concurrent/atomic/AtomicInteger
+     100: dup
+     101: iconst_0
+     102: invokespecial #21                 // Method java/util/concurrent/atomic/AtomicInteger."<init>":(I)V
+     105: astore        10
+     107: iconst_0
+     108: istore        11
+     110: iload         11
+     112: iload         7
+     114: if_icmpge     161
+     117: new           #50                 // class net/imglib2/algorithm/fft2/FFTMethods$3
+     120: dup
+     121: aload         10
+     123: iload         8
+     125: aload_0
+     126: iload         5
+     128: iload_1
+     129: aload         6
+     131: iload         7
+     133: iload_2
+     134: iload_3
+     135: invokespecial #51                 // Method net/imglib2/algorithm/fft2/FFTMethods$3."<init>":(Ljava/util/concurrent/atomic/AtomicInteger;ILnet/imglib2/RandomAccessibleInterval;II[IIZZ)V
+     138: astore        12
+     140: aload         9
+     142: aload         4
+     144: aload         12
+     146: invokeinterface #24,  2           // InterfaceMethod java/util/concurrent/ExecutorService.submit:(Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
+     151: invokevirtual #25                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+     154: pop
+     155: iinc          11, 1
+     158: goto          110
+     161: aload         9
+     163: invokevirtual #26                 // Method java/util/ArrayList.iterator:()Ljava/util/Iterator;
+     166: astore        11
+     168: aload         11
+     170: invokeinterface #27,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+     175: ifeq          221
+     178: aload         11
+     180: invokeinterface #28,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     185: checkcast     #29                 // class java/util/concurrent/Future
+     188: astore        12
+     190: aload         12
+     192: invokeinterface #30,  1           // InterfaceMethod java/util/concurrent/Future.get:()Ljava/lang/Object;
+     197: pop
+     198: goto          218
+     201: astore        13
+     203: aload         13
+     205: invokevirtual #32                 // Method java/lang/InterruptedException.printStackTrace:()V
+     208: goto          218
+     211: astore        13
+     213: aload         13
+     215: invokevirtual #34                 // Method java/util/concurrent/ExecutionException.printStackTrace:()V
+     218: goto          168
+     221: goto          289
+     224: iload         8
+     226: iconst_2
+     227: imul
+     228: newarray       float
+     230: astore        9
+     232: iload         8
+     234: iconst_2
+     235: imul
+     236: newarray       float
+     238: astore        10
+     240: new           #52                 // class edu/mines/jtk/dsp/FftComplex
+     243: dup
+     244: iload         8
+     246: invokespecial #53                 // Method edu/mines/jtk/dsp/FftComplex."<init>":(I)V
+     249: astore        11
+     251: aload_0
+     252: invokeinterface #37,  1           // InterfaceMethod net/imglib2/RandomAccessibleInterval.randomAccess:()Lnet/imglib2/RandomAccess;
+     257: astore        12
+     259: aload         12
+     261: aload_0
+     262: iconst_0
+     263: invokeinterface #38,  2           // InterfaceMethod net/imglib2/RandomAccessibleInterval.min:(I)J
+     268: l2i
+     269: iconst_0
+     270: invokeinterface #39,  3           // InterfaceMethod net/imglib2/RandomAccess.setPosition:(II)V
+     275: aload         11
+     277: iload_2
+     278: aload         12
+     280: iload_1
+     281: aload         9
+     283: aload         10
+     285: iload_3
+     286: invokestatic  #1                  // Method computeComplexToComplex1dFFT:(Ledu/mines/jtk/dsp/FftComplex;ZLnet/imglib2/RandomAccess;I[F[FZ)V
+     289: iconst_1
+     290: ireturn
+    Exception table:
+       from    to  target type
+         190   198   201   Class java/lang/InterruptedException
+         190   198   211   Class java/util/concurrent/ExecutionException
+
+  private static final <R extends net.imglib2.type.numeric.RealType<R>, C extends net.imglib2.type.numeric.ComplexType<C>> void computeRealToComplex1dFFT(edu.mines.jtk.dsp.FftReal, net.imglib2.RandomAccess<R>, net.imglib2.RandomAccess<C>, net.imglib2.Interval, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+    Code:
+       0: aload         5
+       2: arraylength
+       3: istore        8
+       5: aload         6
+       7: arraylength
+       8: iconst_2
+       9: idiv
+      10: istore        9
+      12: iload         8
+      14: iconst_1
+      15: isub
+      16: istore        10
+      18: iload         9
+      20: iconst_1
+      21: isub
+      22: istore        11
+      24: iconst_0
+      25: istore        12
+      27: iload         12
+      29: iload         10
+      31: if_icmpge     67
+      34: aload         5
+      36: iload         12
+      38: aload_1
+      39: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      44: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+      47: invokeinterface #56,  1           // InterfaceMethod net/imglib2/type/numeric/RealType.getRealFloat:()F
+      52: fastore
+      53: aload_1
+      54: iload         4
+      56: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+      61: iinc          12, 1
+      64: goto          27
+      67: aload         5
+      69: iload         10
+      71: aload_1
+      72: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      77: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+      80: invokeinterface #56,  1           // InterfaceMethod net/imglib2/type/numeric/RealType.getRealFloat:()F
+      85: fastore
+      86: aload_0
+      87: iconst_m1
+      88: aload         5
+      90: aload         6
+      92: invokevirtual #58                 // Method edu/mines/jtk/dsp/FftReal.realToComplex:(I[F[F)V
+      95: aload_3
+      96: ifnonnull     109
+      99: iconst_0
+     100: istore        12
+     102: iload         11
+     104: istore        13
+     106: goto          131
+     109: aload_3
+     110: iload         4
+     112: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+     117: l2i
+     118: istore        12
+     120: aload_3
+     121: iload         4
+     123: invokeinterface #60,  2           // InterfaceMethod net/imglib2/Interval.max:(I)J
+     128: l2i
+     129: istore        13
+     131: iload         13
+     133: iconst_2
+     134: imul
+     135: istore        14
+     137: iload         7
+     139: ifeq          244
+     142: iload         12
+     144: istore        15
+     146: iload         15
+     148: iload         13
+     150: if_icmpge     207
+     153: iload         15
+     155: iconst_2
+     156: imul
+     157: istore        16
+     159: aload_2
+     160: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     165: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     168: aload         6
+     170: iload         16
+     172: faload
+     173: iload         8
+     175: i2f
+     176: fdiv
+     177: aload         6
+     179: iload         16
+     181: iconst_1
+     182: iadd
+     183: faload
+     184: iload         8
+     186: i2f
+     187: fdiv
+     188: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     193: aload_2
+     194: iload         4
+     196: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     201: iinc          15, 1
+     204: goto          146
+     207: aload_2
+     208: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     213: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     216: aload         6
+     218: iload         14
+     220: faload
+     221: iload         8
+     223: i2f
+     224: fdiv
+     225: aload         6
+     227: iload         14
+     229: iconst_1
+     230: iadd
+     231: faload
+     232: iload         8
+     234: i2f
+     235: fdiv
+     236: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     241: goto          327
+     244: iload         12
+     246: istore        15
+     248: iload         15
+     250: iload         13
+     252: if_icmpge     301
+     255: iload         15
+     257: iconst_2
+     258: imul
+     259: istore        16
+     261: aload_2
+     262: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     267: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     270: aload         6
+     272: iload         16
+     274: faload
+     275: aload         6
+     277: iload         16
+     279: iconst_1
+     280: iadd
+     281: faload
+     282: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     287: aload_2
+     288: iload         4
+     290: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     295: iinc          15, 1
+     298: goto          248
+     301: aload_2
+     302: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     307: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     310: aload         6
+     312: iload         14
+     314: faload
+     315: aload         6
+     317: iload         14
+     319: iconst_1
+     320: iadd
+     321: faload
+     322: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     327: return
+
+  private static final <C extends net.imglib2.type.numeric.ComplexType<C>, R extends net.imglib2.type.numeric.RealType<R>> void computeComplexToReal1dFFT(edu.mines.jtk.dsp.FftReal, net.imglib2.RandomAccess<C>, net.imglib2.RandomAccess<R>, net.imglib2.Interval, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+    Code:
+       0: aload         5
+       2: arraylength
+       3: iconst_2
+       4: idiv
+       5: istore        8
+       7: aload         6
+       9: arraylength
+      10: istore        9
+      12: iload         8
+      14: iconst_1
+      15: isub
+      16: istore        10
+      18: iload         9
+      20: iconst_1
+      21: isub
+      22: istore        11
+      24: iload         10
+      26: iconst_2
+      27: imul
+      28: istore        12
+      30: iconst_0
+      31: istore        13
+      33: iload         13
+      35: iload         10
+      37: if_icmpge     99
+      40: iload         13
+      42: iconst_2
+      43: imul
+      44: istore        14
+      46: aload         5
+      48: iload         14
+      50: aload_1
+      51: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      56: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+      59: invokeinterface #63,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getRealFloat:()F
+      64: fastore
+      65: aload         5
+      67: iload         14
+      69: iconst_1
+      70: iadd
+      71: aload_1
+      72: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      77: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+      80: invokeinterface #64,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getImaginaryFloat:()F
+      85: fastore
+      86: aload_1
+      87: iconst_0
+      88: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+      93: iinc          13, 1
+      96: goto          33
+      99: aload         5
+     101: iload         12
+     103: aload_1
+     104: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     109: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     112: invokeinterface #63,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getRealFloat:()F
+     117: fastore
+     118: aload         5
+     120: iload         12
+     122: iconst_1
+     123: iadd
+     124: aload_1
+     125: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     130: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     133: invokeinterface #64,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getImaginaryFloat:()F
+     138: fastore
+     139: aload_0
+     140: iconst_1
+     141: aload         5
+     143: aload         6
+     145: invokevirtual #65                 // Method edu/mines/jtk/dsp/FftReal.complexToReal:(I[F[F)V
+     148: aload_3
+     149: ifnonnull     162
+     152: iconst_0
+     153: istore        13
+     155: iload         11
+     157: istore        14
+     159: goto          184
+     162: aload_3
+     163: iload         4
+     165: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+     170: l2i
+     171: istore        13
+     173: aload_3
+     174: iload         4
+     176: invokeinterface #60,  2           // InterfaceMethod net/imglib2/Interval.max:(I)J
+     181: l2i
+     182: istore        14
+     184: iload         7
+     186: ifeq          262
+     189: iload         13
+     191: istore        15
+     193: iload         15
+     195: iload         14
+     197: if_icmpge     236
+     200: aload_2
+     201: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     206: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+     209: aload         6
+     211: iload         15
+     213: faload
+     214: iload         9
+     216: i2f
+     217: fdiv
+     218: invokeinterface #66,  2           // InterfaceMethod net/imglib2/type/numeric/RealType.setReal:(F)V
+     223: aload_2
+     224: iconst_0
+     225: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     230: iinc          15, 1
+     233: goto          193
+     236: aload_2
+     237: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     242: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+     245: aload         6
+     247: iload         14
+     249: faload
+     250: iload         9
+     252: i2f
+     253: fdiv
+     254: invokeinterface #66,  2           // InterfaceMethod net/imglib2/type/numeric/RealType.setReal:(F)V
+     259: goto          324
+     262: iload         13
+     264: istore        15
+     266: iload         15
+     268: iload         14
+     270: if_icmpge     305
+     273: aload_2
+     274: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     279: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+     282: aload         6
+     284: iload         15
+     286: faload
+     287: invokeinterface #66,  2           // InterfaceMethod net/imglib2/type/numeric/RealType.setReal:(F)V
+     292: aload_2
+     293: iconst_0
+     294: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     299: iinc          15, 1
+     302: goto          266
+     305: aload_2
+     306: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     311: checkcast     #55                 // class net/imglib2/type/numeric/RealType
+     314: aload         6
+     316: iload         14
+     318: faload
+     319: invokeinterface #66,  2           // InterfaceMethod net/imglib2/type/numeric/RealType.setReal:(F)V
+     324: return
+
+  private static final <C extends net.imglib2.type.numeric.ComplexType<C>> void computeComplexToComplex1dFFT(edu.mines.jtk.dsp.FftComplex, boolean, net.imglib2.RandomAccess<C>, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftComplex;ZLnet/imglib2/RandomAccess;I[F[FZ)V
+    Code:
+       0: aload         4
+       2: arraylength
+       3: iconst_2
+       4: idiv
+       5: istore        7
+       7: iload         7
+       9: iconst_1
+      10: isub
+      11: istore        8
+      13: iload         8
+      15: iconst_2
+      16: imul
+      17: istore        9
+      19: iconst_0
+      20: istore        10
+      22: iload         10
+      24: iload         8
+      26: if_icmpge     88
+      29: iload         10
+      31: iconst_2
+      32: imul
+      33: istore        11
+      35: aload         4
+      37: iload         11
+      39: aload_2
+      40: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      45: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+      48: invokeinterface #63,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getRealFloat:()F
+      53: fastore
+      54: aload         4
+      56: iload         11
+      58: iconst_1
+      59: iadd
+      60: aload_2
+      61: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      66: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+      69: invokeinterface #64,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getImaginaryFloat:()F
+      74: fastore
+      75: aload_2
+      76: iload_3
+      77: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+      82: iinc          10, 1
+      85: goto          22
+      88: aload         4
+      90: iload         9
+      92: aload_2
+      93: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+      98: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     101: invokeinterface #63,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getRealFloat:()F
+     106: fastore
+     107: aload         4
+     109: iload         9
+     111: iconst_1
+     112: iadd
+     113: aload_2
+     114: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     119: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     122: invokeinterface #64,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.getImaginaryFloat:()F
+     127: fastore
+     128: iload_1
+     129: ifeq          144
+     132: aload_0
+     133: iconst_m1
+     134: aload         4
+     136: aload         5
+     138: invokevirtual #67                 // Method edu/mines/jtk/dsp/FftComplex.complexToComplex:(I[F[F)V
+     141: goto          153
+     144: aload_0
+     145: iconst_1
+     146: aload         4
+     148: aload         5
+     150: invokevirtual #67                 // Method edu/mines/jtk/dsp/FftComplex.complexToComplex:(I[F[F)V
+     153: aload_2
+     154: iload         8
+     156: ineg
+     157: iload_3
+     158: invokeinterface #68,  3           // InterfaceMethod net/imglib2/RandomAccess.move:(II)V
+     163: iload         6
+     165: ifeq          268
+     168: iconst_0
+     169: istore        10
+     171: iload         10
+     173: iload         8
+     175: if_icmpge     231
+     178: iload         10
+     180: iconst_2
+     181: imul
+     182: istore        11
+     184: aload_2
+     185: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     190: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     193: aload         5
+     195: iload         11
+     197: faload
+     198: iload         7
+     200: i2f
+     201: fdiv
+     202: aload         5
+     204: iload         11
+     206: iconst_1
+     207: iadd
+     208: faload
+     209: iload         7
+     211: i2f
+     212: fdiv
+     213: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     218: aload_2
+     219: iload_3
+     220: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     225: iinc          10, 1
+     228: goto          171
+     231: aload_2
+     232: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     237: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     240: aload         5
+     242: iload         9
+     244: faload
+     245: iload         7
+     247: i2f
+     248: fdiv
+     249: aload         5
+     251: iload         9
+     253: iconst_1
+     254: iadd
+     255: faload
+     256: iload         7
+     258: i2f
+     259: fdiv
+     260: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     265: goto          349
+     268: iconst_0
+     269: istore        10
+     271: iload         10
+     273: iload         8
+     275: if_icmpge     323
+     278: iload         10
+     280: iconst_2
+     281: imul
+     282: istore        11
+     284: aload_2
+     285: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     290: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     293: aload         5
+     295: iload         11
+     297: faload
+     298: aload         5
+     300: iload         11
+     302: iconst_1
+     303: iadd
+     304: faload
+     305: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     310: aload_2
+     311: iload_3
+     312: invokeinterface #57,  2           // InterfaceMethod net/imglib2/RandomAccess.fwd:(I)V
+     317: iinc          10, 1
+     320: goto          271
+     323: aload_2
+     324: invokeinterface #54,  1           // InterfaceMethod net/imglib2/RandomAccess.get:()Ljava/lang/Object;
+     329: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+     332: aload         5
+     334: iload         9
+     336: faload
+     337: aload         5
+     339: iload         9
+     341: iconst_1
+     342: iadd
+     343: faload
+     344: invokeinterface #62,  3           // InterfaceMethod net/imglib2/type/numeric/ComplexType.setComplexNumber:(FF)V
+     349: return
+
+  public static final net.imglib2.Interval paddingIntervalCentered(net.imglib2.Interval, net.imglib2.Dimensions);
+    descriptor: (Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+    Code:
+       0: aload_0
+       1: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+       6: newarray       long
+       8: astore_2
+       9: aload_0
+      10: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+      15: newarray       long
+      17: astore_3
+      18: iconst_0
+      19: istore        4
+      21: iload         4
+      23: aload_0
+      24: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+      29: if_icmpge     149
+      32: aload_1
+      33: iload         4
+      35: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      40: aload_0
+      41: iload         4
+      43: invokeinterface #71,  2           // InterfaceMethod net/imglib2/Interval.dimension:(I)J
+      48: lsub
+      49: lstore        5
+      51: lload         5
+      53: ldc2_w        #72                 // long 2l
+      56: lrem
+      57: lconst_0
+      58: lcmp
+      59: ifne          103
+      62: aload_2
+      63: iload         4
+      65: aload_0
+      66: iload         4
+      68: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+      73: lload         5
+      75: ldc2_w        #72                 // long 2l
+      78: ldiv
+      79: lsub
+      80: lastore
+      81: aload_3
+      82: iload         4
+      84: aload_0
+      85: iload         4
+      87: invokeinterface #60,  2           // InterfaceMethod net/imglib2/Interval.max:(I)J
+      92: lload         5
+      94: ldc2_w        #72                 // long 2l
+      97: ldiv
+      98: ladd
+      99: lastore
+     100: goto          143
+     103: aload_2
+     104: iload         4
+     106: aload_0
+     107: iload         4
+     109: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+     114: lload         5
+     116: ldc2_w        #72                 // long 2l
+     119: ldiv
+     120: lsub
+     121: lastore
+     122: aload_3
+     123: iload         4
+     125: aload_0
+     126: iload         4
+     128: invokeinterface #60,  2           // InterfaceMethod net/imglib2/Interval.max:(I)J
+     133: lload         5
+     135: ldc2_w        #72                 // long 2l
+     138: ldiv
+     139: ladd
+     140: lconst_1
+     141: ladd
+     142: lastore
+     143: iinc          4, 1
+     146: goto          21
+     149: new           #74                 // class net/imglib2/FinalInterval
+     152: dup
+     153: aload_2
+     154: aload_3
+     155: invokespecial #75                 // Method net/imglib2/FinalInterval."<init>":([J[J)V
+     158: areturn
+
+  public static final net.imglib2.Interval unpaddingIntervalCentered(net.imglib2.Interval, net.imglib2.Dimensions);
+    descriptor: (Lnet/imglib2/Interval;Lnet/imglib2/Dimensions;)Lnet/imglib2/Interval;
+    Code:
+       0: aload_0
+       1: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+       6: newarray       long
+       8: astore_2
+       9: aload_0
+      10: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+      15: newarray       long
+      17: astore_3
+      18: aload_0
+      19: iconst_0
+      20: invokeinterface #71,  2           // InterfaceMethod net/imglib2/Interval.dimension:(I)J
+      25: lconst_1
+      26: lsub
+      27: ldc2_w        #72                 // long 2l
+      30: lmul
+      31: lstore        4
+      33: lload         4
+      35: aload_1
+      36: iconst_0
+      37: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      42: lsub
+      43: lstore        6
+      45: aload_2
+      46: iconst_0
+      47: aload_0
+      48: iconst_0
+      49: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+      54: lload         6
+      56: ldc2_w        #72                 // long 2l
+      59: ldiv
+      60: ladd
+      61: lastore
+      62: aload_3
+      63: iconst_0
+      64: aload_2
+      65: iconst_0
+      66: laload
+      67: aload_1
+      68: iconst_0
+      69: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      74: ladd
+      75: lconst_1
+      76: lsub
+      77: lastore
+      78: iconst_1
+      79: istore        8
+      81: iload         8
+      83: aload_0
+      84: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+      89: if_icmpge     155
+      92: aload_0
+      93: iload         8
+      95: invokeinterface #71,  2           // InterfaceMethod net/imglib2/Interval.dimension:(I)J
+     100: aload_1
+     101: iload         8
+     103: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+     108: lsub
+     109: lstore        6
+     111: aload_2
+     112: iload         8
+     114: aload_0
+     115: iload         8
+     117: invokeinterface #59,  2           // InterfaceMethod net/imglib2/Interval.min:(I)J
+     122: lload         6
+     124: ldc2_w        #72                 // long 2l
+     127: ldiv
+     128: ladd
+     129: lastore
+     130: aload_3
+     131: iload         8
+     133: aload_2
+     134: iload         8
+     136: laload
+     137: aload_1
+     138: iload         8
+     140: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+     145: ladd
+     146: lconst_1
+     147: lsub
+     148: lastore
+     149: iinc          8, 1
+     152: goto          81
+     155: new           #74                 // class net/imglib2/FinalInterval
+     158: dup
+     159: aload_2
+     160: aload_3
+     161: invokespecial #75                 // Method net/imglib2/FinalInterval."<init>":([J[J)V
+     164: areturn
+
+  public static final void dimensionsComplexToRealSmall(net.imglib2.Dimensions, long[], long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J[J)V
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+       7: l2i
+       8: iconst_1
+       9: isub
+      10: iconst_2
+      11: imul
+      12: istore_3
+      13: aload_1
+      14: iconst_0
+      15: iload_3
+      16: invokestatic  #76                 // Method edu/mines/jtk/dsp/FftReal.nfftSmall:(I)I
+      19: iconst_2
+      20: idiv
+      21: iconst_1
+      22: iadd
+      23: i2l
+      24: lastore
+      25: aload_2
+      26: iconst_0
+      27: aload_1
+      28: iconst_0
+      29: laload
+      30: lconst_1
+      31: lsub
+      32: ldc2_w        #72                 // long 2l
+      35: lmul
+      36: lastore
+      37: iconst_1
+      38: istore        4
+      40: iload         4
+      42: aload_0
+      43: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+      48: if_icmpge     79
+      51: aload_2
+      52: iload         4
+      54: aload_1
+      55: iload         4
+      57: aload_0
+      58: iload         4
+      60: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      65: l2i
+      66: invokestatic  #78                 // Method edu/mines/jtk/dsp/FftComplex.nfftSmall:(I)I
+      69: i2l
+      70: dup2_x2
+      71: lastore
+      72: lastore
+      73: iinc          4, 1
+      76: goto          40
+      79: return
+
+  public static final void dimensionsComplexToRealFast(net.imglib2.Dimensions, long[], long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J[J)V
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+       7: l2i
+       8: iconst_1
+       9: isub
+      10: iconst_2
+      11: imul
+      12: istore_3
+      13: aload_1
+      14: iconst_0
+      15: iload_3
+      16: invokestatic  #79                 // Method edu/mines/jtk/dsp/FftReal.nfftFast:(I)I
+      19: iconst_2
+      20: idiv
+      21: iconst_1
+      22: iadd
+      23: i2l
+      24: lastore
+      25: aload_2
+      26: iconst_0
+      27: aload_1
+      28: iconst_0
+      29: laload
+      30: lconst_1
+      31: lsub
+      32: ldc2_w        #72                 // long 2l
+      35: lmul
+      36: lastore
+      37: iconst_1
+      38: istore        4
+      40: iload         4
+      42: aload_0
+      43: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+      48: if_icmpge     79
+      51: aload_2
+      52: iload         4
+      54: aload_1
+      55: iload         4
+      57: aload_0
+      58: iload         4
+      60: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      65: l2i
+      66: invokestatic  #80                 // Method edu/mines/jtk/dsp/FftComplex.nfftFast:(I)I
+      69: i2l
+      70: dup2_x2
+      71: lastore
+      72: lastore
+      73: iinc          4, 1
+      76: goto          40
+      79: return
+
+  public static final boolean dimensionsEqual(net.imglib2.Interval, long[]);
+    descriptor: (Lnet/imglib2/Interval;[J)Z
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #69,  1           // InterfaceMethod net/imglib2/Interval.numDimensions:()I
+       9: if_icmpge     34
+      12: aload_0
+      13: iload_2
+      14: invokeinterface #71,  2           // InterfaceMethod net/imglib2/Interval.dimension:(I)J
+      19: aload_1
+      20: iload_2
+      21: laload
+      22: lcmp
+      23: ifeq          28
+      26: iconst_0
+      27: ireturn
+      28: iinc          2, 1
+      31: goto          2
+      34: iconst_1
+      35: ireturn
+
+  public static final boolean dimensionsEqual(net.imglib2.Dimensions, net.imglib2.Dimensions);
+    descriptor: (Lnet/imglib2/Dimensions;Lnet/imglib2/Dimensions;)Z
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+       9: if_icmpge     38
+      12: aload_0
+      13: iload_2
+      14: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      19: aload_1
+      20: iload_2
+      21: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      26: lcmp
+      27: ifeq          32
+      30: iconst_0
+      31: ireturn
+      32: iinc          2, 1
+      35: goto          2
+      38: iconst_1
+      39: ireturn
+
+  public static final void dimensionsRealToComplexFast(net.imglib2.Dimensions, long[], long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J[J)V
+    Code:
+       0: aload_1
+       1: iconst_0
+       2: aload_0
+       3: iconst_0
+       4: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+       9: l2i
+      10: invokestatic  #79                 // Method edu/mines/jtk/dsp/FftReal.nfftFast:(I)I
+      13: i2l
+      14: lastore
+      15: aload_2
+      16: iconst_0
+      17: aload_1
+      18: iconst_0
+      19: laload
+      20: ldc2_w        #72                 // long 2l
+      23: ldiv
+      24: lconst_1
+      25: ladd
+      26: lastore
+      27: iconst_1
+      28: istore_3
+      29: iload_3
+      30: aload_0
+      31: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+      36: if_icmpge     64
+      39: aload_2
+      40: iload_3
+      41: aload_1
+      42: iload_3
+      43: aload_0
+      44: iload_3
+      45: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      50: l2i
+      51: invokestatic  #80                 // Method edu/mines/jtk/dsp/FftComplex.nfftFast:(I)I
+      54: i2l
+      55: dup2_x2
+      56: lastore
+      57: lastore
+      58: iinc          3, 1
+      61: goto          29
+      64: return
+
+  public static final void dimensionsRealToComplexSmall(net.imglib2.Dimensions, long[], long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J[J)V
+    Code:
+       0: aload_1
+       1: iconst_0
+       2: aload_0
+       3: iconst_0
+       4: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+       9: l2i
+      10: invokestatic  #76                 // Method edu/mines/jtk/dsp/FftReal.nfftSmall:(I)I
+      13: i2l
+      14: lastore
+      15: aload_2
+      16: iconst_0
+      17: aload_1
+      18: iconst_0
+      19: laload
+      20: ldc2_w        #72                 // long 2l
+      23: ldiv
+      24: lconst_1
+      25: ladd
+      26: lastore
+      27: iconst_1
+      28: istore_3
+      29: iload_3
+      30: aload_0
+      31: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+      36: if_icmpge     64
+      39: aload_2
+      40: iload_3
+      41: aload_1
+      42: iload_3
+      43: aload_0
+      44: iload_3
+      45: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      50: l2i
+      51: invokestatic  #78                 // Method edu/mines/jtk/dsp/FftComplex.nfftSmall:(I)I
+      54: i2l
+      55: dup2_x2
+      56: lastore
+      57: lastore
+      58: iinc          3, 1
+      61: goto          29
+      64: return
+
+  public static final void dimensionsComplexToComplexFast(net.imglib2.Dimensions, long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J)V
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+       9: if_icmpge     33
+      12: aload_1
+      13: iload_2
+      14: aload_0
+      15: iload_2
+      16: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      21: l2i
+      22: invokestatic  #80                 // Method edu/mines/jtk/dsp/FftComplex.nfftFast:(I)I
+      25: i2l
+      26: lastore
+      27: iinc          2, 1
+      30: goto          2
+      33: return
+
+  public static final void dimensionsComplexToComplexSmall(net.imglib2.Dimensions, long[]);
+    descriptor: (Lnet/imglib2/Dimensions;[J)V
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: aload_0
+       4: invokeinterface #77,  1           // InterfaceMethod net/imglib2/Dimensions.numDimensions:()I
+       9: if_icmpge     33
+      12: aload_1
+      13: iload_2
+      14: aload_0
+      15: iload_2
+      16: invokeinterface #70,  2           // InterfaceMethod net/imglib2/Dimensions.dimension:(I)J
+      21: l2i
+      22: invokestatic  #78                 // Method edu/mines/jtk/dsp/FftComplex.nfftSmall:(I)I
+      25: i2l
+      26: lastore
+      27: iinc          2, 1
+      30: goto          2
+      33: return
+
+  protected static final boolean verifyRealToComplexfftDimensions(int, int);
+    descriptor: (II)Z
+    Code:
+       0: iload_0
+       1: invokestatic  #79                 // Method edu/mines/jtk/dsp/FftReal.nfftFast:(I)I
+       4: iconst_2
+       5: idiv
+       6: iconst_1
+       7: iadd
+       8: iload_1
+       9: if_icmpeq     24
+      12: iload_0
+      13: invokestatic  #76                 // Method edu/mines/jtk/dsp/FftReal.nfftSmall:(I)I
+      16: iconst_2
+      17: idiv
+      18: iconst_1
+      19: iadd
+      20: iload_1
+      21: if_icmpne     26
+      24: iconst_1
+      25: ireturn
+      26: iconst_0
+      27: ireturn
+
+  protected static final boolean verifyComplexToComplexfftDimensions(int, int);
+    descriptor: (II)Z
+    Code:
+       0: iload_0
+       1: invokestatic  #80                 // Method edu/mines/jtk/dsp/FftComplex.nfftFast:(I)I
+       4: iload_1
+       5: if_icmpeq     16
+       8: iload_0
+       9: invokestatic  #78                 // Method edu/mines/jtk/dsp/FftComplex.nfftSmall:(I)I
+      12: iload_1
+      13: if_icmpne     18
+      16: iconst_1
+      17: ireturn
+      18: iconst_0
+      19: ireturn
+
+  public static final <T extends net.imglib2.type.numeric.ComplexType<T>> void complexConjugate(net.imglib2.RandomAccessibleInterval<T>);
+    descriptor: (Lnet/imglib2/RandomAccessibleInterval;)V
+    Code:
+       0: aload_0
+       1: invokestatic  #81                 // Method net/imglib2/view/Views.iterable:(Lnet/imglib2/RandomAccessibleInterval;)Lnet/imglib2/IterableInterval;
+       4: invokeinterface #82,  1           // InterfaceMethod net/imglib2/IterableInterval.iterator:()Ljava/util/Iterator;
+       9: astore_1
+      10: aload_1
+      11: invokeinterface #27,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+      16: ifeq          38
+      19: aload_1
+      20: invokeinterface #28,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      25: checkcast     #61                 // class net/imglib2/type/numeric/ComplexType
+      28: astore_2
+      29: aload_2
+      30: invokeinterface #83,  1           // InterfaceMethod net/imglib2/type/numeric/ComplexType.complexConjugate:()V
+      35: goto          10
+      38: return
+
+  static void access$000(edu.mines.jtk.dsp.FftReal, net.imglib2.RandomAccess, net.imglib2.RandomAccess, net.imglib2.Interval, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: iload         4
+       6: aload         5
+       8: aload         6
+      10: iload         7
+      12: invokestatic  #3                  // Method computeComplexToReal1dFFT:(Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+      15: return
+
+  static void access$100(edu.mines.jtk.dsp.FftReal, net.imglib2.RandomAccess, net.imglib2.RandomAccess, net.imglib2.Interval, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: iload         4
+       6: aload         5
+       8: aload         6
+      10: iload         7
+      12: invokestatic  #2                  // Method computeRealToComplex1dFFT:(Ledu/mines/jtk/dsp/FftReal;Lnet/imglib2/RandomAccess;Lnet/imglib2/RandomAccess;Lnet/imglib2/Interval;I[F[FZ)V
+      15: return
+
+  static void access$200(edu.mines.jtk.dsp.FftComplex, boolean, net.imglib2.RandomAccess, int, float[], float[], boolean);
+    descriptor: (Ledu/mines/jtk/dsp/FftComplex;ZLnet/imglib2/RandomAccess;I[F[FZ)V
+    Code:
+       0: aload_0
+       1: iload_1
+       2: aload_2
+       3: iload_3
+       4: aload         4
+       6: aload         5
+       8: iload         6
+      10: invokestatic  #1                  // Method computeComplexToComplex1dFFT:(Ledu/mines/jtk/dsp/FftComplex;ZLnet/imglib2/RandomAccess;I[F[FZ)V
+      13: return
+}
