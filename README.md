@@ -22,6 +22,7 @@ list of deviations from the Java original are in
 | `tools/gen_parity.py` | turns the golden data into the generated MoonBit parity test | yes |
 | `tools/measure_deviation.py` | measures the numerical margin between the port and the original | yes |
 | `tools/gen_tables.py` | generates `moonbit_fft2/tables.mbt` from the transform length tables of the original | yes |
+| `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
 | `tools/_tmp/` | the upstream sources of `imglib2-fft`, fetched for reference | no, local only |
@@ -82,6 +83,9 @@ original as well, so that the port has to fail in the same places.
 ```powershell
 # deterministic inputs
 python tools\gen_cases.py --out build\cases
+
+# the original bytecode has to be laid out under its package path first
+python tools\stage_classes.py
 
 # golden data from the original Java classes
 $lib = "tools\lib"

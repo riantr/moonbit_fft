@@ -258,19 +258,28 @@ To regenerate the golden data and the parity tests:
 # 1. deterministic test inputs
 python tools\gen_cases.py --out build\cases
 
-# 2. run the original Java classes and capture their output
+# 2. lay the original bytecode out under its package path, so that the
+#    oracle can be compiled
+python tools\stage_classes.py
+
+# 3. run the original Java classes and capture their output
 javac -nowarn -encoding UTF-8 `
   -cp "build\classes;tools\lib\imglib2-6.1.0.jar;tools\lib\mines-jtk-20151125.jar" `
   -d build\oracle tools\java\Oracle.java
 java -cp "build\oracle;build\classes;tools\lib\imglib2-6.1.0.jar;tools\lib\mines-jtk-20151125.jar" `
   Oracle build\cases\manifest.txt build\cases\java
 
-# 3. turn the golden data into a MoonBit test
+# 4. turn the golden data into a MoonBit test
 python tools\gen_parity.py --cases build\cases --out moonbit_fft2\parity_wbtest.mbt
 
-# 4. run the tests and refresh the published interface file
+# 5. run the tests and refresh the published interface file
 cd moonbit_fft2 ; moon fmt ; moon check --deny-warn ; moon test ; moon info
 ```
+
+A fresh clone only needs the tracked files for `moon test`, because the
+expectations of the parity tests are inlined in `parity_wbtest.mbt`.  The
+steps above regenerate the golden data from the original bytecode and need a
+JDK 11 in addition.
 
 The numerical margin of the comparison can be measured with
 
