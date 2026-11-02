@@ -131,20 +131,27 @@ power of two at `2^4`.
 
 The port now uses a generic mixed radix Cooley-Tukey kernel with cached
 twiddle factors and reused work buffers.  The `n = 32 760` complex to
-complex transform went from **<!--v:OLD_C2C_S-->28.6<!--/v--> s to <!--v:C2C_MS-->42.8<!--/v--> ms**
-(<!--v:C2C_SPEEDUP-->669<!--/v-->x), and the port is now between <!--v:RANGE-->6.9 to 261<!--/v--> times slower than
-the JVM at the lengths where it is slower at all.  What is left is the price
-of the runtime: a single array element access costs about 5 to 6 ns in
-MoonBit, against about 0.15 ns on the JVM.  The last round of work confirms
-that reading: the small transforms were rewritten to use a quarter of the
-multiplications, and the port got only <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v--> faster for it,
-because the arithmetic was never the bottleneck.
+complex transform went from **<!--v:OLD_C2C_S-->4.6<!--/v--> s to <!--v:C2C_MS-->1.5<!--/v--> ms**
+(<!--v:C2C_SPEEDUP-->3130<!--/v-->x), and the port is now between <!--v:RANGE-->1.3 to 7<!--/v--> times slower than
+the JVM at the lengths where it is slower at all.
 
-The measurements themselves are delicate: the noise of a busy machine is
-bimodal, and a "keep the fastest run" statistic measures the luck of the
-schedule rather than the program.  `BENCHMARK.md` describes the protocol that
-replaces it - the median of the rounds, the ratios taken per round, and the
-order of the sides rotated in every round.
+Two details of the measurement matter as much as the numbers.  The benchmark
+runs the **release** build, because `moon run` produces the debug build by
+default and that one is about thirty times slower - the debug build would
+make the port look 169x slower than the original instead of 5.6x.  And the
+noise of a busy machine is bimodal, so a "keep the fastest run" statistic
+measures the luck of the schedule rather than the program; `BENCHMARK.md`
+describes the protocol that replaces it - the median of the rounds, the
+ratios taken per round, and the order of the sides rotated in every round.
+
+The small transforms of the odd radices use the symmetry of the roots of
+unity, which is a quarter of the multiplications and a quarter of the
+additions, and which is worth
+**<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**
+- the arithmetic of the butterflies *is* a large part of the run time of the
+long transforms.  What is left of the gap is the price of the runtime: a
+single array element access costs about 0.67 ns in MoonBit, against about
+0.15 ns on the JVM.
 
 ## License
 

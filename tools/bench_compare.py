@@ -94,8 +94,20 @@ def java_command() -> list[str]:
     return ["java", "-cp", cp, "Bench"]
 
 
-def moonbit_command(module: pathlib.Path) -> list[str]:
-    return ["moon", "-C", str(module), "run", "--target", "native", "./benchmark"]
+def moonbit_command(module: pathlib.Path, profile: str = "release") -> list[str]:
+    """The command that runs the benchmark of a module.
+
+    The profile matters a lot.  The release build is the one that a user of
+    the library gets, and it is also the fair comparison against the Java
+    original, which is compiled by its JIT.  The debug build is what
+    `moon run` produces by default, and it is *much* slower: the whole
+    benchmark of the port is about thirty times slower in it.
+    """
+    command = ["moon", "-C", str(module), "run", "--target", "native"]
+    if profile == "release":
+        command.append("--release")
+    command.append("./benchmark")
+    return command
 
 
 class Side:
@@ -208,7 +220,7 @@ def pre_kernel_revision() -> str:
     return parent.strip()
 
 
-def baseline_side(rev: str) -> Side:
+def baseline_side(rev: str, profile: str = "release") -> Side:
     """The port with the kernel of a given revision."""
     shadow = BUILD / "oldmodule"
     subprocess.run(
@@ -222,10 +234,10 @@ def baseline_side(rev: str) -> Side:
         check=True,
         cwd=str(ROOT),
     )
-    return Side("old", moonbit_command(shadow))
+    return Side("old", moonbit_command(shadow, profile))
 
 
-def head_side() -> Side:
+def head_side(profile: str = "release") -> Side:
     """The port as it is committed, without the changes of the working tree."""
     shadow = BUILD / "headmodule"
     subprocess.run(
@@ -241,10 +253,10 @@ def head_side() -> Side:
         check=True,
         cwd=str(ROOT),
     )
-    return Side("head", moonbit_command(shadow))
+    return Side("head", moonbit_command(shadow, profile))
 
 
-def direct_side() -> Side:
+def direct_side(profile: str = "release") -> Side:
     """The port of today, with the small transform in its direct form.
 
     Everything else is the working tree, only `kernels.mbt` is regenerated
@@ -277,7 +289,7 @@ def direct_side() -> Side:
         check=True,
         cwd=str(ROOT),
     )
-    return Side("direct", moonbit_command(shadow))
+    return Side("direct", moonbit_command(shadow, profile))
 
 
 def main() -> int:
@@ -322,6 +334,15 @@ def main() -> int:
         help="keep the order of the sides in every round",
     )
     parser.add_argument(
+        "--profile",
+        choices=["release", "debug"],
+        default="release",
+        help="the build profile of the MoonBit sides.  The release build is "
+        "the default, because it is the one a user of the library gets and "
+        "the fair comparison against the Java original, which is compiled by "
+        "its JIT.  The debug build is about thirty times slower.",
+    )
+    parser.add_argument(
         "--baseline-rev",
         default="",
         help="the revision of the baseline, the parent of the commit that "
@@ -337,18 +358,18 @@ def main() -> int:
 
     sides = [
         Side("java", java_command()),
-        Side("moonbit", moonbit_command(MODULE)),
+        Side("moonbit", moonbit_command(MODULE, args.profile)),
     ]
     if args.with_baseline:
         rev = args.baseline_rev or pre_kernel_revision()
         print(f"the baseline is the port at {rev}")
-        sides.append(baseline_side(rev))
+        sides.append(baseline_side(rev, args.profile))
     if args.with_direct:
         print("the direct side is the port of today with the direct small transform")
-        sides.append(direct_side())
+        sides.append(direct_side(args.profile))
     if args.with_head:
         print("the head side is the port as it is committed")
-        sides.append(head_side())
+        sides.append(head_side(args.profile))
 
     # An explicit list of sides overrides the flags.  It exists so that a
     # measurement can be repeated with a different set of sides without

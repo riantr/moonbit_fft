@@ -2,6 +2,7 @@
 build/
 # MoonBit build cache
 moonbit_fft2/_build/
+tools/_build/
 # the byte code cache of the python tools
 __pycache__/
 

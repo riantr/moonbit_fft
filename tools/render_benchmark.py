@@ -49,9 +49,9 @@ DOCUMENTS = (
 )
 
 # The lower bound of a textbook radix-2 transform of n = 32768 on this
-# machine, in milliseconds.  It is a measurement, it is quoted in the
-# documents.
-TEXTBOOK_MS = 11.29
+# machine, in milliseconds, in the release build.  It is a measurement, it is
+# quoted in the documents.
+TEXTBOOK_MS = 1.00
 
 WORKLOADS = ["c2c", "r2c", "api"]
 
@@ -243,16 +243,30 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
 
     # How much the symmetric decomposition of the small transform bought.
     # It is the median of the per round ratios, so that the noise that both
-    # sides see cancels out.  All three workloads are counted, and the ones
-    # where the symmetric transform is *not* faster are counted as well.
-    kernel_values = []
+    # sides see cancels out.  The short and the long transforms are reported
+    # separately, because they say different things: the fixed costs dominate
+    # the short ones, and the butterflies dominate the long ones.
+    short_values = []
+    long_values = []
     for key in kernel_best.get("moonbit", {}):
         value = kernel_ratios.get(key, {}).get("direct/moonbit")
-        if value:
-            kernel_values.append(value)
-    if kernel_values:
-        kernel_low, kernel_high = min(kernel_values), max(kernel_values)
-        kernel_range = f"{kernel_low:.2f}x to {kernel_high:.2f}x"
+        if not value:
+            continue
+        if int(key.split("/")[1]) >= 4095:
+            long_values.append(value)
+        else:
+            short_values.append(value)
+    if long_values:
+        kernel_range = (
+            "%.2fx to %.2fx for the long transforms, and %.2fx to %.2fx for the "
+            "short ones"
+            % (
+                min(long_values),
+                max(long_values),
+                min(short_values) if short_values else 1.0,
+                max(short_values) if short_values else 1.0,
+            )
+        )
     else:
         kernel_range = "not measured"
 
@@ -273,7 +287,10 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
         "C2C_RATIO": f"{c2c / java_c2c:.0f}",
         "C2C_SPEEDUP": f"{old_c2c / c2c:.0f}",
         "OLD_C2C_S": f"{old_c2c / 1e9:.1f}",
-        "GAP_FACTOR": f"{344 / 8.6:.0f}",
+        # The price of the array accesses: the cost of one element of the
+        # textbook transform against the cost of one point of the Java
+        # original.
+        "GAP_FACTOR": f"{30.4 / 8.6:.1f}",
         "KERNEL_RANGE": kernel_range,
     }
 

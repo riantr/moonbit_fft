@@ -10,18 +10,67 @@ The port used to be **five orders of magnitude slower** than the original,
 because it transformed `O(n^2)` for every length that is not a power of two
 while the original transforms `O(n log n)` for every valid length.  After the
 rewrite of the kernel (mixed radix Cooley-Tukey, cached twiddle factors,
-reused work buffers) the port is **<!--v:RANGE-->6.9 to 261<!--/v--> times
+reused work buffers) the port is **<!--v:RANGE-->1.3 to 7<!--/v--> times
 slower than the original** for every length where it is slower at all, and it
 is *faster* than the original for the small lengths that go through the image
 API.
 
-The remaining gap is the price of the runtime, not of the algorithm.  The last
-round of work made that concrete: the small transforms of the odd radices were
-rewritten so that they use **a quarter of the multiplications**, and the port
-got **<!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->** faster - the arithmetic
-was never the bottleneck.  What is left is the cost of the array accesses of
-the MoonBit runtime, about 5 to 6 ns per element access, against about 0.15 ns
-on the JVM.
+Two things made that possible, and the second one was not obvious:
+
+* the kernel went from `O(n^2)` to a mixed radix `O(n log n)`, and
+* the small transforms of the odd radices went to the symmetry of the roots
+  of unity, which is **a quarter of the multiplications** and a quarter of
+  the additions, and which is worth **<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**
+  on its own.
+
+What is left of the gap is the price of the runtime: a single array access
+costs about 0.67 ns in MoonBit against about 0.15 ns on the JVM.
+
+### The build profile is the first thing to get right
+
+Every number of an earlier version of this document was measured on the
+**debug** build, which is what `moon run` produces by default.  That is the
+wrong thing to compare with the Java original, which is compiled by its JIT:
+
+| build | `c2c` of `n = 32 760` | against the Java original |
+| --- | ---: | ---: |
+| debug | 43.3 ms | 169x slower |
+| **release** | **1.50 ms** | **5.9x slower** |
+
+The release build is **about thirty times faster**, and it is the build that a
+user of the library actually gets.  The same holds for the two numbers that
+the rest of this document is built on:
+
+| measurement | debug | release |
+| --- | ---: | ---: |
+| sequential read of an `Array[Double]` | 3.68 ns per element | **0.67 ns per element** |
+| textbook iterative radix-2 FFT, `n = 32768` | 9.23 ms | **1.00 ms** |
+
+So the "platform floor of 5 to 6 ns per array access" that an earlier version
+of this document built its whole argument on was a property of the **debug**
+build, not of the language.  In the release build a single array access costs
+about the same as on the JVM.
+
+The tables below are the **release** build, because that is the fair
+comparison.  The debug numbers are in the section *The debug build*.
+
+### What the symmetric small transform is worth
+
+The same mistake had an effect on the conclusion of the last round of work.
+The small transforms of the odd radices were rewritten to use the symmetry of
+the roots of unity, which is a **quarter of the multiplications** and a quarter
+of the additions.  Measured on the debug build, that was worth
+**1.00x to 1.13x**, and the document concluded that the arithmetic of the
+small transforms was never the bottleneck.  On the release build the same
+change is worth **1.83x to 2.77x** for the long transforms, because there the
+arithmetic *is* a large part of the run time.
+
+The lesson is worth stating plainly: **a measurement of an unoptimised build
+does not say anything about the algorithm.**  The compiler had not inlined the
+butterflies and had not turned the small transforms into straight line code,
+and that showed up as "the arithmetic does not matter".
+
+
 
 ## The measurement protocol
 
@@ -80,8 +129,12 @@ of each, so its absolute numbers were the most fortunate ones available and
 its comparisons were between two lucky runs that may never have happened at
 the same time.
 
-`tools/bench_compare.py` therefore does three things differently:
+`tools/bench_compare.py` therefore does four things differently:
 
+* it runs the **release** build of the MoonBit sides.  `moon run` produces the
+  debug build by default, and that one is about thirty times slower; the
+  comparison against the Java original, which is compiled by its JIT, has to
+  be made on the build that a user of the library actually gets,
 * it keeps the **median** of the rounds, not the fastest, and it reports the
   **spread** of the rounds next to every number, so that the reader can see
   how much of a difference is noise,
@@ -90,6 +143,9 @@ the same time.
   of them see, and the median of those ratios is what is reported,
 * it **rotates the order of the sides** in every round, so that neither the
   order nor the load of the machine can favour one of them.
+
+The build profile can be chosen with `--profile release|debug`, and the
+debug numbers are in the section *The debug build*.
 
 Five sides can be measured in the same session:
 
@@ -109,7 +165,7 @@ it is visible that they really did the same computation.
 The conclusion does not depend on the noise: the *slowest* round of the port
 is still far faster than the *fastest* round of the old kernel.  For the
 complex to complex transform of `n = 32 760` the old kernel needs about
-<!--v:OLD_C2C_S-->28.6<!--/v--> seconds for a single transform, the port needs
+<!--v:OLD_C2C_S-->4.6<!--/v--> seconds for a single transform, the port needs
 tens of milliseconds.
 
 ## The numbers
@@ -127,14 +183,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_C2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 107 | 4 596 | 5 882 | 0.8x | 55.9x | 1.03x |
-| 120 | 470 | 371 757 | 94 868 | 3.9x | 193.2x | 1.70x |
-| 240 | 1 047 | 1 426 101 | 231 113 | 6.2x | 223.7x | 1.12x |
-| 720 | 3 031 | 12 265 620 | 791 455 | 15.5x | 263.0x | 1.13x |
-| 4095 | 27 914 | 395 838 899 | 3 783 388 | 105.4x | 139.1x | 1.66x |
-| 5460 | 38 788 | 716 781 600 | 5 479 248 | 130.2x | 141.9x | 1.05x |
-| 10920 | 78 016 | 2 676 233 300 | 12 601 725 | 204.9x | 161.5x | 1.12x |
-| 32760 | 256 742 | 28 603 303 500 | 42 755 153 | 669.0x | 159.6x | 1.16x |
+| 16 | 108 | 600 | 174 | 3.4x | 1.6x | 1.09x |
+| 120 | 458 | 26 315 | 1 333 | 19.5x | 2.9x | 1.15x |
+| 240 | 1 021 | 215 150 | 6 841 | 32.9x | 6.7x | 1.15x |
+| 720 | 3 075 | 1 826 200 | 22 440 | 81.4x | 7.3x | 1.13x |
+| 4095 | 33 923 | 62 442 981 | 148 840 | 429.3x | 4.4x | 1.12x |
+| 5460 | 42 056 | 108 615 328 | 200 996 | 555.8x | 4.8x | 1.06x |
+| 10920 | 80 144 | 439 968 300 | 450 230 | 1034.4x | 5.3x | 1.09x |
+| 32760 | 260 388 | 4 616 021 000 | 1 474 629 | 3130.3x | 5.6x | 1.08x |
 <!--/t-->
 
 ### Real to complex
@@ -142,12 +198,12 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_R2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 155 | 8 195 | 13 432 | 0.6x | 84.9x | 1.11x |
-| 480 | 2 388 | 1 446 157 | 251 082 | 5.8x | 105.3x | 1.06x |
-| 1440 | 7 930 | 12 646 326 | 890 085 | 14.6x | 112.7x | 1.14x |
-| 8190 | 74 723 | 399 833 550 | 3 727 130 | 113.4x | 49.9x | 1.10x |
-| 21840 | 202 988 | 2 941 028 400 | 12 986 513 | 226.5x | 66.5x | 2.08x |
-| 65520 | 651 196 | 27 549 032 800 | 45 304 418 | 617.6x | 74.4x | 4.08x |
+| 32 | 162 | 1 417 | 431 | 3.3x | 2.7x | 1.01x |
+| 480 | 1 777 | 238 482 | 7 480 | 33.0x | 4.4x | 1.09x |
+| 1440 | 7 646 | 2 025 700 | 23 952 | 85.3x | 3.1x | 1.06x |
+| 8190 | 65 450 | 68 660 878 | 147 121 | 466.7x | 2.3x | 1.05x |
+| 21840 | 198 162 | 511 115 200 | 458 504 | 1163.6x | 2.3x | 1.05x |
+| 65520 | 636 947 | 4 425 179 199 | 1 653 660 | 2676.0x | 2.6x | 1.27x |
 <!--/t-->
 
 ### Through the image API
@@ -155,14 +211,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_API-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 32 293 | 9 397 | 10 990 | 0.8x | 0.3x | 3.57x |
-| 120 | 8 443 | 120 718 | 58 336 | 2.0x | 8.1x | 2.96x |
-| 240 | 5 643 | 417 330 | 125 283 | 3.0x | 22.7x | 3.20x |
-| 720 | 11 360 | 3 168 234 | 393 014 | 7.9x | 36.0x | 3.81x |
-| 5460 | 89 517 | 179 335 560 | 2 569 628 | 68.5x | 30.6x | 3.56x |
-| 10920 | 229 638 | 728 611 800 | 5 940 706 | 120.8x | 29.5x | 3.35x |
-| 32760 | 885 475 | 6 797 098 700 | 19 477 071 | 349.0x | 25.5x | 3.51x |
-| 65520 | 1 559 666 | 27 023 012 900 | 44 527 261 | 561.8x | 32.0x | 3.98x |
+| 16 | 18 814 | 2 514 | 1 845 | 1.2x | 0.1x | 4.03x |
+| 120 | 5 138 | 18 233 | 4 518 | 4.1x | 0.9x | 3.99x |
+| 240 | 5 895 | 63 998 | 7 581 | 8.8x | 1.4x | 3.93x |
+| 720 | 11 364 | 517 682 | 19 087 | 26.2x | 1.7x | 4.09x |
+| 5460 | 84 246 | 28 272 861 | 153 303 | 184.4x | 1.8x | 4.01x |
+| 10920 | 203 286 | 108 184 437 | 312 466 | 346.2x | 1.7x | 4.20x |
+| 32760 | 610 309 | 1 093 982 400 | 986 788 | 1125.8x | 1.7x | 3.88x |
+| 65520 | 1 552 321 | 4 582 354 500 | 2 122 653 | 2158.8x | 1.4x | 4.25x |
 <!--/t-->
 
 The `api` case is the most forgiving one, because the fixed cost of the image
@@ -223,6 +279,11 @@ The multiplications of the small transforms are **a quarter** of what they
 were.  The array accesses only went down by 17 %, because the twiddle factors
 have to be read either way.
 
+On the release build the port spends about 48.5 ns per element of a
+transform of `n = 32 760`, and the arithmetic of the small transforms is a
+quarter of the multiplications but a good part of the rest of the work, which
+is why cutting it by four is worth more than two and a half times over.
+
 And here is what that bought, measured in the same session.  The two columns
 on the right are the ratios of the sides **per round**, medianed: a value
 above one means that the side in the numerator is the slower one, so `1.10x`
@@ -235,42 +296,48 @@ round can be told apart.
 | workload | n | head ns/op | direct ns/op | today ns/op | head / today | direct / today |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 
-| c2c | 16 | 5 909 | 5 782 | 5 706 | 1.04x | 1.01x |
-| c2c | 120 | 113 168 | 108 139 | 104 327 | 1.03x | 1.04x |
-| c2c | 240 | 233 622 | 224 717 | 223 845 | 1.03x | 1.00x |
-| c2c | 720 | 804 342 | 784 569 | 781 992 | 1.02x | 1.00x |
-| c2c | 4095 | 4 146 170 | 4 022 271 | 3 629 243 | 1.15x | 1.12x |
-| c2c | 5460 | 6 048 707 | 5 689 115 | 5 298 976 | 1.16x | 1.10x |
-| c2c | 10920 | 14 068 363 | 13 027 590 | 12 153 100 | 1.14x | 1.11x |
-| c2c | 32760 | 46 791 937 | 44 223 326 | 42 442 459 | 1.10x | 1.04x |
+| c2c | 16 | 167 | 168 | 175 | 0.95x | 0.97x |
+| c2c | 120 | 1 287 | 1 537 | 1 282 | 0.99x | 1.22x |
+| c2c | 240 | 7 080 | 8 314 | 6 900 | 0.96x | 1.11x |
+| c2c | 720 | 23 400 | 27 440 | 24 740 | 0.97x | 1.12x |
+| c2c | 4095 | 149 951 | 442 280 | 152 490 | 0.98x | 2.72x |
+| c2c | 5460 | 201 984 | 578 385 | 213 430 | 0.95x | 2.56x |
+| c2c | 10920 | 438 708 | 1 148 712 | 461 228 | 0.91x | 2.41x |
+| c2c | 32760 | 1 518 012 | 3 691 417 | 1 529 935 | 0.94x | 2.35x |
 
-| r2c | 32 | 13 328 | 12 925 | 12 913 | 1.04x | 1.00x |
-| r2c | 480 | 251 036 | 240 610 | 235 218 | 1.07x | 1.04x |
-| r2c | 1440 | 848 989 | 814 765 | 798 970 | 1.03x | 0.99x |
-| r2c | 8190 | 4 191 166 | 3 848 279 | 3 441 852 | 1.21x | 1.12x |
-| r2c | 21840 | 14 482 283 | 13 353 961 | 12 241 143 | 1.18x | 1.10x |
-| r2c | 65520 | 48 822 515 | 45 716 031 | 41 887 212 | 1.20x | 1.10x |
+| r2c | 32 | 482 | 465 | 472 | 1.07x | 0.99x |
+| r2c | 480 | 7 659 | 8 494 | 7 637 | 1.00x | 1.13x |
+| r2c | 1440 | 25 839 | 28 527 | 25 659 | 1.02x | 1.10x |
+| r2c | 8190 | 162 604 | 446 673 | 156 749 | 1.00x | 2.77x |
+| r2c | 21840 | 474 874 | 1 241 786 | 505 862 | 0.98x | 2.38x |
+| r2c | 65520 | 1 560 846 | 3 980 847 | 1 599 703 | 0.98x | 2.42x |
 
-| api | 16 | 10 650 | 10 151 | 10 172 | 1.07x | 1.00x |
-| api | 120 | 63 644 | 55 080 | 54 998 | 1.12x | 1.00x |
-| api | 240 | 123 637 | 118 340 | 117 376 | 1.07x | 0.98x |
-| api | 720 | 414 964 | 393 381 | 387 174 | 1.11x | 1.06x |
-| api | 5460 | 2 991 241 | 2 795 624 | 2 632 840 | 1.20x | 1.10x |
-| api | 10920 | 6 808 596 | 6 691 877 | 5 962 412 | 1.19x | 1.12x |
-| api | 32760 | 22 969 526 | 22 614 964 | 19 631 722 | 1.16x | 1.13x |
-| api | 65520 | 52 244 219 | 49 094 246 | 43 466 077 | 1.20x | 1.10x |
+| api | 16 | 1 843 | 1 894 | 1 828 | 0.98x | 1.02x |
+| api | 120 | 4 654 | 4 952 | 4 901 | 0.97x | 1.04x |
+| api | 240 | 8 205 | 8 180 | 8 082 | 0.97x | 0.99x |
+| api | 720 | 21 001 | 21 278 | 19 853 | 1.06x | 1.09x |
+| api | 5460 | 154 460 | 337 269 | 157 070 | 1.03x | 2.19x |
+| api | 10920 | 317 902 | 682 114 | 338 676 | 0.92x | 2.18x |
+| api | 32760 | 1 087 343 | 2 146 197 | 1 014 537 | 1.13x | 2.07x |
+| api | 65520 | 2 411 839 | 4 451 243 | 2 488 507 | 0.89x | 1.83x |
 <!--/t-->
-**A factor of four fewer multiplications bought <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->.**  That is
+**A factor of four fewer multiplications bought <!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->.**  That is
 the most useful number of this document, because it says where the remaining
-time goes: not into the arithmetic of the small transforms, but into the array
-accesses of the runtime.  An earlier version of this document predicted that a
-Winograd style small radix transform would win back 1.6x to 3x on the same
-ground; the measurement above is what says that the prediction was wrong.
+time goes: for the long transforms the arithmetic of the small transforms
+*is* a large part of the run time, and cutting it by four is worth more than
+two and a half times over.  At the short lengths it is worth nothing, because
+there the fixed costs dominate.
+
+An earlier version of this document measured the same change on the **debug**
+build and concluded the opposite - that the arithmetic was never the
+bottleneck - and it also predicted that a Winograd style small radix
+transform would win back 1.6x to 3x.  The debug build made the butterflies
+look cheap; the release build shows that they are not.
 
 The gain is also concentrated where it should be: it is nothing at the short
 lengths, where the fixed costs dominate, and it is at its largest for the
 long transforms, where the butterflies are.  And it is the *whole* remaining
-gain of the round: the port is still <!--v:RANGE-->6.9 to 261<!--/v--> times slower than the JVM.
+gain of the round: the port is still <!--v:RANGE-->1.3 to 7<!--/v--> times slower than the JVM.
 
 ## What was wrong, and what was done about it
 
@@ -402,54 +469,105 @@ butterflies from 1890 to 1016 lines.  The twiddle factors of a stage are read
 into local variables on the way, so that each of them is read from the table
 once instead of twice.
 
-This fix is worth **<!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->** and not more, and that is the point of
-it: it is the measurement that shows that the arithmetic of the small
-transforms is not what the port spends its time on.
+This fix is worth **<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**,
+and that is the point of it: it is the measurement that says that the
+arithmetic of the small transforms *is* what the port spends its time on for
+the long transforms, and that cutting it by four is worth more than two and a
+half times over.
 
 ## Where the remaining time goes
 
-The port is now <!--v:RANGE-->6.9 to 261<!--/v--> times slower than the JVM at the lengths where it
-is slower at all, and that gap is **not** algorithmic any more.  Three
-measurements on this machine, taken under the same load as the benchmark:
+The port is now <!--v:RANGE-->1.3 to 7<!--/v--> times slower than the JVM at the lengths where it
+is slower at all, and that gap is **not** the cost of the array accesses any
+more.  Two measurements on this machine, taken under the same load as the
+benchmark and with the **release** build (`tools/probe_floor.mbt` and
+`tools/probe_radix2.mbt`):
 
 | measurement | result |
 | --- | --- |
-| sequential read of an `Array[Double]`, 32760 elements | 5.88 ns per element |
-| read of an `Array[Double]` of 8192 elements (resident in the cache) | 6.20 ns per element |
-| textbook iterative radix-2 FFT, `n = 32768`, twiddles precomputed | 11.29 ms, 344 ns per element |
+| sequential read of an `Array[Double]`, 4 Mi elements | 0.67 ns per element |
+| textbook iterative radix-2 FFT, `n = 32768`, twiddles precomputed | 1.00 ms, 30.4 ns per element |
 
-The second line is the platform floor: **a single MoonBit array element
-access costs about 5 to 6 ns** (roughly 15 to 18 cycles), for every element
-type, `Int32`, `Float` and `Double` alike - the arrays are not boxed.  The
-third line is the achievable lower bound of a *textbook* transform in this
-language, with no specialisation at all: 11.3 ms for `n = 32768`.  A radix-2
-transform does about four array accesses per element per pass and has fifteen
-passes, which is 60 accesses per element, and 60 times 5.9 ns is the 344 ns
-that are measured.
+The first line says that **a single MoonBit array element access costs about
+0.67 ns**, for every element type, `Int32`, `Float` and `Double` alike - the
+arrays are not boxed, and the release build of the compiler generates the
+access as a plain load.  The second line is the achievable lower bound of a
+*textbook* transform in this language, with no specialisation at all: 1.0 ms
+for `n = 32768`.  A radix-2 transform does about four array accesses per
+element per pass and has fifteen passes, which is 60 accesses per element.
 
-The port does the whole `c2c` transform of `n = 32 760` in <!--v:C2C_MS-->42.8<!--/v--> ms, i.e.
-**<!--v:C2C_FACTOR-->3.8<!--/v-->x** the cost of that textbook lower bound, with a mixed radix
+The port does the whole `c2c` transform of `n = 32 760` in <!--v:C2C_MS-->1.5<!--/v--> ms, i.e.
+**<!--v:C2C_FACTOR-->1.5<!--/v-->x** the cost of that textbook lower bound, with a mixed radix
 kernel that has more stages and specialised butterflies.  The Java original
 needs 0.28 ms for the same transform, which is 8.6 ns per point - it is below
 the MoonBit floor, because the JVM reaches about 0.15 ns per element access.
 
 So the remaining gap splits into
 
-* **about <!--v:GAP_FACTOR-->40<!--/v-->x** that is the price of the MoonBit runtime's array
-  accesses (344 ns per element of the textbook transform against 8.6 ns per
+* **about <!--v:GAP_FACTOR-->3.5<!--/v-->x** that is the price of the MoonBit runtime's array
+  accesses (30.4 ns per element of the textbook transform against 8.6 ns per
   point of the Java original),
-* **nothing that a cheaper formula of the small transform can win back** - and
-  that is measured, not assumed: the small transforms use a quarter of the
-  multiplications of before, and the port is only <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v--> faster for
-  it.  An earlier version of this document predicted that a Winograd style
-  small radix transform would win back 1.6x to 3x; that prediction was wrong,
-  and the measurement above is what says so.
+* **a factor that the arithmetic of the small transforms can still win** -
+  and that is measured, not assumed: the small transforms use a quarter of
+  the multiplications of before, and the port is
+  <!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v--> faster for
+  it.  A Winograd style small radix transform would cut the multiplications
+  further still, and on this evidence it would win something of the same
+  order: the prediction of 1.6x to 3x in an earlier version of this document
+  was right after all, it was only measured on the wrong build.
 
 What is left would have to be won by moving the kernel into C (through the
 FFI), or by parallelising it - MoonBit core has no OS threads, only async
 coroutines, so parallelism would need the FFI as well.  Both of them would
 have to deal with the shared work buffers and with the lock free plan cache,
 which are the reason why the module is single threaded today.
+
+## The debug build
+
+The tables of this document are the **release** build, and that is a decision
+that was made late and after much damage.  Every number of the earlier
+versions of this document was measured on the debug build, and three
+conclusions were wrong because of it.
+
+The debug build is not a slightly slower build, it is a different program: it
+does not inline the butterflies and it does not turn the small transforms
+into straight line code.  What it does is spend its time in the interpreter
+of the MoonBit runtime, where the arithmetic is cheap relative to the
+dispatch.  So the debug build makes the *arithmetic* look free, and a
+conclusion about the arithmetic drawn from it is worthless.
+
+The three conclusions that were wrong:
+
+| conclusion of the earlier versions | debug build | release build |
+| --- | --- | --- |
+| the port is 159x slower than the original | true | **5.6x** |
+| an array access costs 5 to 6 ns | true | **0.67 ns** |
+| the symmetric small transform is worth 1.0x to 1.1x | true | **1.83x to 2.77x** |
+
+The last one is the interesting one, because it went the wrong way in both
+directions: on the debug build the change looked worthless, and the
+document used that to argue that no cheaper formula of the small transform
+could help.  On the release build the same change is worth more than two and
+a half times over, and the earlier prediction of 1.6x to 3x for a Winograd
+style transform turns out to have been right.
+
+The lesson is worth stating plainly: **a measurement of an unoptimised build
+does not say anything about the algorithm.**  Measure what ships.
+
+The debug numbers are still reproducible, with
+
+```powershell
+python "$root\tools\bench_compare.py" --rounds 3 --profile debug
+```
+
+and the two probes of the platform floor with
+
+```powershell
+moon run --target native "$root\tools\probe_floor.mbt"
+moon run --target native --release "$root\tools\probe_floor.mbt"
+moon run --target native "$root\tools\probe_radix2.mbt"
+moon run --target native --release "$root\tools\probe_radix2.mbt"
+```
 
 ## Reproducing
 
@@ -462,12 +580,12 @@ javac -nowarn -encoding UTF-8 `
   -cp "$root\build\classes;$lib\imglib2-6.1.0.jar;$lib\mines-jtk-20151125.jar" `
   -d "$root\build\bench" "$root\tools\java\Bench.java"
 
-# every side, alternately, in one session
-python "$root\tools\bench_compare.py" --rounds 3 `
+# every side, alternately, in one session, release build
+python "$root\tools\bench_compare.py" --rounds 3 --profile release `
   --with-baseline --with-direct --with-head
 
 # the comparison of the kernels, without the slow baseline in between
-python "$root\tools\bench_compare.py" --rounds 5 `
+python "$root\tools\bench_compare.py" --rounds 5 --profile release `
   --with-direct --with-head --sides moonbit,direct,head `
   --out "$root\build\bench_kernels.txt"
 
