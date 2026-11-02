@@ -13,29 +13,6 @@ fn check_sign(sign : Int32) -> Unit {
 }
 
 ///|
-/// Returns true if `n` is a power of two.
-fn is_power_of_two(n : Int32) -> Bool {
-  n > 0 && (n & (n - 1)) == 0
-}
-
-///|
-/// Precomputes the `n` twiddle factors `exp(sign * 2 * pi * i / n)`.
-fn twiddle_table(sign : Int32, n : Int32) -> (Array[Double], Array[Double]) {
-  let re = Array::Array(capacity=n)
-  let im = Array::Array(capacity=n)
-  let s = sign.to_double()
-  let nn = n.to_double()
-  let mut i = 0
-  while i < n {
-    let ang = s * two_pi * i.to_double() / nn
-    re.push(@math.cos(ang))
-    im.push(@math.sin(ang))
-    i = i + 1
-  }
-  (re, im)
-}
-
-///|
 /// In-place discrete Fourier transform of `n` complex points stored as
 /// interleaved `(real, imaginary)` pairs in `c`.
 ///
@@ -44,6 +21,12 @@ fn twiddle_table(sign : Int32, n : Int32) -> (Array[Double], Array[Double]) {
 /// inverse `X[k] = sum_j x[j] * exp(+2*pi*i*j*k/n)`.  This matches the
 /// convention of `edu.mines.jtk.dsp.FftComplex`, where the inverse transform
 /// does not divide by `n`.
+///
+/// The transform is the mixed radix decimation in time transform of
+/// `mixed_radix.mbt`, which is `O(n log n)` for every valid length, just like
+/// the prime factor algorithm of the Java original.  The plan of the length
+/// holds the twiddle factors and the permutation, they are built once and
+/// then reused.
 ///
 /// The Java original evaluates the transform in single precision with a mixed
 /// radix PFA kernel.  The port accumulates in double precision and rounds the
@@ -54,123 +37,32 @@ fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
   if n <= 1 {
     return
   }
-  let re = Array::Array(capacity=n)
-  let im = Array::Array(capacity=n)
-  let mut i = 0
-  while i < n {
-    re.push(c[2 * i].to_double())
-    im.push(c[2 * i + 1].to_double())
-    i = i + 1
-  }
-  if is_power_of_two(n) {
-    dft_radix2(sign, n, re, im)
-  } else {
-    dft_naive(sign, n, re, im)
-  }
-  let mut i = 0
-  while i < n {
-    c[2 * i] = Float::from_double(re[i])
-    c[2 * i + 1] = Float::from_double(im[i])
-    i = i + 1
-  }
-}
-
-///|
-/// Iterative radix-2 decimation-in-time Cooley-Tukey transform.
-fn dft_radix2(
-  sign : Int32,
-  n : Int32,
-  c_re : Array[Double],
-  c_im : Array[Double],
-) -> Unit {
-  // bit reversal permutation
+  let plan = plan_for(n)
+  // The working buffer belongs to the plan, a transform does not allocate.
+  let re = plan.buf_re
+  let im = plan.buf_im
+  // The inverse transform is the conjugate of the forward transform of the
+  // conjugated input, so only the forward transform is implemented.
+  let inverse = sign > 0
+  // Read the samples in the order of the permutation of the transform.
   let mut j = 0
-  let mut i = 0
-  while i < n {
-    if i < j {
-      let tr = c_re[i]
-      c_re[i] = c_re[j]
-      c_re[j] = tr
-      let ti = c_im[i]
-      c_im[i] = c_im[j]
-      c_im[j] = ti
-    }
-    let mut m = n / 2
-    while m >= 1 && j >= m {
-      j = j - m
-      m = m / 2
-    }
-    j = j + m
-    i = i + 1
+  while j < n {
+    let src = plan.perm[j]
+    let vr = c[2 * src].to_double()
+    let vi = c[2 * src + 1].to_double()
+    re[j] = vr
+    im[j] = if inverse { -vi } else { vi }
+    j = j + 1
   }
-  // butterflies
-  let (tw_re, tw_im) = twiddle_table(sign, n)
-  let mut len = 2
-  while len <= n {
-    let half = len / 2
-    let step = n / len
-    let mut base = 0
-    while base < n {
-      let mut k = 0
-      while k < half {
-        let wr = tw_re[k * step]
-        let wi = tw_im[k * step]
-        let a = base + k
-        let b = base + k + half
-        let vr = c_re[b]
-        let vi = c_im[b]
-        let tr = vr * wr - vi * wi
-        let ti = vr * wi + vi * wr
-        let ur = c_re[a]
-        let ui = c_im[a]
-        c_re[a] = ur + tr
-        c_im[a] = ui + ti
-        c_re[b] = ur - tr
-        c_im[b] = ui - ti
-        k = k + 1
-      }
-      base = base + len
-    }
-    len = len * 2
-  }
-}
-
-///|
-/// Direct evaluation of the DFT, used for lengths that are not a power of
-/// two.
-fn dft_naive(
-  sign : Int32,
-  n : Int32,
-  c_re : Array[Double],
-  c_im : Array[Double],
-) -> Unit {
-  let (tw_re, tw_im) = twiddle_table(sign, n)
-  let out_re = Array::Array(capacity=n)
-  let out_im = Array::Array(capacity=n)
-  let mut k = 0
-  while k < n {
-    let mut sr = 0.0
-    let mut si = 0.0
-    let mut j = 0
-    while j < n {
-      let idx = j * k % n
-      let wr = tw_re[idx]
-      let wi = tw_im[idx]
-      let xr = c_re[j]
-      let xi = c_im[j]
-      sr = sr + (xr * wr - xi * wi)
-      si = si + (xr * wi + xi * wr)
-      j = j + 1
-    }
-    out_re.push(sr)
-    out_im.push(si)
-    k = k + 1
-  }
-  let mut i = 0
-  while i < n {
-    c_re[i] = out_re[i]
-    c_im[i] = out_im[i]
-    i = i + 1
+  dft_plan(plan, re, im)
+  // Write the spectrum back, it is in the natural order.
+  j = 0
+  while j < n {
+    let vr = re[j]
+    let vi = im[j]
+    c[2 * j] = Float::from_double(vr)
+    c[2 * j + 1] = Float::from_double(if inverse { -vi } else { vi })
+    j = j + 1
   }
 }
 

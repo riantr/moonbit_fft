@@ -24,6 +24,18 @@ fn zerosf(n : Int32) -> Array[Float] {
 }
 
 ///|
+/// Creates an array of `n` zero doubles.
+fn zerosd(n : Int32) -> Array[Double] {
+  let a = Array::Array(capacity=n)
+  let mut i = 0
+  while i < n {
+    a.push(0.0)
+    i = i + 1
+  }
+  a
+}
+
+///|
 /// A real-valued N-dimensional image.
 ///
 /// `data` holds the samples in the linear order of `net.imglib2`, i.e. the

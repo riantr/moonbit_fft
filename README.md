@@ -17,14 +17,23 @@ list of deviations from the Java original are in
 | --- | --- | --- |
 | `fft2/` | the **original** Java bytecode of `net.imglib2.algorithm.fft2` (`FFT`, `FFTMethods`), the oracle of this port | yes |
 | `moonbit_fft2/` | the MoonBit module `riantr/moonbit_fft2` | yes |
+| `moonbit_fft2/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
 | `tools/java/Oracle.java` | harness that drives the original bytecode and dumps its results as golden data | yes |
+| `tools/java/Bench.java` | benchmark of the original Java implementation | yes |
 | `tools/gen_cases.py` | generates the deterministic test inputs and the manifest | yes |
 | `tools/gen_parity.py` | turns the golden data into the generated MoonBit parity test | yes |
 | `tools/measure_deviation.py` | measures the numerical margin between the port and the original | yes |
 | `tools/gen_tables.py` | generates `moonbit_fft2/tables.mbt` from the transform length tables of the original | yes |
+| `tools/gen_kernels.py` | generates the specialised small radix butterflies of `moonbit_fft2/kernels.mbt` | yes |
 | `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
+| `tools/compare_bench.py` | joins the results of the two benchmarks into one table | yes |
+| `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
+| `tools/bench_baseline.py` | measures the port as it was before the kernel was rewritten, from a revision of the git history | yes |
+| `tools/check_benchmark.py` | checks that the tables of `BENCHMARK.md` agree with the benchmark results | yes |
+| `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
+| `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation | yes |
 | `tools/_tmp/` | the upstream sources of `imglib2-fft`, fetched for reference | no, local only |
 | `build/` | generated artefacts: the compiled oracle, the test cases, the golden data, the decompiled sources | no, local only |
 
@@ -57,7 +66,8 @@ The port was then validated against the original: the oracle runs the
 original classes over deterministic inputs and writes the raw `float32`
 results, and the generated test `moonbit_fft2/parity_wbtest.mbt` replays
 them against the MoonBit implementation.  The suite currently holds 629
-parity cases and 28 unit tests, 657 in total; all of them pass.
+parity cases, 28 hand written unit tests and 5 tests of the transform
+kernel, 662 in total; all of them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
@@ -108,6 +118,23 @@ moon info          # refresh the published interface file
 
 Requires a JDK 11 (the original classes are Java 8), Python with NumPy
 and the MoonBit toolchain (`moon` 0.1.20261012 or newer).
+
+## Runtime comparison
+
+[`BENCHMARK.md`](BENCHMARK.md) compares the runtime of the port with the
+runtime of the original, using the same measurement protocol on both sides.
+The short version: the port used to be five orders of magnitude slower for
+every length that matters, because the original transforms `O(n log n)` with
+a mixed radix PFA kernel while the port transformed `O(n^2)` for every length
+that is not a power of two - and the length table of the original caps the
+power of two at `2^4`.
+
+The port now uses a generic mixed radix Cooley-Tukey kernel with cached
+twiddle factors and reused work buffers.  The `n = 32 760` complex to
+complex transform went from **34.7 s to 30.0 ms** (1 158x), and the port is
+now within a factor of 9.6 to 158 of the JVM for every length that matters.
+What is left is the price of the runtime: a single array element access costs
+about 5 to 6 ns in MoonBit, against about 0.15 ns on the JVM.
 
 ## License
 

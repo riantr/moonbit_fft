@@ -160,16 +160,19 @@ smallest supported length instead of the cheapest one.
 
 The Java original evaluates the transform in single precision with the
 mixed radix PFA kernel of `edu.mines.jtk.dsp.Pfacc`.  The port does not
-reproduce that kernel: powers of two are handled by an iterative radix-2
-Cooley-Tukey transform, all other lengths by a direct evaluation of the
-DFT.  The accumulation of the port is done in **double** precision and
-rounded back to single precision at the end, so the difference to the
-original is dominated by the rounding error of the original rather than by
-the error of the port.
+reproduce that kernel: it uses a **generic mixed radix Cooley-Tukey**
+transform (decimation in time, factors applied in descending order, the small
+`2, 3, 5, 7, 11, 13` point DFTs evaluated by specialised butterflies whose
+constants are literals).  The accumulation of the port is done in **double**
+precision and rounded back to single precision at the end, so the difference
+to the original is dominated by the rounding error of the original rather than
+by the error of the port.
 
 The measured result over the whole verification suite is a largest
 deviation of about one unit in the last place of a `float`, i.e. **14 % of
-the tolerance** that the parity tests allow.  The tests therefore compare
+the tolerance** that the parity tests allow (`0.142` as the ratio between the
+observed deviation and the tolerance, measured with
+`python tools\measure_deviation.py`).  The tests therefore compare
 with a relative tolerance of `1e-6`, measured against the magnitude of the
 whole result rather than against a single sample: a sample that happens to
 be close to zero still carries the rounding error of the whole transform,
@@ -181,15 +184,37 @@ rotation of the spectrum and the recurrence of the twiddle factors) is a
 faithful port of `edu.mines.jtk.dsp.FftReal` and was verified against the
 disassembled original.
 
+## Performance
+
+The transform kernel is a generic mixed radix Cooley-Tukey transform; the
+twiddle factors, the small DFT matrices, the permutation and the work
+buffers are held in a `FftPlan` that is cached globally, so a transform of an
+already used length allocates nothing and evaluates no trigonometric
+function.  The plans are bounded by the total number of elements they hold
+(`plan_cache_budget`), not by their number.
+
+The measured result against the original Java implementation: the complex to
+complex transform of `n = 32 760` takes 30.0 ms in the port and 0.28 ms in
+the original, which is 107x.  The gap is the price of the runtime rather than
+of the algorithm - a single array element access costs about 5 to 6 ns in
+MoonBit against about 0.15 ns on the JVM, and a *textbook* radix-2 FFT of
+`n = 32768` already needs 11.3 ms here.  The full comparison, including the
+spread of the measurements, is in [`../BENCHMARK.md`](../BENCHMARK.md).
+
 ## Deviations from the Java original
 
-1. **Transform kernel** - radix-2 / direct DFT with double precision
-   accumulation instead of the PFA mixed radix kernel in single precision,
-   see *Numerical behaviour*.
+1. **Transform kernel** - a generic mixed radix Cooley-Tukey kernel with
+   double precision accumulation instead of the PFA mixed radix kernel in
+   single precision, see *Numerical behaviour*.  The two kernels are
+   mathematically equivalent, but they do not accumulate in the same order,
+   so the results differ by the rounding error of the original.
 2. **Threading** - the Java original spreads the lines of an image over a
    thread pool, the port is single threaded.  The `ExecutorService` and
    `numThreads` overloads of the original have no counterpart in the port,
-   they only choose the thread pool.
+   they only choose the thread pool.  The transform plans are kept in a
+   global cache, so the module is **not** safe to use from several threads at
+   the same time: a transform of a length that is already cached would share
+   the work buffers of its plan with the other thread.
 3. **Image factories** - the original overloads that take an `ImgFactory`
    create the result image themselves.  The port returns the result
    directly, so those overloads have no counterpart.  The same holds for
@@ -214,11 +239,19 @@ disassembled original.
 
 ## Verification
 
-`moon test` runs two groups of tests, 657 in total:
+`moon test` runs three groups of tests, 662 in total:
 
 * `fft2_wbtest.mbt` - 28 hand written unit tests of the individual
   functions, including the two length tables and the refusal of the
   unsupported lengths.
+* `kernel_wbtest.mbt` - 5 tests of the mixed radix kernel itself: it has to
+  reproduce the direct `O(n^2)` evaluation of the transform for 90 lengths
+  and for both directions, the forward and the inverse transform have to undo
+  each other at **every** valid length of the original, a transform must not
+  depend on the transforms that ran before it, the plan of a length has to be
+  built once and then reused, and the generic butterfly - the fallback for a
+  radix that has no specialised kernel - has to work for radices that the
+  original does not use.
 * `parity_wbtest.mbt` - 629 generated parity tests.  Every expectation in
   this file is the output of the **original Java bytecode**, captured by
   the oracle in `../tools/java/Oracle.java`; the port has to reproduce it
@@ -290,6 +323,19 @@ python tools\measure_deviation.py
 It instruments the generated parity test, runs it and reports the largest
 ratio between the observed deviation and the tolerance that the test
 allows; the ratio is currently about `0.14`.
+
+A green suite is only worth something if it can turn red.  The negative
+control `../tools/negative_control.py` breaks the kernel of the transform on
+purpose - for all the twiddle factors, for the radix 13 alone, for the sizes
+of the generic path and for the plan cache - and checks that the suite fails;
+it restores the file afterwards and verifies its checksum.  It also runs a
+*stress* control in the other direction: with a tiny plan cache budget the
+cache drops and rebuilds its plans over and over again, and the suite has to
+stay green, because that is not a defect but a different memory budget.
+
+```powershell
+python tools\negative_control.py
+```
 
 ## License
 
