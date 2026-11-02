@@ -2,6 +2,8 @@
 build/
 # MoonBit build cache
 moonbit_fft2/_build/
+# the byte code cache of the python tools
+__pycache__/
 
 # third party jars that are kept locally for reference but are not used by the
 # verification pipeline: the original depends on edu.mines:mines-jtk, not on

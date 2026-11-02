@@ -1,9 +1,19 @@
-"""Checks that the tables of `BENCHMARK.md` agree with the benchmark results.
+#!/usr/bin/env python3
+"""Checks that the tables of `BENCHMARK.md` agree with the measurements.
 
-The document quotes numbers that were produced by `tools/merge_bench.py` and
-`tools/compare_bench.py`; this script recomputes them from the raw runs and
-compares them with what the document says, so that a table cannot drift away
-from the measurements it claims to show.
+The document quotes numbers that were produced by `tools/bench_compare.py`;
+this script recomputes them from the machine readable result of that script
+and compares them with what the document says, so that a table cannot drift
+away from the measurements it claims to show.
+
+Two kinds of tables are checked:
+
+* the tables of the three workloads, one row per transform length, with the
+  runtime of the original, the runtime of the port before the rewrite of the
+  kernel, the runtime of the port of today, the speedup, the ratio to the
+  original and the spread of the measurements,
+* the table of the kernels, which compares the port of today with the port as
+  it is committed and with the port of today with the direct small transform.
 
 Usage::
 
@@ -12,6 +22,7 @@ Usage::
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
@@ -19,93 +30,204 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 DOC = ROOT / "BENCHMARK.md"
+DATA = BUILD / "bench_compare.json"
+# The comparison of the kernels is a separate measurement.
+KERNEL_DATA = BUILD / "bench_kernels.json"
 
-LINE = re.compile(
-    r"^CASE\s+(?P<impl>\w+)\s+(?P<workload>\w+)\s+n=(?P<n>\d+)\s+ns_per_op=(?P<ns>[\d.]+)\s*$"
-)
-
-# The rows of the three tables of the document, in the order they appear.
+# A row of the tables of the workloads:
+#
+#   | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
+#
+# The numbers may be written with thin spaces and they may be put in bold, and
+# the last three carry an `x`.
 ROW = re.compile(
-    r"^\|\s*(?P<n>[\d ]+)\s*\|\s*(?P<java>[\d ]+)\s*\|\s*(?P<before>[\d ]+)\s*\|"
-    r"\s*\**(?P<after>[\d ]+)\**\s*\|\s*\**(?P<speed>[\d.]+)x\**\s*\|"
-    r"\s*\**(?P<ratio>[\d.]+)x\**\s*\|$"
+    r"^\|\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|\s*\**\s*(?P<java>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<before>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<after>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<speed>[\d.]+)x\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*"
+    r"(?:\|\s*\**\s*(?P<spread>[\d.]+)x\s*\**\s*)?\|$"
 )
 
-# The sections of the document that hold a table.
+# A row of the table of the kernels:
+#
+#   | workload | n | head ns/op | direct ns/op | today ns/op | head / today | direct / today |
+ROW_KERNELS = re.compile(
+    r"^\|\s*(?P<workload>\w+)\s*\|\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<head>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<direct>[\d ]+)\s*\**\s*\|\s*\**\s*(?P<today>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<over_head>[\d.]+)x\s*\**\s*\|"
+    r"\s*\**\s*(?P<over_direct>[\d.]+)x\s*\**\s*\|$"
+)
+
+# A line of a table that is neither a header nor a separator.
+DATA_ROW = re.compile(r"^\|\s*\**\s*[\d]")
+
+# The sections of the document that hold a table, and the workload of each.
 SECTIONS = {
     "Complex to complex": "c2c",
     "Real to complex": "r2c",
     "Through the image API": "api",
 }
 
-
-def decode(path: pathlib.Path) -> str:
-    raw = path.read_bytes()
-    if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
-        return raw.decode("utf-16")
-    return raw.decode("utf-8", errors="replace")
-
-
-def read(path: pathlib.Path) -> dict[tuple[str, int], float]:
-    out: dict[tuple[str, int], float] = {}
-    for line in decode(path).splitlines():
-        m = LINE.match(line.strip())
-        if m:
-            out[(m.group("workload"), int(m.group("n")))] = float(m.group("ns"))
-    return out
+# The section that holds the table of the kernels.
+KERNEL_SECTION = "The kernels of today"
 
 
 def number(text: str) -> int:
-    return int(text.replace(" ", ""))
+    return int(text.replace(" ", "").replace(" ", ""))
+
+
+def close(given: float, actual: float, tolerance: float = 0.05, floor: float = 0.05) -> bool:
+    """Whether the document and the measurement agree.
+
+    The document writes the numbers with one or two decimals, so a small
+    number can not be checked with a relative tolerance alone: `0.3` and
+    `0.34` differ by more than five percent of the second one.  The absolute
+    floor is the error that the rounding of the document can introduce, half
+    of the last written digit.
+    """
+    return abs(given - actual) <= max(tolerance * abs(actual), floor)
 
 
 def main() -> int:
-    java = read(BUILD / "bench_java_merged.txt")
-    before = read(BUILD / "bench_moonbit_before.txt")
-    after = read(BUILD / "bench_moonbit_final.txt")
+    if not DATA.exists():
+        print(f"{DATA} does not exist, run tools/bench_compare.py first")
+        return 1
+    data = json.loads(DATA.read_text(encoding="utf-8"))
+    best = data.get("median") or data["best"]
+    spread = data.get("spread", {})
+    ratios = data.get("ratios", {})
+    if "java" not in best or "moonbit" not in best:
+        print("the measurement has no java or moonbit side")
+        return 1
+    old = best.get("old")
+
+    # The table of the kernels comes from the separate comparison.
+    kernel_best: dict = {}
+    kernel_ratios: dict = {}
+    if KERNEL_DATA.exists():
+        kernel_data = json.loads(KERNEL_DATA.read_text(encoding="utf-8"))
+        kernel_best = kernel_data.get("median") or kernel_data.get("best", {})
+        kernel_ratios = kernel_data.get("ratios", {})
 
     problems: list[str] = []
     checked = 0
     workload = None
+    in_kernels = False
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
-            workload = SECTIONS.get(line[4:].strip())
+            title = line[4:].strip()
+            workload = SECTIONS.get(title)
+            in_kernels = title == KERNEL_SECTION
         if line.startswith("| n |") or line.startswith("| ---"):
             continue
+
+        m = ROW_KERNELS.match(line)
+        if m and in_kernels:
+            checked += 1
+            n = number(m.group("n"))
+            workload = m.group("workload")
+            key = f"{workload}/{n}"
+            head = kernel_best.get("head", {}).get(key)
+            direct = kernel_best.get("direct", {}).get(key)
+            today = kernel_best.get("moonbit", {}).get(key)
+            if head is None or direct is None or today is None:
+                problems.append(f"{key}: the measurement is missing a side")
+                continue
+            if number(m.group("head")) != int(head):
+                problems.append(
+                    f"{key}: the document says head = {number(m.group('head'))}, "
+                    f"the measurement is {head:.0f}"
+                )
+            if number(m.group("direct")) != int(direct):
+                problems.append(
+                    f"{key}: the document says direct = {number(m.group('direct'))}, "
+                    f"the measurement is {direct:.0f}"
+                )
+            if number(m.group("today")) != int(today):
+                problems.append(
+                    f"{key}: the document says today = {number(m.group('today'))}, "
+                    f"the measurement is {today:.0f}"
+                )
+            # The ratios are the medians of the per round ratios, they are
+            # not the quotient of the two medians.
+            names = kernel_ratios.get(key, {})
+            for name, given, measured in (
+                ("head", m.group("over_head"), names.get("head/moonbit")),
+                ("direct", m.group("over_direct"), names.get("direct/moonbit")),
+            ):
+                if measured is None:
+                    continue
+                if not close(float(given), measured, 0.02, 0.01):
+                    problems.append(
+                        f"{key}: the document says {name} / today = {given}x, "
+                        f"the measurement is {measured:.2f}x"
+                    )
+            continue
+
         m = ROW.match(line)
         if not m:
+            # A row that is neither a header nor a separator, and that this
+            # script does not understand, is a row that would be checked by
+            # nothing.  That must not pass silently.
+            if DATA_ROW.match(line):
+                problems.append(f"the row {line.strip()!r} is not understood")
             continue
         n = number(m.group("n"))
         if workload is None:
             problems.append(f"the row for n = {n} is in an unknown section")
             continue
-        key = (workload, n)
-        if key not in java or key not in before or key not in after:
-            problems.append(f"no measurement for {workload} n = {n}")
+        key = f"{workload}/{n}"
+        if key not in best["moonbit"]:
+            problems.append(f"no measurement for {key}")
             continue
         checked += 1
-        for label, expected, actual in (
-            ("java", number(m.group("java")), java[key]),
-            ("before", number(m.group("before")), before[key]),
-            ("after", number(m.group("after")), after[key]),
-        ):
-            if abs(expected - actual) > max(1.0, actual * 0.005):
+        java = best["java"].get(key)
+        after = best["moonbit"][key]
+        before = old.get(key) if old else None
+        names = ratios.get(key, {})
+        if java is not None and number(m.group("java")) != int(java):
+            problems.append(
+                f"{key}: the document says java = {number(m.group('java'))}, "
+                f"the measurement is {java:.0f}"
+            )
+        if before is not None and number(m.group("before")) != int(before):
+            problems.append(
+                f"{key}: the document says before = {number(m.group('before'))}, "
+                f"the measurement is {before:.0f}"
+            )
+        if number(m.group("after")) != int(after):
+            problems.append(
+                f"{key}: the document says after = {number(m.group('after'))}, "
+                f"the measurement is {after:.0f}"
+            )
+        if before is not None:
+            speed = names.get("old/moonbit")
+            if speed is None:
+                speed = before / after
+            if not close(float(m.group("speed")), speed):
                 problems.append(
-                    f"{key[0]} n = {n}: the document says {label} = {expected}, "
-                    f"the measurement is {actual:.0f}"
+                    f"{key}: the document says the speedup is {m.group('speed')}x, "
+                    f"it is {speed:.1f}x"
                 )
-        speed = before[key] / after[key]
-        if round(speed, 1) != float(m.group("speed")):
-            problems.append(
-                f"{key[0]} n = {n}: the document says the speedup is "
-                f"{m.group('speed')}x, it is {speed:.1f}x"
-            )
-        ratio = after[key] / java[key]
-        if round(ratio, 1) != float(m.group("ratio")):
-            problems.append(
-                f"{key[0]} n = {n}: the document says the ratio to the original "
-                f"is {m.group('ratio')}x, it is {ratio:.1f}x"
-            )
+        if java:
+            ratio = names.get("moonbit/java")
+            if ratio is None:
+                ratio = after / java
+            if not close(float(m.group("ratio")), ratio):
+                problems.append(
+                    f"{key}: the document says the ratio to the original is "
+                    f"{m.group('ratio')}x, it is {ratio:.1f}x"
+                )
+        given_spread = m.group("spread")
+        measured = spread.get("moonbit", {}).get(key)
+        if given_spread and measured is not None:
+            if not close(float(given_spread), measured, 0.02, 0.01):
+                problems.append(
+                    f"{key}: the document says the spread is {given_spread}x, "
+                    f"the measurement is {measured:.2f}x"
+                )
 
     if checked == 0:
         print("no rows of the document were found")

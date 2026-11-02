@@ -131,10 +131,20 @@ power of two at `2^4`.
 
 The port now uses a generic mixed radix Cooley-Tukey kernel with cached
 twiddle factors and reused work buffers.  The `n = 32 760` complex to
-complex transform went from **34.7 s to 30.0 ms** (1 158x), and the port is
-now within a factor of 9.6 to 158 of the JVM for every length that matters.
-What is left is the price of the runtime: a single array element access costs
-about 5 to 6 ns in MoonBit, against about 0.15 ns on the JVM.
+complex transform went from **<!--v:OLD_C2C_S-->28.6<!--/v--> s to <!--v:C2C_MS-->42.8<!--/v--> ms**
+(<!--v:C2C_SPEEDUP-->669<!--/v-->x), and the port is now between <!--v:RANGE-->6.9 to 261<!--/v--> times slower than
+the JVM at the lengths where it is slower at all.  What is left is the price
+of the runtime: a single array element access costs about 5 to 6 ns in
+MoonBit, against about 0.15 ns on the JVM.  The last round of work confirms
+that reading: the small transforms were rewritten to use a quarter of the
+multiplications, and the port got only <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v--> faster for it,
+because the arithmetic was never the bottleneck.
+
+The measurements themselves are delicate: the noise of a busy machine is
+bimodal, and a "keep the fastest run" statistic measures the luck of the
+schedule rather than the program.  `BENCHMARK.md` describes the protocol that
+replaces it - the median of the rounds, the ratios taken per round, and the
+order of the sides rotated in every round.
 
 ## License
 

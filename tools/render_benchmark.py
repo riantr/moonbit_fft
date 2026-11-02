@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+"""Fills the placeholders of the documents from the measurements.
+
+The documents hold placeholders of the form `{{NAME}}`, and this script
+replaces them with the numbers of `build/bench_compare.json`, the machine
+readable result of `tools/bench_compare.py`.  The tables of the documents are
+built the same way, so that no number in them is typed by hand.
+
+The placeholders are:
+
+* `{{TABLE_C2C}}`, `{{TABLE_R2C}}`, `{{TABLE_API}}` - the tables of the three
+  workloads,
+* `{{TABLE_KERNELS}}` - the table of the kernels,
+* `{{CHECKSUM_JAVA}}`, `{{CHECKSUM_MOONBIT}}` - the checksums of the two sides,
+* `{{RANGE}}`, `{{RANGE_LOW}}`, `{{RANGE_HIGH}}` - how much slower the port is
+  than the JVM, over all the lengths of the three workloads,
+* `{{C2C_MS}}`, `{{C2C_FACTOR}}`, `{{C2C_RATIO}}`, `{{C2C_SPEEDUP}}`,
+  `{{OLD_C2C_S}}` - the transform of `n = 32 760`, against the lower bound of
+  a textbook transform and against the original,
+* `{{GAP_FACTOR}}` - the price of the array accesses of the runtime.
+
+Usage::
+
+    python tools/render_benchmark.py
+    python tools/render_benchmark.py --check
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+BUILD = ROOT / "build"
+DATA = BUILD / "bench_compare.json"
+# The comparison of the kernels is a separate measurement, so that the slow
+# baseline of the main comparison does not sit between the sides that are
+# compared.
+KERNEL_DATA = BUILD / "bench_kernels.json"
+
+# The documents that hold the numbers of the measurements.
+DOCUMENTS = (
+    ROOT / "BENCHMARK.md",
+    ROOT / "README.md",
+    ROOT / "moonbit_fft2" / "README.md",
+)
+
+# The lower bound of a textbook radix-2 transform of n = 32768 on this
+# machine, in milliseconds.  It is a measurement, it is quoted in the
+# documents.
+TEXTBOOK_MS = 11.29
+
+WORKLOADS = ["c2c", "r2c", "api"]
+
+
+def grouped(value: float) -> str:
+    """Formats an integer with spaces as the thousands separator."""
+    return f"{int(value):,}".replace(",", " ")
+
+
+def all_ratios_of(best: dict) -> list[float]:
+    """The ratio of the port to the original, over all the lengths."""
+    out = []
+    for key, value in best["moonbit"].items():
+        java = best["java"].get(key)
+        if java:
+            out.append(value / java)
+    return out
+
+
+def slowest(best: dict) -> tuple[float, float, str]:
+    """The ratio of the port to the original, over the lengths where the port
+    is the slower one.
+
+    The port is faster than the original at the small lengths that go through
+    the image API, and those cases do not belong into a factor that says how
+    much slower the port is.
+    """
+    cases = []
+    for key, value in best["moonbit"].items():
+        java = best["java"].get(key)
+        if java and value > java:
+            cases.append((value / java, key))
+    if not cases:
+        return 1.0, 1.0, "-"
+    cases.sort()
+    low = cases[0][0]
+    high = cases[-1][0]
+    return low, high, cases[-1][1]
+
+
+def table(best: dict, workload: str, old: dict | None, spread: dict, ratios: dict) -> str:
+    """The table of one workload.
+
+    The ratio to the original and the speedup over the old kernel are the
+    medians of the per round ratios, so that the part of the noise that both
+    sides see cancels out.
+    """
+    lines = [
+        "| n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    keys = sorted(
+        (k for k in best["moonbit"] if k.startswith(workload + "/")),
+        key=lambda k: int(k.split("/")[1]),
+    )
+    for key in keys:
+        n = int(key.split("/")[1])
+        after = best["moonbit"][key]
+        java = best["java"].get(key)
+        before = old.get(key) if old else None
+        names = ratios.get(key, {})
+        ratio = names.get("moonbit/java")
+        if ratio is None and java:
+            ratio = after / java
+        # The speedup over the old kernel: the old kernel takes this many
+        # times the time of the port.
+        speed = names.get("old/moonbit")
+        if speed is None and before:
+            speed = before / after
+        spread_value = spread.get("moonbit", {}).get(key)
+        spread_text = f"{spread_value:.2f}x" if spread_value else "-"
+        lines.append(
+            "| %d | %s | %s | %s | %s | %s | %s |"
+            % (
+                n,
+                grouped(java) if java else "-",
+                grouped(before) if before else "-",
+                grouped(after),
+                f"{speed:.1f}x" if speed else "-",
+                f"{ratio:.1f}x" if ratio else "-",
+                spread_text,
+            )
+        )
+    return "\n".join(lines)
+
+
+def kernel_table(best: dict, ratios: dict) -> str:
+    """The table of the kernels, for the three workloads.
+
+    The two columns on the right are the ratios of the sides, taken per round
+    and then medianed, so that the part of the noise that both sides see
+    cancels out.  A value above one means that the side in the numerator is
+    the slower one, so `1.10x` under `direct / today` means that the direct
+    small transform is ten percent slower than the symmetric one.
+    """
+    lines = [
+        "| workload | n | head ns/op | direct ns/op | today ns/op | head / today | direct / today |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for workload in WORKLOADS:
+        keys = sorted(
+            (k for k in best["moonbit"] if k.startswith(workload + "/")),
+            key=lambda k: int(k.split("/")[1]),
+        )
+        if not keys:
+            continue
+        if lines:
+            lines.append("")
+        for key in keys:
+            n = int(key.split("/")[1])
+            today = best["moonbit"][key]
+            head = best.get("head", {}).get(key)
+            direct = best.get("direct", {}).get(key)
+            names = ratios.get(key, {})
+            over_head = names.get("head/moonbit")
+            over_direct = names.get("direct/moonbit")
+            lines.append(
+                "| %s | %d | %s | %s | %s | %s | %s |"
+                % (
+                    workload,
+                    n,
+                    grouped(head) if head else "-",
+                    grouped(direct) if direct else "-",
+                    grouped(today),
+                    f"{over_head:.2f}x" if over_head else "-",
+                    f"{over_direct:.2f}x" if over_direct else "-",
+                )
+            )
+    return "\n".join(lines)
+
+
+def replace_block(text: str, name: str, body: str) -> str:
+    """Replaces the body of a marked block.
+
+    The blocks are written as
+
+        <!--t:NAME--> ... <!--/t-->
+
+    The comments are invisible in the rendered document, and they survive the
+    rendering, so the script can be run again after a new measurement: it
+    replaces the body of the block and nothing else.  A plain `{{NAME}}`
+    placeholder is accepted as well, for the first run.
+    """
+    start = f"<!--t:{name}-->"
+    end = "<!--/t-->"
+    if start in text and end in text:
+        head, rest = text.split(start, 1)
+        _, tail = rest.split(end, 1)
+        return head + start + "\n" + body + "\n" + end + tail
+    return text.replace("{{" + name + "}}", body)
+
+
+def replace_value(text: str, name: str, value: str) -> str:
+    """Replaces the value of a marked span.
+
+    The span is written as `<!--v:NAME--> ... <!--/v-->`, and the plain
+    `{{NAME}}` placeholder is accepted as well.
+    """
+    start = f"<!--v:{name}-->"
+    end = "<!--/v-->"
+    if start in text and end in text:
+        head, rest = text.split(start, 1)
+        _, tail = rest.split(end, 1)
+        return head + start + value + end + tail
+    return text.replace("{{" + name + "}}", value)
+
+
+def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
+    """The values of the placeholders."""
+    best = data.get("median") or data["best"]
+    spread = data.get("spread", {})
+    old = best.get("old")
+    checksums = data.get("checksums", {})
+    ratios = data.get("ratios", {})
+
+    # The table of the kernels comes from the separate comparison, and the
+    # ratio of its sides is taken from there as well.
+    kernel_best = kernel_data.get("median") or kernel_data.get("best", {})
+    kernel_ratios = kernel_data.get("ratios", {})
+
+    all_ratios = all_ratios_of(best)
+    low, high = min(all_ratios), max(all_ratios)
+    slow_low, slow_high, slow_case = slowest(best)
+
+    c2c = best["moonbit"]["c2c/32760"]
+    c2c_ms = c2c / 1e6
+    java_c2c = best["java"]["c2c/32760"]
+    old_c2c = old["c2c/32760"] if old else 0
+
+    # How much the symmetric decomposition of the small transform bought.
+    # It is the median of the per round ratios, so that the noise that both
+    # sides see cancels out.  All three workloads are counted, and the ones
+    # where the symmetric transform is *not* faster are counted as well.
+    kernel_values = []
+    for key in kernel_best.get("moonbit", {}):
+        value = kernel_ratios.get(key, {}).get("direct/moonbit")
+        if value:
+            kernel_values.append(value)
+    if kernel_values:
+        kernel_low, kernel_high = min(kernel_values), max(kernel_values)
+        kernel_range = f"{kernel_low:.2f}x to {kernel_high:.2f}x"
+    else:
+        kernel_range = "not measured"
+
+    return {
+        "TABLE_C2C": table(best, "c2c", old, spread, ratios),
+        "TABLE_R2C": table(best, "r2c", old, spread, ratios),
+        "TABLE_API": table(best, "api", old, spread, ratios),
+        "TABLE_KERNELS": kernel_table(kernel_best, kernel_ratios),
+        "CHECKSUM_JAVA": checksums.get("java", "-"),
+        "CHECKSUM_MOONBIT": checksums.get("moonbit", "-"),
+        "RANGE": f"{slow_low:.1f} to {slow_high:.0f}",
+        "RANGE_LOW": f"{slow_low:.1f}",
+        "RANGE_HIGH": f"{slow_high:.0f}",
+        "RANGE_ALL": f"{low:.1f} to {high:.0f}",
+        "SLOWEST_CASE": slow_case,
+        "C2C_MS": f"{c2c_ms:.1f}",
+        "C2C_FACTOR": f"{c2c_ms / TEXTBOOK_MS:.1f}",
+        "C2C_RATIO": f"{c2c / java_c2c:.0f}",
+        "C2C_SPEEDUP": f"{old_c2c / c2c:.0f}",
+        "OLD_C2C_S": f"{old_c2c / 1e9:.1f}",
+        "GAP_FACTOR": f"{344 / 8.6:.0f}",
+        "KERNEL_RANGE": kernel_range,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="only report the documents that are not in sync, do not write",
+    )
+    args = parser.parse_args()
+
+    if not DATA.exists():
+        print(f"{DATA} does not exist, run tools/bench_compare.py first")
+        return 1
+    data = json.loads(DATA.read_text(encoding="utf-8"))
+    kernel_data = {}
+    if KERNEL_DATA.exists():
+        kernel_data = json.loads(KERNEL_DATA.read_text(encoding="utf-8"))
+    else:
+        print(f"{KERNEL_DATA} does not exist, the table of the kernels is empty")
+    values = values_of(data, kernel_data)
+
+    out_of_sync = []
+    for document in DOCUMENTS:
+        text = document.read_text(encoding="utf-8")
+        rendered = text
+        for name, value in values.items():
+            if name.startswith("TABLE_"):
+                rendered = replace_block(rendered, name, value)
+            else:
+                rendered = replace_value(rendered, name, value)
+        left = re.findall(r"\{\{[A-Z_0-9]+\}\}", rendered)
+        if left:
+            print(f"{document}: the placeholders {sorted(set(left))} are unknown")
+            return 1
+        if rendered != text:
+            out_of_sync.append(document)
+            if not args.check:
+                document.write_text(rendered, encoding="utf-8", newline="")
+    if args.check:
+        if out_of_sync:
+            for document in out_of_sync:
+                print(f"{document} is not in sync with the measurements")
+            return 1
+        print("OK: the documents are in sync with the measurements")
+        return 0
+
+    for document in DOCUMENTS:
+        print(f"{document.relative_to(ROOT)} rendered from {DATA.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

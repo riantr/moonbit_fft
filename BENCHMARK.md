@@ -10,14 +10,18 @@ The port used to be **five orders of magnitude slower** than the original,
 because it transformed `O(n^2)` for every length that is not a power of two
 while the original transforms `O(n log n)` for every valid length.  After the
 rewrite of the kernel (mixed radix Cooley-Tukey, cached twiddle factors,
-reused work buffers) the port is **within a factor of 9.6 to 158** of the
-original for every length that matters, and it is *faster* than the original
-for the small lengths that go through the image API.
+reused work buffers) the port is **<!--v:RANGE-->6.9 to 261<!--/v--> times
+slower than the original** for every length where it is slower at all, and it
+is *faster* than the original for the small lengths that go through the image
+API.
 
-The remaining gap is the price of the runtime, not of the algorithm: it is
-dominated by the cost of the array accesses of the MoonBit runtime (about 5
-to 6 ns per element access, measured), while the JVM does the same accesses
-in about 0.15 ns.
+The remaining gap is the price of the runtime, not of the algorithm.  The last
+round of work made that concrete: the small transforms of the odd radices were
+rewritten so that they use **a quarter of the multiplications**, and the port
+got **<!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->** faster - the arithmetic
+was never the bottleneck.  What is left is the cost of the array accesses of
+the MoonBit runtime, about 5 to 6 ns per element access, against about 0.15 ns
+on the JVM.
 
 ## The measurement protocol
 
@@ -30,6 +34,11 @@ Both sides implement the same protocol, in `tools/java/Bench.java` and
 2. an **iteration count** derived from the probe, chosen so that one measured
    round takes about one second,
 3. **the best of three** measured rounds inside one run.
+
+Step 3 is inside one run and is harmless: the three rounds of a run are
+back to back, so they see the same machine.  It is the choice of the
+*outer* statistic, across the runs of the whole benchmark, that had to be
+different, and that is what the next section is about.
 
 Both sides print one line per case:
 
@@ -44,42 +53,64 @@ computation:
 
 | | checksum |
 | --- | --- |
-| Java | `-62107.018879670184` |
-| MoonBit | `-62107.00744686906` |
+| Java | `<!--v:CHECKSUM_JAVA-->-62107.018879670184<!--/v-->` |
+| MoonBit | `<!--v:CHECKSUM_MOONBIT-->-62107.00744686906<!--/v-->` |
 
 ### The runs and the noise
 
 The machine this was measured on is not idle - it runs other work, and the
-processor was between 37 % and 64 % loaded during the measurements.  The
-individual runs of the port therefore differ a lot, and the difference is
-**not** uniform over the table: it is the fixed overhead of the small cases
-that suffers the most, because a fixed cost is what the load adds to.
+processor was between 37 % and 64 % loaded during the measurements.  Two runs
+of the *same* program therefore do not agree, and the difference is **not** a
+smooth jitter.  It is bimodal: the same binary, on the same input, six times
+in a row, gave
 
-To take that out of the comparison, **both sides were run several times and
-the fastest result per case was kept** (`tools/merge_bench.py`):
+```
+44.1 ms, 20.8 ms, 42.2 ms, 40.6 ms, 41.4 ms, 39.5 ms
+```
 
-* the Java side: 3 runs, the fastest per case; the spread over the runs is
-  between 1.0x and 4.2x per case,
-* the MoonBit side: 5 runs, the fastest per case; the spread over the runs is
-  between 1.2x and 5.1x per case,
-* the old kernel: 3 runs, the fastest per case; the spread is up to 7.8x.
-  Two of them are the runs of the port before the rewrite and one was
-  measured again from the git history, with `tools/bench_baseline.py`.  All
-  three measure the same program: the two historical runs and the
-  reproduction agree in shape, and every run that carries the checksum prints
-  the same value.
+for the complex to complex transform of `n = 32 760`.  One run in six was
+twice as fast as the others.
 
-The numbers below are these fastest results, so they pair the best run of the
-port with the best run of the original.  That is the most favourable
-comparison for the port, and a reader who prefers the pessimistic end of the
-spread should expect the ratio to move by a factor of several in either
-direction.
+That has a direct consequence for the method.  A statistic that keeps the
+**fastest** of the runs does not measure the program, it measures the luck of
+the schedule - and it favours whichever side of the comparison happened to
+get a lucky round.  The previous version of this document did exactly that:
+it ran each side several times in separate sessions and kept the fastest run
+of each, so its absolute numbers were the most fortunate ones available and
+its comparisons were between two lucky runs that may never have happened at
+the same time.
 
-The conclusion does not depend on that: the *slowest* run of the port is
-still far faster than the *fastest* run of the old kernel.  For the complex
-to complex transform of `n = 32 760` the slowest port run took 70.5 ms and
-the fastest old run took 34.7 s, which is a factor of **493** in the worst
-case for the port and 1 158 in the best one.
+`tools/bench_compare.py` therefore does three things differently:
+
+* it keeps the **median** of the rounds, not the fastest, and it reports the
+  **spread** of the rounds next to every number, so that the reader can see
+  how much of a difference is noise,
+* it compares the sides **through their ratios, per round**: the ratio of two
+  sides measured in the *same* round cancels the part of the noise that both
+  of them see, and the median of those ratios is what is reported,
+* it **rotates the order of the sides** in every round, so that neither the
+  order nor the load of the machine can favour one of them.
+
+Five sides can be measured in the same session:
+
+| side | what it is |
+| --- | --- |
+| `java` | the original, driven through its own bytecode |
+| `moonbit` | the port of today |
+| `direct` | the port of today with the small transforms in their direct form |
+| `head` | the port as it is committed, without the changes of the working tree |
+| `old` | the port with the kernel it had before the rewrite, the one that transformed `O(n^2)` |
+
+The three MoonBit sides other than `moonbit` are shadow modules under
+`build/`, assembled from the working tree or from the git history, and they
+run the very same benchmark harness.  All of them print the same checksum, so
+it is visible that they really did the same computation.
+
+The conclusion does not depend on the noise: the *slowest* round of the port
+is still far faster than the *fastest* round of the old kernel.  For the
+complex to complex transform of `n = 32 760` the old kernel needs about
+<!--v:OLD_C2C_S-->28.6<!--/v--> seconds for a single transform, the port needs
+tens of milliseconds.
 
 ## The numbers
 
@@ -88,57 +119,158 @@ case for the port and 1 158 in the best one.
 `FFTMethods.realToComplex` against `real_to_complex`.
 
 The *before* column is the port before the rewrite of the kernel, the
-*after* column is the port as it is now.
+*after* column is the port as it is now, and the spread is the ratio of the
+slowest to the fastest of the three rounds of the port.
 
 ### Complex to complex
 
-| n | Java ns/op | MoonBit before ns/op | MoonBit after ns/op | speedup | after / Java |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 115 | 4 390 | 7 347 | 0.6x | 63.9x |
-| 120 | 487 | 320 788 | 71 828 | 4.5x | 147.5x |
-| 240 | 1 067 | 1 328 024 | 147 328 | 9.0x | 138.1x |
-| 720 | 3 412 | 12 152 108 | 537 976 | 22.6x | 157.7x |
-| 4 095 | 30 129 | 373 232 450 | 2 849 099 | 131.0x | 94.6x |
-| 5 460 | 42 701 | 672 324 900 | 4 065 406 | 165.4x | 95.2x |
-| 10 920 | 88 708 | 2 857 858 900 | 9 147 006 | 312.4x | 103.1x |
-| 32 760 | 281 191 | 34 746 693 300 | **29 999 635** | **1 158.2x** | 106.7x |
+<!--t:TABLE_C2C-->
+| n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 16 | 107 | 4 596 | 5 882 | 0.8x | 55.9x | 1.03x |
+| 120 | 470 | 371 757 | 94 868 | 3.9x | 193.2x | 1.70x |
+| 240 | 1 047 | 1 426 101 | 231 113 | 6.2x | 223.7x | 1.12x |
+| 720 | 3 031 | 12 265 620 | 791 455 | 15.5x | 263.0x | 1.13x |
+| 4095 | 27 914 | 395 838 899 | 3 783 388 | 105.4x | 139.1x | 1.66x |
+| 5460 | 38 788 | 716 781 600 | 5 479 248 | 130.2x | 141.9x | 1.05x |
+| 10920 | 78 016 | 2 676 233 300 | 12 601 725 | 204.9x | 161.5x | 1.12x |
+| 32760 | 256 742 | 28 603 303 500 | 42 755 153 | 669.0x | 159.6x | 1.16x |
+<!--/t-->
 
 ### Real to complex
 
-| n | Java ns/op | MoonBit before ns/op | MoonBit after ns/op | speedup | after / Java |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 168 | 12 087 | 8 712 | 1.4x | 51.9x |
-| 480 | 2 106 | 1 804 711 | 164 967 | 10.9x | 78.3x |
-| 1 440 | 8 234 | 8 738 204 | 531 702 | 16.4x | 64.6x |
-| 8 190 | 73 057 | 304 473 933 | 3 296 111 | 92.4x | 45.1x |
-| 21 840 | 215 616 | 2 193 405 800 | 9 748 115 | 225.0x | 45.2x |
-| 65 520 | 686 113 | 29 131 586 400 | **30 884 145** | **943.3x** | 45.0x |
+<!--t:TABLE_R2C-->
+| n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 32 | 155 | 8 195 | 13 432 | 0.6x | 84.9x | 1.11x |
+| 480 | 2 388 | 1 446 157 | 251 082 | 5.8x | 105.3x | 1.06x |
+| 1440 | 7 930 | 12 646 326 | 890 085 | 14.6x | 112.7x | 1.14x |
+| 8190 | 74 723 | 399 833 550 | 3 727 130 | 113.4x | 49.9x | 1.10x |
+| 21840 | 202 988 | 2 941 028 400 | 12 986 513 | 226.5x | 66.5x | 2.08x |
+| 65520 | 651 196 | 27 549 032 800 | 45 304 418 | 617.6x | 74.4x | 4.08x |
+<!--/t-->
 
 ### Through the image API
 
-| n | Java ns/op | MoonBit before ns/op | MoonBit after ns/op | speedup | after / Java |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 25 151 | 9 418 | 8 722 | 1.1x | 0.3x |
-| 120 | 4 174 | 127 472 | 40 096 | 3.2x | 9.6x |
-| 240 | 5 756 | 392 899 | 90 203 | 4.4x | 15.7x |
-| 720 | 11 964 | 3 211 268 | 314 167 | 10.2x | 26.3x |
-| 5 460 | 93 701 | 196 074 450 | 2 133 814 | 91.9x | 22.8x |
-| 10 920 | 202 713 | 917 636 000 | 4 645 541 | 197.5x | 22.9x |
-| 32 760 | 702 668 | 6 845 123 300 | 17 720 253 | 386.3x | 25.2x |
-| 65 520 | 1 493 525 | 27 165 519 300 | **43 021 738** | **631.4x** | 28.8x |
+<!--t:TABLE_API-->
+| n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 16 | 32 293 | 9 397 | 10 990 | 0.8x | 0.3x | 3.57x |
+| 120 | 8 443 | 120 718 | 58 336 | 2.0x | 8.1x | 2.96x |
+| 240 | 5 643 | 417 330 | 125 283 | 3.0x | 22.7x | 3.20x |
+| 720 | 11 360 | 3 168 234 | 393 014 | 7.9x | 36.0x | 3.81x |
+| 5460 | 89 517 | 179 335 560 | 2 569 628 | 68.5x | 30.6x | 3.56x |
+| 10920 | 229 638 | 728 611 800 | 5 940 706 | 120.8x | 29.5x | 3.35x |
+| 32760 | 885 475 | 6 797 098 700 | 19 477 071 | 349.0x | 25.5x | 3.51x |
+| 65520 | 1 559 666 | 27 023 012 900 | 44 527 261 | 561.8x | 32.0x | 3.98x |
+<!--/t-->
 
 The `api` case is the most forgiving one, because the fixed cost of the image
 API is the same on both sides and dominates at small lengths: at `n = 16` the
 port is even *faster* than the original, because the original pays for the
 `ListImg` random access and the port reads a flat array.
 
-The only regression is `c2c` at `n = 16`, where the port pays 7.3 us for what
-the original does in 0.12 us.  The transform length is 16 on both sides, so
-this is not about the butterflies: the port pays for the lookup of the plan,
-for the copy of the input into the work buffer and for the permutation of the
-16 samples, and those fixed costs are what is left when the transform itself
-is this small.  The original works in place on the array and has no plan and
-no permutation.
+The only regression is `c2c` at `n = 16`, where the port pays about 6 us for
+what the original does in 0.11 us.  The transform length is 16 on both sides,
+so this is not about the butterflies: the port pays for the lookup of the
+plan, for the copy of the input into the work buffer and for the permutation
+of the 16 samples, and those fixed costs are what is left when the transform
+itself is this small.  The original works in place on the array and has no
+plan and no permutation.
+
+### The kernels of today
+
+The kernel of today is the result of two changes to the butterflies of
+`moonbit_fft2/kernels.mbt`, both of them generated by
+`tools/gen_kernels.py`:
+
+1. the twiddle factors of a stage are read into local variables, so that the
+   butterfly reads each of them from the table once instead of twice,
+2. the small transform of an odd radix uses the symmetry of the roots of unity
+   instead of being evaluated the obvious way.
+
+The second one is the interesting one.  For an odd radix `r` the inputs are
+paired,
+
+```
+A_s = u_s + u_{r-s}          B_s = u_s - u_{r-s}
+```
+
+and the output `p` is
+
+```
+X[p] = u_0 + sum over s of (A_s * cos(2 pi s p / r)
+                            - i * B_s * sin(2 pi s p / r))
+```
+
+while `X[r-p]` uses the same two sums with the opposite sign of the sine.  So
+a pair of outputs costs four dot products instead of two full transforms, which
+is a quarter of the multiplications, and a quarter of the additions as well.
+The prime factor algorithm of the Java original uses the same idea, in
+`Pfacc.pfa13`.
+
+The operation counts of the three kernels, per element of a transform of
+`n = 32 760`, are in the table below (`tools/count_ops.py`):
+
+| | `head`: direct | direct + read | `moonbit`: symmetric |
+| --- | ---: | ---: | ---: |
+| multiplications of the small transform | 88.3 | 88.3 | 22.1 |
+| multiplications of the twiddle factors | 45.7 | 45.7 | 45.7 |
+| array accesses | 64.0 | 53.2 | 53.2 |
+| total multiplications | 134.0 | 134.0 | 67.7 |
+
+The multiplications of the small transforms are **a quarter** of what they
+were.  The array accesses only went down by 17 %, because the twiddle factors
+have to be read either way.
+
+And here is what that bought, measured in the same session.  The two columns
+on the right are the ratios of the sides **per round**, medianed: a value
+above one means that the side in the numerator is the slower one, so `1.10x`
+under `direct / today` means that the direct small transform is ten percent
+slower than the symmetric one.  The table covers the three workloads, and the
+`head` column is the port as it was committed, so the two changes of the
+round can be told apart.
+
+<!--t:TABLE_KERNELS-->
+| workload | n | head ns/op | direct ns/op | today ns/op | head / today | direct / today |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+
+| c2c | 16 | 5 909 | 5 782 | 5 706 | 1.04x | 1.01x |
+| c2c | 120 | 113 168 | 108 139 | 104 327 | 1.03x | 1.04x |
+| c2c | 240 | 233 622 | 224 717 | 223 845 | 1.03x | 1.00x |
+| c2c | 720 | 804 342 | 784 569 | 781 992 | 1.02x | 1.00x |
+| c2c | 4095 | 4 146 170 | 4 022 271 | 3 629 243 | 1.15x | 1.12x |
+| c2c | 5460 | 6 048 707 | 5 689 115 | 5 298 976 | 1.16x | 1.10x |
+| c2c | 10920 | 14 068 363 | 13 027 590 | 12 153 100 | 1.14x | 1.11x |
+| c2c | 32760 | 46 791 937 | 44 223 326 | 42 442 459 | 1.10x | 1.04x |
+
+| r2c | 32 | 13 328 | 12 925 | 12 913 | 1.04x | 1.00x |
+| r2c | 480 | 251 036 | 240 610 | 235 218 | 1.07x | 1.04x |
+| r2c | 1440 | 848 989 | 814 765 | 798 970 | 1.03x | 0.99x |
+| r2c | 8190 | 4 191 166 | 3 848 279 | 3 441 852 | 1.21x | 1.12x |
+| r2c | 21840 | 14 482 283 | 13 353 961 | 12 241 143 | 1.18x | 1.10x |
+| r2c | 65520 | 48 822 515 | 45 716 031 | 41 887 212 | 1.20x | 1.10x |
+
+| api | 16 | 10 650 | 10 151 | 10 172 | 1.07x | 1.00x |
+| api | 120 | 63 644 | 55 080 | 54 998 | 1.12x | 1.00x |
+| api | 240 | 123 637 | 118 340 | 117 376 | 1.07x | 0.98x |
+| api | 720 | 414 964 | 393 381 | 387 174 | 1.11x | 1.06x |
+| api | 5460 | 2 991 241 | 2 795 624 | 2 632 840 | 1.20x | 1.10x |
+| api | 10920 | 6 808 596 | 6 691 877 | 5 962 412 | 1.19x | 1.12x |
+| api | 32760 | 22 969 526 | 22 614 964 | 19 631 722 | 1.16x | 1.13x |
+| api | 65520 | 52 244 219 | 49 094 246 | 43 466 077 | 1.20x | 1.10x |
+<!--/t-->
+**A factor of four fewer multiplications bought <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->.**  That is
+the most useful number of this document, because it says where the remaining
+time goes: not into the arithmetic of the small transforms, but into the array
+accesses of the runtime.  An earlier version of this document predicted that a
+Winograd style small radix transform would win back 1.6x to 3x on the same
+ground; the measurement above is what says that the prediction was wrong.
+
+The gain is also concentrated where it should be: it is nothing at the short
+lengths, where the fixed costs dominate, and it is at its largest for the
+long transforms, where the butterflies are.  And it is the *whole* remaining
+gain of the round: the port is still <!--v:RANGE-->6.9 to 261<!--/v--> times slower than the JVM.
 
 ## What was wrong, and what was done about it
 
@@ -201,7 +333,10 @@ small `r` point DFTs are the expensive part, so they are **specialised**: for
 every radix `2, 3, 5, 7, 11, 13` the generator `tools/gen_kernels.py` emits a
 hand written butterfly with the small DFT constants as literals, into
 `moonbit_fft2/kernels.mbt`.  The matrix form (read the coefficients from a
-table) is kept as a fallback for a radix that has no specialised kernel.
+table) is kept for a radix that has no specialised kernel; it is not reached
+by a transform of a valid length, because the public API refuses a length
+that is not in the table of the original, and it is exercised by the tests
+with a plan that is built for a length of its own.
 
 The kernel is checked on its own in `moonbit_fft2/kernel_wbtest.mbt`: against
 the direct `O(n^2)` evaluation of the transform for 90 lengths and both
@@ -212,9 +347,10 @@ built once and then reused, which is checked through the effect of the cache
 on the work buffer of the plan.
 `tools/negative_control.py` breaks the kernel on purpose and checks that the
 suite turns red - for the twiddle factors, for the radix 13, for the sizes
-of the generic path and for the plan cache - so that a green suite is known
-to mean something; it also runs a stress control in the other direction,
-with a tiny plan cache budget, where the suite has to stay green.
+of the generic path, for the plan cache, for the pairing of the inputs of the
+symmetric small transform and for a constant of the radix 13 - so that a green
+suite is known to mean something; it also runs a stress control in the other
+direction, with a tiny plan cache budget, where the suite has to stay green.
 
 ### 2. The port rebuilt its twiddle table on every call
 
@@ -251,11 +387,30 @@ not allocate at all.
 `let idx = j * k % n` was a division per multiplication.  The new kernel
 advances the twiddle index instead, so there is no modulo in the inner loop.
 
+### 5. The small transforms were evaluated the obvious way
+
+The butterflies of `moonbit_fft2/kernels.mbt` evaluated the small DFT of a
+stage the obvious way, every output being the sum of the `r` inputs times the
+`r` roots of unity.  That costs `4 * (r - 1)^2` real multiplications and as
+many additions, 576 of them for the radix 13.
+
+**Fix (G5).**  The small transform of an odd radix uses the symmetry of the
+roots of unity, the inputs are paired into a sum and a difference, and a pair
+of outputs is evaluated with four dot products.  That is `(r - 1)^2`
+multiplications, a quarter of the direct form, and it shortens the generated
+butterflies from 1890 to 1016 lines.  The twiddle factors of a stage are read
+into local variables on the way, so that each of them is read from the table
+once instead of twice.
+
+This fix is worth **<!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v-->** and not more, and that is the point of
+it: it is the measurement that shows that the arithmetic of the small
+transforms is not what the port spends its time on.
+
 ## Where the remaining time goes
 
-The port is now 9.6x to 158x slower than the JVM, and that gap is **not**
-algorithmic any more.  Three measurements on this machine, taken under the
-same load as the benchmark:
+The port is now <!--v:RANGE-->6.9 to 261<!--/v--> times slower than the JVM at the lengths where it
+is slower at all, and that gap is **not** algorithmic any more.  Three
+measurements on this machine, taken under the same load as the benchmark:
 
 | measurement | result |
 | --- | --- |
@@ -272,28 +427,29 @@ transform does about four array accesses per element per pass and has fifteen
 passes, which is 60 accesses per element, and 60 times 5.9 ns is the 344 ns
 that are measured.
 
-The port does the whole `c2c` transform of `n = 32 760` in 30.0 ms, i.e.
-**2.7x** the cost of that textbook lower bound, with a mixed radix kernel
-that has more stages and specialised butterflies.  The Java original needs
-0.28 ms for the same transform, which is 8.6 ns per point - it is below the
-MoonBit floor, because the JVM reaches about 0.15 ns per element access.
+The port does the whole `c2c` transform of `n = 32 760` in <!--v:C2C_MS-->42.8<!--/v--> ms, i.e.
+**<!--v:C2C_FACTOR-->3.8<!--/v-->x** the cost of that textbook lower bound, with a mixed radix
+kernel that has more stages and specialised butterflies.  The Java original
+needs 0.28 ms for the same transform, which is 8.6 ns per point - it is below
+the MoonBit floor, because the JVM reaches about 0.15 ns per element access.
 
 So the remaining gap splits into
 
-* **about 1.6x to 3x** that a Winograd style small radix DFT could win back:
-  the `r` point DFTs are evaluated with `r^2` complex multiplications (37 per
-  element for the radices used here), Winograd reduces that to about 6,
-* **about 40x** that is the price of the MoonBit runtime's array accesses
-  (344 ns per element of the textbook transform against 8.6 ns per point of
-  the Java original).
+* **about <!--v:GAP_FACTOR-->40<!--/v-->x** that is the price of the MoonBit runtime's array
+  accesses (344 ns per element of the textbook transform against 8.6 ns per
+  point of the Java original),
+* **nothing that a cheaper formula of the small transform can win back** - and
+  that is measured, not assumed: the small transforms use a quarter of the
+  multiplications of before, and the port is only <!--v:KERNEL_RANGE-->0.98x to 1.13x<!--/v--> faster for
+  it.  An earlier version of this document predicted that a Winograd style
+  small radix transform would win back 1.6x to 3x; that prediction was wrong,
+  and the measurement above is what says so.
 
-The first is a constant factor that a careful implementation can win; the
-second is the price of the platform and can only be won by moving the kernel
-into C (through the FFI), or by parallelising it - MoonBit core has no OS
-threads, only async coroutines, so parallelism would need the FFI as well.
-Both of them would have to deal with the shared work buffers and with the
-lock free plan cache, which are the reason why the module is single threaded
-today.
+What is left would have to be won by moving the kernel into C (through the
+FFI), or by parallelising it - MoonBit core has no OS threads, only async
+coroutines, so parallelism would need the FFI as well.  Both of them would
+have to deal with the shared work buffers and with the lock free plan cache,
+which are the reason why the module is single threaded today.
 
 ## Reproducing
 
@@ -305,44 +461,41 @@ $lib = "$root\tools\lib"
 javac -nowarn -encoding UTF-8 `
   -cp "$root\build\classes;$lib\imglib2-6.1.0.jar;$lib\mines-jtk-20151125.jar" `
   -d "$root\build\bench" "$root\tools\java\Bench.java"
-java -cp "$root\build\bench;$root\build\classes;$lib\imglib2-6.1.0.jar;$lib\mines-jtk-20151125.jar" `
-  Bench > "$root\build\bench_java.txt"
 
-# the MoonBit port
-moon -C "$root\moonbit_fft2" run --target native ./benchmark > "$root\build\bench_moonbit.txt"
+# every side, alternately, in one session
+python "$root\tools\bench_compare.py" --rounds 3 `
+  --with-baseline --with-direct --with-head
 
-# the fastest of several runs of each side
-python "$root\tools\merge_bench.py" "$root\build\bench_java*.txt" > "$root\build\bench_java_merged.txt"
-python "$root\tools\merge_bench.py" "$root\build\bench_moonbit*.txt" > "$root\build\bench_moonbit_merged.txt"
+# the comparison of the kernels, without the slow baseline in between
+python "$root\tools\bench_compare.py" --rounds 5 `
+  --with-direct --with-head --sides moonbit,direct,head `
+  --out "$root\build\bench_kernels.txt"
 
-# the table
-python "$root\tools\compare_bench.py" "$root\build\bench_java_merged.txt" "$root\build\bench_moonbit_merged.txt"
+# the tables of this document, checked against the measurements
+python "$root\tools\check_benchmark.py"
+
+# the operation counts of the butterflies
+python "$root\tools\count_ops.py"
 ```
 
 The Java side needs `build\classes`, the staged original bytecode; create it
 with `python tools\stage_classes.py`.
 
-### Reproducing the *before* column
-
-The *before* column is the port with the old kernel - the one that
-transformed `O(n^2)` for every length that is not a power of two.  That
+The side `old` is the port with the kernel it had before the rewrite, the one
+that transformed `O(n^2)` for every length that is not a power of two.  That
 kernel is in the git history, so the column can be measured again instead of
-being taken on trust:
+being taken on trust: `tools/bench_compare.py` finds the revision itself, it
+is the parent of the commit that added `moonbit_fft2/mixed_radix.mbt`.  The
+side takes about nine minutes per round, because the old kernel needs about
+24 seconds for a single `n = 32 760` transform.
 
-```powershell
-python "$root\tools\bench_baseline.py" --rev HEAD --out "$root\build\bench_moonbit_head.txt"
-```
-
-The script assembles a shadow module under `build/oldmodule` from the current
-module, replaces the two files that the kernel rewrite touched with the ones
-of the given revision and runs the benchmark of the port there.  It takes
-about fifteen minutes, because the old kernel needs 35 s for a single
-`n = 32 760` transform.
-
-The MoonBit side now takes a few minutes instead of a quarter of an hour:
-the `O(n^2)` path of the old port needed 35 s for a single `n = 32 760`
-transform, and the benchmark runs it five times; the mixed radix kernel needs
-30 ms for the same transform.
+The side `head` is the port as it is committed, and the side `direct` is the
+port of today with the small transforms in their direct form, so that the
+effect of the symmetric decomposition is measured in the same session as
+everything else.  They are compared **without** the slow baseline in between,
+because the baseline takes nine minutes per round and would put every other
+side into a different state of the machine; that is why the table of the
+kernels comes from a second run, `--sides moonbit,direct,head`.
 
 The specialised kernels are generated, not written by hand; regenerate them
 with
@@ -352,9 +505,8 @@ python "$root\tools\gen_kernels.py" --out "$root\moonbit_fft2\kernels.mbt"
 moon -C "$root\moonbit_fft2" fmt
 ```
 
-The tables of this document are checked against the measurements, so that
-they cannot drift away from the runs they claim to show:
+and the direct form, which is the control of the measurement above, with
 
 ```powershell
-python "$root\tools\check_benchmark.py"
+python "$root\tools\gen_kernels.py" --out "$root\build\kernels_direct.mbt" --style direct
 ```
