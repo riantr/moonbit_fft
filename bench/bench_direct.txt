@@ -1,0 +1,67 @@
+checksums:
+  moonbit  -62107.00744685416
+  direct   -62107.00744686347
+
+work          n  moonbit ns/op  spread   direct ns/op  spread
+-------------------------------------------------------------
+# FftComplex / FftComplex  (complex to complex)
+c2c          16            110   1.08x            353   1.03x
+c2c         120            834   1.05x           1352   1.22x
+c2c         240           3473   1.57x          11855   1.04x
+c2c         720          12281   1.07x          47861   1.06x
+c2c        4095          93845   1.01x         204505   1.17x
+c2c        5460         129829   1.01x         249082   1.11x
+c2c       10920         268824   1.03x         556341   1.18x
+c2c       32760         855788   1.02x        1910309   1.15x
+
+# FftReal / FftReal  (real to complex)
+r2c          32            266   1.04x            910   1.05x
+r2c         480           4442   1.02x          12535   1.03x
+r2c        1440          14041   1.04x          50414   1.03x
+r2c        8190         104032   1.02x         214591   1.04x
+r2c       21840         296954   1.03x         580438   1.03x
+r2c       65520         940743   1.03x        2030534   1.04x
+
+# FFTMethods.realToComplex / real_to_complex
+api          16           1539   1.04x           1576   1.04x
+api         120           3253   1.03x           3568   1.07x
+api         240           5201   1.01x           6214   1.07x
+api         720          13384   1.01x          19107   1.05x
+api        5460         115208   1.02x         169156   1.04x
+api       10920         230348   1.07x         346354   1.01x
+api       32760         716880   1.04x        1165781   1.02x
+api       65520        1459850   1.03x        2524339   1.01x
+
+the ratios, per round and then medianed:
+
+# FftComplex / FftComplex  (complex to complex)
+work          n moonbit/direct direct/moonbit
+c2c          16        0.31x        3.22x
+c2c         120        0.62x        1.62x
+c2c         240        0.29x        3.41x
+c2c         720        0.26x        3.91x
+c2c        4095        0.46x        2.19x
+c2c        5460        0.52x        1.91x
+c2c       10920        0.48x        2.08x
+c2c       32760        0.45x        2.24x
+
+# FftReal / FftReal  (real to complex)
+work          n moonbit/direct direct/moonbit
+r2c          32        0.29x        3.43x
+r2c         480        0.36x        2.81x
+r2c        1440        0.28x        3.56x
+r2c        8190        0.48x        2.07x
+r2c       21840        0.51x        1.95x
+r2c       65520        0.46x        2.15x
+
+# FFTMethods.realToComplex / real_to_complex
+work          n moonbit/direct direct/moonbit
+api          16        0.98x        1.02x
+api         120        0.91x        1.09x
+api         240        0.83x        1.21x
+api         720        0.70x        1.43x
+api        5460        0.68x        1.47x
+api       10920        0.67x        1.49x
+api       32760        0.61x        1.64x
+api       65520        0.58x        1.73x
+

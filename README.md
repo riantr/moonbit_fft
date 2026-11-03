@@ -138,8 +138,8 @@ power of two at `2^4`.
 The port now uses the **prime factor algorithm of the original**: the length
 is split into pairwise coprime factors, every factor selects a small kernel,
 and the stages carry no twiddle factor at all.  The `n = 32 760` complex to
-complex transform went from **<!--v:OLD_C2C_S-->4.1<!--/v--> s to <!--v:C2C_MS-->0.9<!--/v--> ms**
-(<!--v:C2C_SPEEDUP-->4824<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4<!--/v--> times slower than
+complex transform went from **<!--v:OLD_C2C_S-->4.2<!--/v--> s to <!--v:C2C_MS-->0.9<!--/v--> ms**
+(<!--v:C2C_SPEEDUP-->4890<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4<!--/v--> times slower than
 the JVM at the lengths where it is slower at all.
 
 Two details of the measurement matter as much as the numbers.  The benchmark
@@ -160,7 +160,7 @@ long transforms.  The prime factor rewrite of the kernel, which removed the
 twiddle factors between the stages and the permutation of the output, was
 worth another **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->**, and the rewrite of the butterflies
 by the **factorisations of the original** was worth
-**<!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**.  The port now does the same number of
+**<!--v:ORIG_RANGE-->1.00x to 1.20x<!--/v-->**.  The port now does the same number of
 multiplications, of additions and of array accesses per element as the
 original, so what is left of the gap is the price of the runtime: a single
 array element access costs about 0.67 ns in MoonBit, against about 0.15 ns on

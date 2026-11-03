@@ -223,7 +223,7 @@ by `../tools/gen_java_kernels.py`; see *Numerical behaviour*.
 The measured result against the original Java implementation, with the
 **release** build: the complex to complex transform of `n = 32 760` takes
 <!--v:C2C_MS-->0.9<!--/v--> ms in the port and 0.25 ms in the original, which is
-<!--v:C2C_RATIO-->3.4<!--/v-->x.  The port was **five orders of magnitude** slower
+<!--v:C2C_RATIO-->3.5<!--/v-->x.  The port was **five orders of magnitude** slower
 than the original before the kernel was rewritten; the rewrite of the kernel
 into a mixed radix one, then into the prime factor algorithm of the original
 and finally into the butterflies of the original brought it down to that.  The
@@ -235,7 +235,7 @@ were rewritten to use a quarter of the multiplications, and the port got
 **<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**
 faster for it, the prime factor rewrite of the kernel got it another
 **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->** faster and the rewrite of the butterflies another
-**<!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**.  The port now does the same number of
+**<!--v:ORIG_RANGE-->1.00x to 1.20x<!--/v-->**.  The port now does the same number of
 multiplications, of additions and of array accesses per element as the
 original.  The full comparison, including the spread of the measurements, is
 in [`../BENCHMARK.md`](../BENCHMARK.md).

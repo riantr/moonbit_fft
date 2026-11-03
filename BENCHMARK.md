@@ -34,7 +34,7 @@ Four things made that possible, and the last two were not obvious:
 * and the butterflies of the stages became the **factorisations of the
   original**, which keep far fewer values alive and whose constants are
   literals instead of a table in the plan.  That is worth
-  **<!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**, and it is the reason why the port
+  **<!--v:ORIG_RANGE-->1.00x to 1.20x<!--/v-->**, and it is the reason why the port
   now does **the same arithmetic as the original**: the same number of
   multiplications, the same number of additions and the same number of array
   accesses per element.
@@ -193,7 +193,7 @@ it is visible that they really did the same computation.
 The conclusion does not depend on the noise: the *slowest* round of the port
 is still far faster than the *fastest* round of the old kernel.  For the
 complex to complex transform of `n = 32 760` the old kernel needs about
-<!--v:OLD_C2C_S-->4.1<!--/v--> seconds for a single transform, the port needs
+<!--v:OLD_C2C_S-->4.2<!--/v--> seconds for a single transform, the port needs
 tens of milliseconds.
 
 ## The numbers
@@ -211,14 +211,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_C2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 99 | 566 | 111 | 5.1x | 1.1x | 1.04x |
-| 120 | 428 | 25 620 | 828 | 30.9x | 1.9x | 1.04x |
-| 240 | 957 | 198 731 | 3 596 | 55.3x | 4.0x | 1.08x |
-| 720 | 2 872 | 1 703 640 | 12 312 | 138.4x | 4.3x | 1.03x |
-| 4095 | 26 358 | 56 101 494 | 93 801 | 598.1x | 3.6x | 1.02x |
-| 5460 | 38 200 | 98 628 390 | 130 370 | 756.5x | 3.4x | 1.02x |
-| 10920 | 77 855 | 415 069 650 | 266 648 | 1556.6x | 3.5x | 1.10x |
-| 32760 | 249 289 | 4 133 978 900 | 856 931 | 4824.2x | 3.4x | 1.03x |
+| 16 | 99 | 558 | 110 | 5.1x | 1.1x | 1.08x |
+| 120 | 415 | 25 041 | 845 | 29.9x | 2.0x | 1.10x |
+| 240 | 966 | 195 504 | 3 833 | 51.0x | 3.9x | 1.11x |
+| 720 | 2 848 | 1 683 330 | 12 269 | 136.8x | 4.3x | 1.07x |
+| 4095 | 27 039 | 56 162 752 | 95 718 | 585.5x | 3.5x | 1.03x |
+| 5460 | 38 972 | 98 772 069 | 129 271 | 765.6x | 3.4x | 1.03x |
+| 10920 | 78 875 | 418 764 550 | 264 092 | 1582.7x | 3.4x | 1.04x |
+| 32760 | 245 929 | 4 192 755 800 | 857 331 | 4899.9x | 3.4x | 1.05x |
 <!--/t-->
 
 ### Real to complex
@@ -226,12 +226,12 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_R2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 219 | 1 332 | 263 | 5.0x | 1.2x | 1.03x |
-| 480 | 1 625 | 198 993 | 4 437 | 44.8x | 2.7x | 1.02x |
-| 1440 | 7 227 | 1 716 555 | 14 140 | 121.4x | 2.0x | 1.07x |
-| 8190 | 60 444 | 56 672 172 | 104 918 | 540.2x | 1.7x | 1.07x |
-| 21840 | 178 014 | 417 781 450 | 299 908 | 1393.0x | 1.7x | 1.04x |
-| 65520 | 582 688 | 4 078 435 100 | 943 987 | 4320.4x | 1.6x | 1.04x |
+| 32 | 142 | 1 299 | 265 | 4.8x | 1.9x | 1.07x |
+| 480 | 1 886 | 195 548 | 4 478 | 43.9x | 2.4x | 1.04x |
+| 1440 | 7 265 | 1 732 413 | 14 213 | 121.6x | 2.0x | 1.11x |
+| 8190 | 60 972 | 57 123 452 | 104 565 | 543.3x | 1.7x | 1.04x |
+| 21840 | 178 692 | 412 250 100 | 296 464 | 1400.7x | 1.7x | 1.02x |
+| 65520 | 584 542 | 4 138 322 500 | 958 937 | 4363.9x | 1.6x | 1.02x |
 <!--/t-->
 
 ### Through the image API
@@ -239,14 +239,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_API-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 20 183 | 2 276 | 1 562 | 1.5x | 0.1x | 1.23x |
-| 120 | 8 763 | 16 728 | 3 214 | 5.2x | 0.4x | 1.01x |
-| 240 | 5 018 | 55 975 | 5 182 | 10.8x | 1.0x | 1.02x |
-| 720 | 10 369 | 438 088 | 13 269 | 33.0x | 1.3x | 1.02x |
-| 5460 | 80 353 | 24 981 687 | 114 204 | 218.7x | 1.4x | 1.04x |
-| 10920 | 165 872 | 99 947 470 | 231 469 | 431.8x | 1.4x | 1.01x |
-| 32760 | 829 794 | 973 604 200 | 708 676 | 1373.8x | 0.8x | 1.03x |
-| 65520 | 1 672 490 | 4 032 145 000 | 1 458 170 | 2765.2x | 0.9x | 1.07x |
+| 16 | 17 082 | 2 286 | 1 558 | 1.4x | 0.1x | 1.04x |
+| 120 | 7 960 | 17 017 | 3 278 | 5.2x | 0.4x | 1.03x |
+| 240 | 5 151 | 57 500 | 5 216 | 11.0x | 1.0x | 1.03x |
+| 720 | 10 395 | 437 976 | 13 403 | 32.4x | 1.3x | 1.02x |
+| 5460 | 82 769 | 24 763 424 | 114 169 | 216.7x | 1.4x | 1.03x |
+| 10920 | 174 372 | 99 943 722 | 229 343 | 434.6x | 1.3x | 1.06x |
+| 32760 | 958 965 | 966 546 900 | 704 799 | 1359.4x | 0.8x | 1.09x |
+| 65520 | 1 748 649 | 4 113 841 900 | 1 444 463 | 2832.6x | 0.8x | 1.08x |
 <!--/t-->
 
 The `api` case is the most forgiving one, because the fixed cost of the image
@@ -577,33 +577,33 @@ the noise that both sides see cancels out.  A value above one under
 <!--t:TABLE_ORIGINAL-->
 | workload | n | Java ns/op | head ns/op | today ns/op | head / today | today / Java |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| c2c | 16 | 99 | 132 | 111 | 1.18x | 1.12x |
-| c2c | 120 | 428 | 918 | 828 | 1.11x | 1.95x |
-| c2c | 240 | 957 | 4 470 | 3 596 | 1.24x | 3.96x |
-| c2c | 720 | 2 872 | 14 556 | 12 312 | 1.18x | 4.29x |
-| c2c | 4095 | 26 358 | 101 366 | 93 801 | 1.09x | 3.56x |
-| c2c | 5460 | 38 200 | 138 335 | 130 370 | 1.06x | 3.40x |
-| c2c | 10920 | 77 855 | 288 819 | 266 648 | 1.07x | 3.48x |
-| c2c | 32760 | 249 289 | 938 175 | 856 931 | 1.10x | 3.44x |
+| c2c | 16 | 99 | 128 | 110 | 1.17x | 1.12x |
+| c2c | 120 | 415 | 915 | 845 | 1.08x | 2.03x |
+| c2c | 240 | 966 | 4 573 | 3 833 | 1.19x | 3.86x |
+| c2c | 720 | 2 848 | 14 686 | 12 269 | 1.20x | 4.30x |
+| c2c | 4095 | 27 039 | 104 086 | 95 718 | 1.10x | 3.51x |
+| c2c | 5460 | 38 972 | 137 625 | 129 271 | 1.06x | 3.40x |
+| c2c | 10920 | 78 875 | 289 709 | 264 092 | 1.10x | 3.35x |
+| c2c | 32760 | 245 929 | 945 723 | 857 331 | 1.10x | 3.44x |
 
-| r2c | 32 | 219 | 312 | 263 | 1.18x | 1.20x |
-| r2c | 480 | 1 625 | 5 101 | 4 437 | 1.15x | 2.74x |
-| r2c | 1440 | 7 227 | 16 425 | 14 140 | 1.16x | 1.96x |
-| r2c | 8190 | 60 444 | 111 173 | 104 918 | 1.06x | 1.73x |
-| r2c | 21840 | 178 014 | 316 123 | 299 908 | 1.06x | 1.67x |
-| r2c | 65520 | 582 688 | 1 026 061 | 943 987 | 1.08x | 1.63x |
+| r2c | 32 | 142 | 312 | 265 | 1.16x | 1.85x |
+| r2c | 480 | 1 886 | 5 170 | 4 478 | 1.15x | 2.39x |
+| r2c | 1440 | 7 265 | 16 862 | 14 213 | 1.19x | 1.96x |
+| r2c | 8190 | 60 972 | 112 417 | 104 565 | 1.08x | 1.71x |
+| r2c | 21840 | 178 692 | 318 345 | 296 464 | 1.08x | 1.67x |
+| r2c | 65520 | 584 542 | 1 072 756 | 958 937 | 1.12x | 1.62x |
 
-| api | 16 | 20 183 | 1 549 | 1 562 | 1.01x | 0.07x |
-| api | 120 | 8 763 | 3 257 | 3 214 | 1.01x | 0.37x |
-| api | 240 | 5 018 | 5 348 | 5 182 | 1.04x | 1.03x |
-| api | 720 | 10 369 | 14 079 | 13 269 | 1.06x | 1.29x |
-| api | 5460 | 80 353 | 115 930 | 114 204 | 1.02x | 1.42x |
-| api | 10920 | 165 872 | 243 665 | 231 469 | 1.06x | 1.41x |
-| api | 32760 | 829 794 | 748 035 | 708 676 | 1.06x | 0.84x |
-| api | 65520 | 1 672 490 | 1 547 061 | 1 458 170 | 1.06x | 0.89x |
+| api | 16 | 17 082 | 1 564 | 1 558 | 1.00x | 0.09x |
+| api | 120 | 7 960 | 3 294 | 3 278 | 1.01x | 0.40x |
+| api | 240 | 5 151 | 5 385 | 5 216 | 1.02x | 1.01x |
+| api | 720 | 10 395 | 14 230 | 13 403 | 1.06x | 1.29x |
+| api | 5460 | 82 769 | 117 662 | 114 169 | 1.02x | 1.37x |
+| api | 10920 | 174 372 | 237 793 | 229 343 | 1.04x | 1.31x |
+| api | 32760 | 958 965 | 747 236 | 704 799 | 1.07x | 0.79x |
+| api | 65520 | 1 748 649 | 1 527 568 | 1 444 463 | 1.06x | 0.83x |
 <!--/t-->
 
-**The rewrite of the butterflies bought <!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**, and it is
+**The rewrite of the butterflies bought <!--v:ORIG_RANGE-->1.00x to 1.20x<!--/v-->**, and it is
 worth more than that number alone says: it is the round in which the port
 stopped being a *reimplementation* of the kernel of the original and became
 the kernel of the original itself, with the same arithmetic.  A port that
@@ -619,33 +619,68 @@ the same small transform: every output is the sum of the `r` inputs times the
 exactly the same transform and the only difference between them is the
 factorisation.  `tools/gen_java_kernels.py --style direct` generates that
 form, and the whole test suite passes with it, so the two kernels really do
-compute the same thing.
+compute the same thing: the checksums of the two sides of the measurement
+below agree to `9.3e-9`, which is the rounding error of the single precision
+of the original and not a difference of the computation.
 
-**This measurement is not taken yet.**  The first attempt at it was scheduled
-while the machine was busy with an unrelated workload, and a measurement of
-two sides of the same language in a busy session is not worth taking: the
-load of the machine slows the port down about 2.3 times, and it slows it
-down and the other side at the same time, so the absolute numbers of such a
-session are twice as high as the ones of the tables above.  The table below
-is the place where the result will appear when the machine is idle.
+The measurement has its own session, with the two sides of the comparison in
+it and nothing else, and it was taken on an idle machine.  (An earlier
+attempt at it was scheduled while the machine was busy with an unrelated
+workload, and it was thrown away: the load of the machine slows the port
+down about 2.3 times, and it slows down the two sides of the comparison
+alike, so the absolute numbers of such a session are twice as high as the
+ones of the tables above.  A ratio of two sides of the same language
+survives the load, but the numbers of the session do not look like the ones
+of the other tables, and they are not worth publishing.)
 
 <!--t:TABLE_DIRECT-->
 | workload | n | direct ns/op | today ns/op | direct / today |
 | --- | ---: | ---: | ---: | ---: |
+| c2c | 16 | 353 | 109 | 3.22x |
+| c2c | 120 | 1 352 | 834 | 1.62x |
+| c2c | 240 | 11 855 | 3 472 | 3.41x |
+| c2c | 720 | 47 860 | 12 281 | 3.91x |
+| c2c | 4095 | 204 505 | 93 845 | 2.19x |
+| c2c | 5460 | 249 081 | 129 828 | 1.91x |
+| c2c | 10920 | 556 341 | 268 824 | 2.08x |
+| c2c | 32760 | 1 910 309 | 855 788 | 2.24x |
+
+| r2c | 32 | 909 | 265 | 3.43x |
+| r2c | 480 | 12 535 | 4 441 | 2.81x |
+| r2c | 1440 | 50 413 | 14 041 | 3.56x |
+| r2c | 8190 | 214 590 | 104 031 | 2.07x |
+| r2c | 21840 | 580 438 | 296 954 | 1.95x |
+| r2c | 65520 | 2 030 533 | 940 743 | 2.15x |
+
+| api | 16 | 1 576 | 1 538 | 1.02x |
+| api | 120 | 3 568 | 3 253 | 1.09x |
+| api | 240 | 6 213 | 5 201 | 1.21x |
+| api | 720 | 19 107 | 13 383 | 1.43x |
+| api | 5460 | 169 156 | 115 207 | 1.47x |
+| api | 10920 | 346 354 | 230 348 | 1.49x |
+| api | 32760 | 1 165 781 | 716 880 | 1.64x |
+| api | 65520 | 2 524 339 | 1 459 850 | 1.73x |
 <!--/t-->
 
-What the control is expected to show is that the factorisation is the cheap
-form: the direct evaluation of the radix 13 costs **576** real
-multiplications per butterfly, where the factorisation of the original costs
-**134** of them, a factor of **4.3**.  The measurement is what turns that
-expectation into a fact, and until it is taken the arithmetic of the small
-transform is the one thing of this document that rests on the code alone.
+**The direct evaluation is <!--v:DIRECT_RANGE-->1.02x to 3.91x<!--/v--> slower than the
+factorisation of the original**, and for the long transforms it is
+<!--v:DIRECT_LONG-->1.47x to 2.24x<!--/v--> slower.  The two ends of the range are the two
+ends of the same story: at the short lengths the fixed costs dominate and
+the two kernels are the same, at the long ones the butterflies are and the
+factorisation wins.
+
+That is the number that answers the question of how much a cheaper small
+transform can still buy, and the answer is: the factorisation of the original
+is already the cheap one.  It needs twelve products per pair of outputs for
+the radix 13, where the direct evaluation of the sum needs `r * r` of them,
+and the port that uses it does the same arithmetic as the original.
 
 The prediction of an earlier version of this document, that a Winograd style
 transform would win another factor of 1.6x to 3x, assumed that the arithmetic
-of the small transforms was the bottleneck.  The port is on the cheap side of
-that trade already: its small transform is the factorisation of the original,
-and it does the same arithmetic as the original.  A transform that did fewer
+of the small transforms was the bottleneck.  The measurement above shows how
+much the arithmetic of the small transforms is worth: the cheap form of it is
+worth a factor of <!--v:DIRECT_RANGE-->1.02x to 3.91x<!--/v--> against the direct evaluation, and
+the port is already on that cheap side.  A transform that did fewer
 multiplications than the original would have to be a transform of a different
 algorithm, not a better butterfly of this one.
 
@@ -848,10 +883,11 @@ So the remaining gap splits into
 * **nothing that the arithmetic of the small transforms can still win.**
   That is measured, not assumed: the port now does the same number of
   multiplications, of additions and of array accesses per element as the
-  original, and its small transform is the factorisation of the original,
-  which is the cheap form of it - 134 real multiplications per butterfly for
-  the radix 13, where the direct evaluation of the sum costs 576 of them.
-  An earlier version of this document predicted that a Winograd style small
+  original, and the control of the section above shows that the direct
+  evaluation of the small transform is
+  <!--v:DIRECT_RANGE-->1.02x to 3.91x<!--/v--> slower than the factorisation of the
+  original - the cheap form of it is the one that is already in use.  An
+  earlier version of this document predicted that a Winograd style small
   radix transform would win another factor of 1.6x to 3x; that prediction
   assumed that the arithmetic of the small transforms was the bottleneck, and
   the arithmetic of the port is now the arithmetic of the original, so there
