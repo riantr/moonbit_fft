@@ -2,9 +2,14 @@
 """Fills the placeholders of the documents from the measurements.
 
 The documents hold placeholders of the form `{{NAME}}`, and this script
-replaces them with the numbers of `build/bench_compare.json`, the machine
+replaces them with the numbers of `bench/bench_compare.json`, the machine
 readable result of `tools/bench_compare.py`.  The tables of the documents are
 built the same way, so that no number in them is typed by hand.
+
+The measurements of the rounds are tracked in `bench/`, one file per round,
+so that the tables can be checked on a fresh clone.  Every round needs its
+own file, because the `head` side of a comparison is the port as it is
+committed, so the same table means something different in every round.
 
 The placeholders are:
 
@@ -12,6 +17,7 @@ The placeholders are:
   workloads,
 * `{{TABLE_KERNELS}}` - the table of the kernels,
 * `{{TABLE_GOODTHOMAS}}` - the table of the prime factor rewrite of the kernel,
+* `{{TABLE_ORIGINAL}}` - the table of the rewrite of the butterflies,
 * `{{CHECKSUM_JAVA}}`, `{{CHECKSUM_MOONBIT}}` - the checksums of the two sides,
 * `{{RANGE}}`, `{{RANGE_LOW}}`, `{{RANGE_HIGH}}` - how much slower the port is
   than the JVM, over all the lengths of the three workloads,
@@ -19,6 +25,14 @@ The placeholders are:
   `{{OLD_C2C_S}}` - the transform of `n = 32 760`, against the lower bound of
   a textbook transform and against the original,
 * `{{GAP_FACTOR}}` - the price of the array accesses of the runtime.
+
+Every round of work is measured on its own, because the `head` side of a
+comparison is the port as it is committed, so the same table means something
+different in every round.  The measurement of the prime factor rewrite is
+therefore read from `build/bench_goodthomas.json`, which is the result of the
+round that did that rewrite, and the measurement of the rewrite of the
+butterflies is read from `build/bench_compare.json`, which is the result of
+the round that did that one.
 
 Usage::
 
@@ -36,11 +50,22 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
-DATA = BUILD / "bench_compare.json"
+# The measurements of the rounds are tracked, so that the tables of the
+# documents can be checked on a fresh clone.
+BENCH = ROOT / "bench"
+DATA = BENCH / "bench_compare.json"
 # The comparison of the kernels is a separate measurement, so that the slow
 # baseline of the main comparison does not sit between the sides that are
 # compared.
-KERNEL_DATA = BUILD / "bench_kernels.json"
+KERNEL_DATA = BENCH / "bench_kernels.json"
+# The measurement of the round that replaced the kernel by the prime factor
+# algorithm of the original.  It is kept apart, because the `head` side of the
+# comparison is the port as it is committed, so the same table means something
+# different in every round.
+GT_DATA = BENCH / "bench_goodthomas.json"
+# The measurement of the control of the factorisation of the original: the
+# port of today against the port with the small transform in its direct form.
+DIRECT_DATA = BENCH / "bench_direct.json"
 
 # The documents that hold the numbers of the measurements.
 DOCUMENTS = (
@@ -184,6 +209,52 @@ def goodthomas_table(best: dict, ratios: dict) -> str:
     return "\n".join(lines)
 
 
+def direct_table(best: dict, ratios: dict) -> str:
+    """The table of the control of the factorisation of the original.
+
+    The `direct` side is the port of today with the small transform in its
+    direct form: every output is the sum of the `r` inputs times the `r` roots
+    of unity.  It computes the same transform as the port of today, so the
+    ratio of the two sides is what the factorisation of the original is
+    worth.  A value above one under `direct / today` means that the direct
+    form is the slower one.
+
+    The measurement has only the two sides of the comparison, because it is
+    run in its own session and the machine is not always idle; the ratio is
+    taken per round and then medianed, so it does not depend on the load.
+    """
+    lines = [
+        "| workload | n | direct ns/op | today ns/op | direct / today |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    for workload in WORKLOADS:
+        keys = sorted(
+            (k for k in best.get("moonbit", {}) if k.startswith(workload + "/")),
+            key=lambda k: int(k.split("/")[1]),
+        )
+        if not keys:
+            continue
+        if len(lines) > 2:
+            lines.append("")
+        for key in keys:
+            n = int(key.split("/")[1])
+            today = best["moonbit"][key]
+            direct = best.get("direct", {}).get(key)
+            names = ratios.get(key, {})
+            over_direct = names.get("direct/moonbit")
+            lines.append(
+                "| %s | %d | %s | %s | %s |"
+                % (
+                    workload,
+                    n,
+                    grouped(direct) if direct else "-",
+                    grouped(today),
+                    f"{over_direct:.2f}x" if over_direct else "-",
+                )
+            )
+    return "\n".join(lines)
+
+
 def kernel_table(best: dict, ratios: dict) -> str:
     """The table of the kernels, for the three workloads.
 
@@ -275,13 +346,22 @@ def replace_value(text: str, name: str, value: str) -> str:
     return text.replace("{{" + name + "}}", value)
 
 
-def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
+def values_of(data: dict, kernel_data: dict, gt_data: dict, direct_data: dict) -> dict[str, str]:
     """The values of the placeholders."""
     best = data.get("median") or data["best"]
     spread = data.get("spread", {})
     old = best.get("old")
     checksums = data.get("checksums", {})
     ratios = data.get("ratios", {})
+
+    # The kernel that transformed `O(n^2)` is the same code in every round, and
+    # it is thousands of times slower than the port, so the session it was
+    # measured in does not matter.  It is taken from the round of the prime
+    # factor rewrite, which measured it.
+    gt_best = gt_data.get("median") or gt_data.get("best", {})
+    gt_ratios = gt_data.get("ratios", {})
+    if old is None:
+        old = gt_best.get("old")
 
     # The table of the kernels comes from the separate comparison, and the
     # ratio of its sides is taken from there as well.
@@ -329,11 +409,13 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
     # How much the prime factor rewrite of the kernel bought: the ratio of
     # the committed port to the port of the working tree, per round.  The
     # ratio of the two sides is the time of the committed port divided by
-    # the time of the port of today, so a value above one is the gain.
+    # the time of the port of today, so a value above one is the gain.  The
+    # measurement is the one of the round that did that rewrite, not the one
+    # of the round that is running now.
     gains = []
     long_gains = []
-    for key in best.get("moonbit", {}):
-        value = ratios.get(key, {}).get("head/moonbit")
+    for key in gt_best.get("moonbit", {}):
+        value = gt_ratios.get(key, {}).get("head/moonbit")
         if not value:
             continue
         gains.append(value)
@@ -346,12 +428,52 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
         gt_range = "not measured"
         gt_long = "not measured"
 
+    # How much the rewrite of the butterflies bought: the same ratio, taken
+    # from the measurement of the round that did that rewrite.
+    orig_gains = []
+    orig_long = []
+    for key in best.get("moonbit", {}):
+        value = ratios.get(key, {}).get("head/moonbit")
+        if not value:
+            continue
+        orig_gains.append(value)
+        if int(key.split("/")[1]) >= 4095:
+            orig_long.append(value)
+    if orig_gains:
+        orig_range = "%.2fx to %.2fx" % (min(orig_gains), max(orig_gains))
+        orig_long_range = "%.2fx to %.2fx" % (min(orig_long), max(orig_long))
+    else:
+        orig_range = "not measured"
+        orig_long_range = "not measured"
+
+    # What the factorisation of the original is worth against the direct
+    # evaluation of the small transform.
+    direct_best = direct_data.get("median") or direct_data.get("best", {})
+    direct_ratios = direct_data.get("ratios", {})
+    direct_values = []
+    direct_long = []
+    for key in direct_best.get("moonbit", {}):
+        value = direct_ratios.get(key, {}).get("direct/moonbit")
+        if not value:
+            continue
+        direct_values.append(value)
+        if int(key.split("/")[1]) >= 4095:
+            direct_long.append(value)
+    if direct_values:
+        direct_range = "%.2fx to %.2fx" % (min(direct_values), max(direct_values))
+        direct_long_range = "%.2fx to %.2fx" % (min(direct_long), max(direct_long))
+    else:
+        direct_range = "not measured"
+        direct_long_range = "not measured"
+
     return {
         "TABLE_C2C": table(best, "c2c", old, spread, ratios),
         "TABLE_R2C": table(best, "r2c", old, spread, ratios),
         "TABLE_API": table(best, "api", old, spread, ratios),
         "TABLE_KERNELS": kernel_table(kernel_best, kernel_ratios),
-        "TABLE_GOODTHOMAS": goodthomas_table(best, ratios),
+        "TABLE_GOODTHOMAS": goodthomas_table(gt_best, gt_ratios),
+        "TABLE_ORIGINAL": goodthomas_table(best, ratios),
+        "TABLE_DIRECT": direct_table(direct_best, direct_ratios),
         "CHECKSUM_JAVA": checksums.get("java", "-"),
         "CHECKSUM_MOONBIT": checksums.get("moonbit", "-"),
         "RANGE": f"{slow_low:.1f} to {slow_high:.0f}",
@@ -371,6 +493,10 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
         "KERNEL_RANGE": kernel_range,
         "GT_RANGE": gt_range,
         "GT_LONG": gt_long,
+        "ORIG_RANGE": orig_range,
+        "ORIG_LONG": orig_long_range,
+        "DIRECT_RANGE": direct_range,
+        "DIRECT_LONG": direct_long_range,
     }
 
 
@@ -392,7 +518,17 @@ def main() -> int:
         kernel_data = json.loads(KERNEL_DATA.read_text(encoding="utf-8"))
     else:
         print(f"{KERNEL_DATA} does not exist, the table of the kernels is empty")
-    values = values_of(data, kernel_data)
+    gt_data = {}
+    if GT_DATA.exists():
+        gt_data = json.loads(GT_DATA.read_text(encoding="utf-8"))
+    else:
+        print(f"{GT_DATA} does not exist, the table of the prime factor rewrite is empty")
+    direct_data = {}
+    if DIRECT_DATA.exists():
+        direct_data = json.loads(DIRECT_DATA.read_text(encoding="utf-8"))
+    else:
+        print(f"{DIRECT_DATA} does not exist, the table of the control is empty")
+    values = values_of(data, kernel_data, gt_data, direct_data)
 
     out_of_sync = []
     for document in DOCUMENTS:

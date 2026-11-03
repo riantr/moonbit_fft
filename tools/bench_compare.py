@@ -261,8 +261,8 @@ def direct_side(profile: str = "release") -> Side:
 
     Everything else is the working tree, only `kernels.mbt` is regenerated
     with `--style direct`.  The difference to the port of today is therefore
-    exactly the symmetric decomposition of the small transform, and the two
-    sides are measured in the same session, one after the other.
+    exactly the factorisation of the small transform, and the two sides are
+    measured in the same session, one after the other.
     """
     shadow = BUILD / "directmodule"
     if shadow.exists():
@@ -280,7 +280,7 @@ def direct_side(profile: str = "release") -> Side:
     subprocess.run(
         [
             sys.executable,
-            str(ROOT / "tools" / "gen_kernels.py"),
+            str(ROOT / "tools" / "gen_java_kernels.py"),
             "--out",
             str(shadow / "kernels.mbt"),
             "--style",

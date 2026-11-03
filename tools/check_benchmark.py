@@ -6,6 +6,9 @@ this script recomputes them from the machine readable result of that script
 and compares them with what the document says, so that a table cannot drift
 away from the measurements it claims to show.
 
+The measurements of the rounds are tracked in `bench/`, one file per round,
+so that the check runs on a fresh clone, without running the benchmark first.
+
 Two kinds of tables are checked:
 
 * the tables of the three workloads, one row per transform length, with the
@@ -13,7 +16,9 @@ Two kinds of tables are checked:
   kernel, the runtime of the port of today, the speedup, the ratio to the
   original and the spread of the measurements,
 * the table of the kernels, which compares the port of today with the port as
-  it is committed and with the port of today with the direct small transform.
+  it is committed and with the port of today with the direct small transform,
+* the tables of the rounds, the prime factor rewrite and the rewrite of the
+  butterflies, and the control of the factorisation.
 
 Usage::
 
@@ -29,10 +34,19 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
+# The measurements of the rounds are tracked, so that the tables of the
+# document can be checked on a fresh clone.
+BENCH = ROOT / "bench"
 DOC = ROOT / "BENCHMARK.md"
-DATA = BUILD / "bench_compare.json"
+DATA = BENCH / "bench_compare.json"
 # The comparison of the kernels is a separate measurement.
-KERNEL_DATA = BUILD / "bench_kernels.json"
+KERNEL_DATA = BENCH / "bench_kernels.json"
+# The measurement of the round that replaced the kernel by the prime factor
+# algorithm of the original.  The `head` side of a comparison is the port as
+# it is committed, so every round needs its own measurement.
+GT_DATA = BENCH / "bench_goodthomas.json"
+# The measurement of the control of the factorisation of the original.
+DIRECT_DATA = BENCH / "bench_direct.json"
 
 # A row of the tables of the workloads:
 #
@@ -83,10 +97,26 @@ SECTIONS = {
 }
 
 # The section that holds the table of the kernels.
-KERNEL_SECTION = "The kernels of the committed port"
+KERNEL_SECTION = "The symmetry of the roots of unity"
 
 # The section that holds the table of the prime factor rewrite.
 GOODTHOMAS_SECTION = "The prime factor algorithm of the original"
+
+# The section that holds the table of the rewrite of the butterflies.
+ORIGINAL_SECTION = "The butterflies of the original"
+
+# The section that holds the table of the control of the factorisation.
+DIRECT_SECTION = "The control of the factorisation"
+
+# A row of the table of the control:
+#
+#   | workload | n | direct ns/op | today ns/op | direct / today |
+ROW_DIRECT = re.compile(
+    r"^\|\s*(?P<workload>\w+)\s*\|\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<direct>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<today>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<over_direct>[\d.]+)x\s*\**\s*\|$"
+)
 
 
 def number(text: str) -> int:
@@ -126,29 +156,90 @@ def main() -> int:
         kernel_best = kernel_data.get("median") or kernel_data.get("best", {})
         kernel_ratios = kernel_data.get("ratios", {})
 
+    # The table of the prime factor rewrite comes from the measurement of the
+    # round that did that rewrite.  The kernel that transformed `O(n^2)` is the
+    # same code in every round and it is thousands of times slower than the
+    # port, so the session it was measured in does not matter.
+    gt_best: dict = {}
+    gt_ratios: dict = {}
+    if GT_DATA.exists():
+        gt_data = json.loads(GT_DATA.read_text(encoding="utf-8"))
+        gt_best = gt_data.get("median") or gt_data.get("best", {})
+        gt_ratios = gt_data.get("ratios", {})
+    if old is None:
+        old = gt_best.get("old")
+
+    # The table of the control of the factorisation comes from its own
+    # measurement.
+    direct_best: dict = {}
+    direct_ratios: dict = {}
+    if DIRECT_DATA.exists():
+        direct_data = json.loads(DIRECT_DATA.read_text(encoding="utf-8"))
+        direct_best = direct_data.get("median") or direct_data.get("best", {})
+        direct_ratios = direct_data.get("ratios", {})
+
     problems: list[str] = []
     checked = 0
     workload = None
     in_kernels = False
     in_goodthomas = False
+    in_original = False
+    in_direct = False
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()
             workload = SECTIONS.get(title)
             in_kernels = title == KERNEL_SECTION
             in_goodthomas = title == GOODTHOMAS_SECTION
+            in_original = title == ORIGINAL_SECTION
+            in_direct = title == DIRECT_SECTION
         if line.startswith("| n |") or line.startswith("| ---"):
             continue
 
-        m = ROW_GOODTHOMAS.match(line)
-        if m and in_goodthomas:
+        m = ROW_DIRECT.match(line)
+        if m and in_direct:
             checked += 1
             name = m.group("workload")
             n = number(m.group("n"))
             key = f"{name}/{n}"
-            java = best["java"].get(key)
-            head = best.get("head", {}).get(key)
-            today = best["moonbit"].get(key)
+            direct = direct_best.get("direct", {}).get(key)
+            today = direct_best.get("moonbit", {}).get(key)
+            if direct is None or today is None:
+                problems.append(f"{key}: the measurement is missing a side")
+                continue
+            for given, measured, what in (
+                (m.group("direct"), direct, "direct"),
+                (m.group("today"), today, "today"),
+            ):
+                if number(given) != int(measured):
+                    problems.append(
+                        f"{key}: the document says {what} = {number(given)}, "
+                        f"the measurement is {measured:.0f}"
+                    )
+            names = direct_ratios.get(key, {})
+            measured = names.get("direct/moonbit")
+            if measured is not None:
+                if not close(float(m.group("over_direct")), measured, 0.02, 0.01):
+                    problems.append(
+                        f"{key}: the document says direct / today = "
+                        f"{m.group('over_direct')}x, the measurement is "
+                        f"{measured:.2f}x"
+                    )
+            continue
+
+        m = ROW_GOODTHOMAS.match(line)
+        if m and (in_goodthomas or in_original):
+            checked += 1
+            name = m.group("workload")
+            n = number(m.group("n"))
+            key = f"{name}/{n}"
+            if in_goodthomas:
+                side_best, side_ratios = gt_best, gt_ratios
+            else:
+                side_best, side_ratios = best, ratios
+            java = side_best.get("java", {}).get(key)
+            head = side_best.get("head", {}).get(key)
+            today = side_best.get("moonbit", {}).get(key)
             if java is None or head is None or today is None:
                 problems.append(f"{key}: the measurement is missing a side")
                 continue
@@ -167,7 +258,7 @@ def main() -> int:
                     f"{key}: the document says today = {number(m.group('today'))}, "
                     f"the measurement is {today:.0f}"
                 )
-            names = ratios.get(key, {})
+            names = side_ratios.get(key, {})
             for given, measured, what in (
                 (m.group("over_head"), names.get("head/moonbit"), "head / today"),
                 (m.group("over_java"), names.get("moonbit/java"), "today / java"),

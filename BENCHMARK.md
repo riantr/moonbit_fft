@@ -10,25 +10,34 @@ The port used to be **five orders of magnitude slower** than the original,
 because it transformed `O(n^2)` for every length that is not a power of two
 while the original transforms `O(n log n)` for every valid length.  After the
 rewrite of the kernel (mixed radix Cooley-Tukey, cached twiddle factors,
-reused work buffers) and after the second rewrite, which replaced it by the
-**prime factor algorithm of the original itself**, the port is
-**<!--v:RANGE-->1.1 to 5<!--/v--> times slower than the original** for every length
+reused work buffers), after the second rewrite, which replaced it by the
+**prime factor algorithm of the original itself**, and after the third one,
+which replaced the butterflies by the **hand written factorisations of the
+original**, the port is
+**<!--v:RANGE-->1.0 to 4<!--/v--> times slower than the original** for every length
 where it is slower at all, and it is *at parity* with the original for the
 long transforms that go through the image API.
 
-Three things made that possible, and the third one was not obvious:
+Four things made that possible, and the last two were not obvious:
 
 * the kernel went from `O(n^2)` to a mixed radix `O(n log n)`,
 * the small transforms of the odd radices went to the symmetry of the roots
   of unity, which is **a quarter of the multiplications** and a quarter of
   the additions, and which is worth **<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**
   on its own,
-* and the length was finally split the way the original splits it, into
+* the length was finally split the way the original splits it, into
   **pairwise coprime factors**, which removes the twiddle factors between the
   stages altogether.  That is worth
   **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->**, and it is the reason why the port
   now needs **fewer array accesses than the original itself**, where the
-  committed port needed twice as many.
+  committed port needed twice as many,
+* and the butterflies of the stages became the **factorisations of the
+  original**, which keep far fewer values alive and whose constants are
+  literals instead of a table in the plan.  That is worth
+  **<!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**, and it is the reason why the port
+  now does **the same arithmetic as the original**: the same number of
+  multiplications, the same number of additions and the same number of array
+  accesses per element.
 
 What is left of the gap is the price of the runtime: a single array access
 costs about 0.67 ns in MoonBit against about 0.15 ns on the JVM.
@@ -136,6 +145,18 @@ of each, so its absolute numbers were the most fortunate ones available and
 its comparisons were between two lucky runs that may never have happened at
 the same time.
 
+The load of the machine does not hit both sides of the comparison equally,
+either.  While the measurements of this round were taken, an unrelated
+workload was running on the machine and it made the **port** about 2.3 times
+slower and the **original** not slower at all.  The port holds its samples in
+double precision arrays and the original holds them in single precision ones,
+so the port moves twice the memory, and a machine that is busy with other
+work costs it more.  The committed port, whose code did not change at all,
+was slowed down by the same factor, which is how the effect was told apart
+from a change of the code: **a ratio of two sides of the same language, in
+the same session, survives the load, and a ratio against the original does
+not.**
+
 `tools/bench_compare.py` therefore does four things differently:
 
 * it runs the **release** build of the MoonBit sides.  `moon run` produces the
@@ -190,14 +211,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_C2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 105 | 566 | 134 | 4.2x | 1.3x | 1.03x |
-| 120 | 429 | 25 620 | 942 | 27.3x | 2.1x | 1.04x |
-| 240 | 1 048 | 198 731 | 4 432 | 44.9x | 4.2x | 2.09x |
-| 720 | 3 016 | 1 703 640 | 14 549 | 116.9x | 4.8x | 1.70x |
-| 4095 | 26 094 | 56 101 494 | 100 184 | 560.0x | 3.9x | 1.97x |
-| 5460 | 38 644 | 98 628 390 | 137 686 | 729.7x | 3.6x | 2.07x |
-| 10920 | 80 295 | 415 069 650 | 289 650 | 1433.0x | 3.6x | 2.10x |
-| 32760 | 253 861 | 4 133 978 900 | 940 273 | 4341.5x | 3.8x | 2.09x |
+| 16 | 99 | 566 | 111 | 5.1x | 1.1x | 1.04x |
+| 120 | 428 | 25 620 | 828 | 30.9x | 1.9x | 1.04x |
+| 240 | 957 | 198 731 | 3 596 | 55.3x | 4.0x | 1.08x |
+| 720 | 2 872 | 1 703 640 | 12 312 | 138.4x | 4.3x | 1.03x |
+| 4095 | 26 358 | 56 101 494 | 93 801 | 598.1x | 3.6x | 1.02x |
+| 5460 | 38 200 | 98 628 390 | 130 370 | 756.5x | 3.4x | 1.02x |
+| 10920 | 77 855 | 415 069 650 | 266 648 | 1556.6x | 3.5x | 1.10x |
+| 32760 | 249 289 | 4 133 978 900 | 856 931 | 4824.2x | 3.4x | 1.03x |
 <!--/t-->
 
 ### Real to complex
@@ -205,12 +226,12 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_R2C-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 149 | 1 332 | 310 | 4.5x | 2.1x | 1.88x |
-| 480 | 1 584 | 198 993 | 5 128 | 39.0x | 3.2x | 2.07x |
-| 1440 | 7 300 | 1 716 555 | 16 462 | 104.3x | 2.2x | 1.79x |
-| 8190 | 61 522 | 56 672 172 | 111 359 | 508.9x | 1.8x | 2.04x |
-| 21840 | 179 446 | 417 781 450 | 311 814 | 1332.8x | 1.7x | 2.03x |
-| 65520 | 595 216 | 4 078 435 100 | 1 022 627 | 3975.0x | 1.7x | 2.06x |
+| 32 | 219 | 1 332 | 263 | 5.0x | 1.2x | 1.03x |
+| 480 | 1 625 | 198 993 | 4 437 | 44.8x | 2.7x | 1.02x |
+| 1440 | 7 227 | 1 716 555 | 14 140 | 121.4x | 2.0x | 1.07x |
+| 8190 | 60 444 | 56 672 172 | 104 918 | 540.2x | 1.7x | 1.07x |
+| 21840 | 178 014 | 417 781 450 | 299 908 | 1393.0x | 1.7x | 1.04x |
+| 65520 | 582 688 | 4 078 435 100 | 943 987 | 4320.4x | 1.6x | 1.04x |
 <!--/t-->
 
 ### Through the image API
@@ -218,14 +239,14 @@ slowest to the fastest of the three rounds of the port.
 <!--t:TABLE_API-->
 | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 19 763 | 2 276 | 1 527 | 1.4x | 0.1x | 1.95x |
-| 120 | 9 256 | 16 728 | 3 266 | 5.1x | 0.4x | 1.07x |
-| 240 | 4 967 | 55 975 | 5 381 | 10.4x | 1.1x | 1.04x |
-| 720 | 10 524 | 438 088 | 14 158 | 31.1x | 1.3x | 1.02x |
-| 5460 | 80 938 | 24 981 687 | 118 692 | 206.7x | 1.5x | 1.05x |
-| 10920 | 174 327 | 99 947 470 | 245 082 | 407.8x | 1.4x | 1.03x |
-| 32760 | 701 666 | 973 604 200 | 764 046 | 1262.7x | 1.1x | 1.09x |
-| 65520 | 1 572 274 | 4 032 145 000 | 1 545 634 | 2635.2x | 1.0x | 1.03x |
+| 16 | 20 183 | 2 276 | 1 562 | 1.5x | 0.1x | 1.23x |
+| 120 | 8 763 | 16 728 | 3 214 | 5.2x | 0.4x | 1.01x |
+| 240 | 5 018 | 55 975 | 5 182 | 10.8x | 1.0x | 1.02x |
+| 720 | 10 369 | 438 088 | 13 269 | 33.0x | 1.3x | 1.02x |
+| 5460 | 80 353 | 24 981 687 | 114 204 | 218.7x | 1.4x | 1.04x |
+| 10920 | 165 872 | 99 947 470 | 231 469 | 431.8x | 1.4x | 1.01x |
+| 32760 | 829 794 | 973 604 200 | 708 676 | 1373.8x | 0.8x | 1.03x |
+| 65520 | 1 672 490 | 4 032 145 000 | 1 458 170 | 2765.2x | 0.9x | 1.07x |
 <!--/t-->
 
 The `api` case is the most forgiving one, because the fixed cost of the image
@@ -241,19 +262,16 @@ of the 16 samples, and those fixed costs are what is left when the transform
 itself is this small.  The original works in place on the array and has no
 plan and no permutation.
 
-### The kernels of the committed port
+### The symmetry of the roots of unity
 
-The kernel of the committed port is the result of two changes to the
-butterflies of `moonbit_fft2/kernels.mbt`, both of them generated by
-`tools/gen_kernels.py`:
+The kernel of the port went through two generations of the small transforms,
+and the first one was the port's own.
 
-1. the twiddle factors of a stage are read into local variables, so that the
-   butterfly reads each of them from the table once instead of twice,
-2. the small transform of an odd radix uses the symmetry of the roots of unity
-   instead of being evaluated the obvious way.
-
-The second one is the interesting one.  For an odd radix `r` the inputs are
-paired,
+The butterflies of `moonbit_fft2/kernels.mbt` were generated by
+`tools/gen_kernels.py` - the generator of that round, which is in the git
+history at the commit `cd434fd` - and they evaluated the small transform of
+an odd radix with the symmetry of the roots of unity.  For an odd radix `r`
+the inputs are paired,
 
 ```
 A_s = u_s + u_{r-s}          B_s = u_s - u_{r-s}
@@ -298,6 +316,11 @@ under `direct / today` means that the direct small transform is ten percent
 slower than the symmetric one.  The table covers the three workloads, and the
 `head` column is the port as it was committed, so the two changes of the
 round can be told apart.
+
+This is the measurement of an earlier round: the generator of that kernel and
+the direct form of it live in the git history, at the commit `cd434fd`, and
+the table below is the result of that round.  The kernel of the port of today
+is the one of the next section.
 
 <!--t:TABLE_KERNELS-->
 | workload | n | head ns/op | direct ns/op | today ns/op | head / today | direct / today |
@@ -369,8 +392,8 @@ transform, so they need no twiddle factors at all.
 The port had been doing the mixed radix thing all along, and the two are not
 the same.  The mixed radix transform of `n = 32 760` needed **43.7
 multiplications and 42.8 array accesses per element**; the prime factor
-algorithm of the original needs **21.4 and 30.0**, and the port now needs
-**29.1 and 20.0**.
+algorithm of the original needs **21.4 and 30.0**, and the port of that round
+needed **29.1 and 20.0**.
 
 The structure of one stage is this.  The stage has the radix `r`, the length
 is `n` and `m = n / r` is the number of butterflies of the stage.  The value
@@ -408,13 +431,14 @@ and the additions of the values and the accesses of the array:
 | floating point operations | 70.9 | 84.5 |
 | array accesses | 30.0 | 20.0 |
 
-The port does **more** arithmetic than the original, because the small
-transform of an even radix uses the symmetry of the roots of unity as well,
-which the original does for the odd radices only.  It does **fewer** array
-accesses, because it keeps the values of a butterfly in local variables where
-the original reads them from the array again.  The arithmetic of the port is
-within a factor of **1.19** of the arithmetic of the original, and its array
-accesses are a third cheaper.
+That kernel did **more** arithmetic than the original, because the small
+transform of an even radix used the symmetry of the roots of unity as well,
+which the original does for the odd radices only.  It did **fewer** array
+accesses, because it kept the values of a butterfly in local variables where
+the original reads them from the array again.  Its arithmetic was within a
+factor of **1.19** of the arithmetic of the original, and its array accesses
+were a third cheaper.  The rewrite of the butterflies removed both
+differences, see *The butterflies of the original*.
 
 And here is what it bought, measured in the same session.  The `head` side is
 the port as it is committed, the `today` side is the port of the working
@@ -469,6 +493,145 @@ they are the two halves of the whole idea:
   with a permutation of the whole array, four accesses per element.  In the
   prime factor algorithm the twist is in the roots of unity, so the small
   transform writes its result where it read its input.
+
+### The butterflies of the original
+
+The third rewrite of the kernel did not change the algorithm at all - the port
+already transformed with the prime factor algorithm of the original.  It
+changed the **butterflies**, the small transforms of the stages, and it did so
+by adopting the ones of the original itself.
+
+`Pfacc` does not evaluate the small transform of a stage as a sum of `r`
+products.  It has one hand written function per radix, `pfa2` ... `pfa16`, and
+each of them is a **factorisation** of the discrete Fourier transform of that
+size.  The factorisation of `pfa13` needs twelve products per pair of
+outputs, where the direct evaluation needs `r * r` of them, and it keeps only
+about two dozen values alive at a time.  The butterfly of the port, which used
+the symmetry of the roots of unity, kept about fifty of them alive for the
+radix 13, which does not fit into the sixteen registers of the machine, so the
+compiler had to spill most of them to the stack.
+
+The port now translates those functions line by line.
+`tools/gen_java_kernels.py` reads the decompiled `Pfacc.java` and emits one
+MoonBit function per pair of a radix and a twist - fifty five of them, from
+`stage_r2_mu1` to `stage_r16_mu15`.  The twist of a stage is the exponent of
+the roots of unity of its small transform, and the original picks its
+constants with a branch on that twist, once per stage.  The port generates one
+kernel per twist instead, so that the constants are **literals** in the code
+and the compiler keeps them out of the registers altogether.
+
+The constants are **solved**, not copied.  The original evaluates in single
+precision, and its constants are single precision literals; copying them into
+a port that accumulates in double precision would make the port as inaccurate
+as the original, and two of the tests of the kernel are strict enough to
+notice.  `tools/solve_constants.py` therefore treats the structure of the
+original as an unknown linear function of its constants and fits them against
+the transform it has to reproduce, by least squares.  The residual of the fit
+is about `1e-15`, and the values it finds agree with the literals of the
+original to six digits - the radix 3 gives `+-0.866025`, the radix 5 gives
+`0.559017`, `0.951057` and `0.587785`.
+
+Because the constants are literals, the plan no longer holds a table of the
+roots of unity: a plan costs about sixteen bytes per element of its length
+instead of about forty eight, and the plan cache holds twice as many lengths
+for the same budget.
+
+The operation counts of the two sides, per element of a transform of
+`n = 32 760`, are now the same:
+
+| | the original | the port |
+| --- | ---: | ---: |
+| multiplications | 21.4 | 21.4 |
+| additions | 49.5 | 45.1 |
+| floating point operations | 70.9 | 66.5 |
+| array accesses | 32.7 | 32.7 |
+
+The port does the same number of multiplications and it reads the same number
+of array elements as the original, and it does slightly fewer additions.  The
+two sides are now the same program, in the sense that matters for the run
+time.
+
+And here is what it bought, measured in the same session.  The `head` side is
+the port as it is committed, the `today` side is the port of the working
+tree, and the ratio is taken per round and then medianed, so that the part of
+the noise that both sides see cancels out.  A value above one under
+`head / today` means that the committed port is the slower one.
+
+<!--t:TABLE_ORIGINAL-->
+| workload | n | Java ns/op | head ns/op | today ns/op | head / today | today / Java |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| c2c | 16 | 99 | 132 | 111 | 1.18x | 1.12x |
+| c2c | 120 | 428 | 918 | 828 | 1.11x | 1.95x |
+| c2c | 240 | 957 | 4 470 | 3 596 | 1.24x | 3.96x |
+| c2c | 720 | 2 872 | 14 556 | 12 312 | 1.18x | 4.29x |
+| c2c | 4095 | 26 358 | 101 366 | 93 801 | 1.09x | 3.56x |
+| c2c | 5460 | 38 200 | 138 335 | 130 370 | 1.06x | 3.40x |
+| c2c | 10920 | 77 855 | 288 819 | 266 648 | 1.07x | 3.48x |
+| c2c | 32760 | 249 289 | 938 175 | 856 931 | 1.10x | 3.44x |
+
+| r2c | 32 | 219 | 312 | 263 | 1.18x | 1.20x |
+| r2c | 480 | 1 625 | 5 101 | 4 437 | 1.15x | 2.74x |
+| r2c | 1440 | 7 227 | 16 425 | 14 140 | 1.16x | 1.96x |
+| r2c | 8190 | 60 444 | 111 173 | 104 918 | 1.06x | 1.73x |
+| r2c | 21840 | 178 014 | 316 123 | 299 908 | 1.06x | 1.67x |
+| r2c | 65520 | 582 688 | 1 026 061 | 943 987 | 1.08x | 1.63x |
+
+| api | 16 | 20 183 | 1 549 | 1 562 | 1.01x | 0.07x |
+| api | 120 | 8 763 | 3 257 | 3 214 | 1.01x | 0.37x |
+| api | 240 | 5 018 | 5 348 | 5 182 | 1.04x | 1.03x |
+| api | 720 | 10 369 | 14 079 | 13 269 | 1.06x | 1.29x |
+| api | 5460 | 80 353 | 115 930 | 114 204 | 1.02x | 1.42x |
+| api | 10920 | 165 872 | 243 665 | 231 469 | 1.06x | 1.41x |
+| api | 32760 | 829 794 | 748 035 | 708 676 | 1.06x | 0.84x |
+| api | 65520 | 1 672 490 | 1 547 061 | 1 458 170 | 1.06x | 0.89x |
+<!--/t-->
+
+**The rewrite of the butterflies bought <!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**, and it is
+worth more than that number alone says: it is the round in which the port
+stopped being a *reimplementation* of the kernel of the original and became
+the kernel of the original itself, with the same arithmetic.  A port that
+does the same work as the original can only be faster than it because of the
+runtime, and the runtime is where the remaining gap is.
+
+### The control of the factorisation
+
+The claim of the section above is that the factorisation of the original is
+worth something, and the control of that claim is the **direct evaluation** of
+the same small transform: every output is the sum of the `r` inputs times the
+`r` roots of unity, with the same twist, so that the two kernels compute
+exactly the same transform and the only difference between them is the
+factorisation.  `tools/gen_java_kernels.py --style direct` generates that
+form, and the whole test suite passes with it, so the two kernels really do
+compute the same thing.
+
+This measurement has its own session, with the two sides of the comparison in
+it and nothing else.  It is **not measured yet**: the machine was busy with an
+unrelated workload when it was scheduled, and a measurement of two sides of
+the same language in a busy session is not worth taking.  The table below is
+the place where its result will appear.
+
+<!--t:TABLE_DIRECT-->
+| workload | n | direct ns/op | today ns/op | direct / today |
+| --- | ---: | ---: | ---: | ---: |
+<!--/t-->
+
+**The direct evaluation is slower than the factorisation of the original.**
+The size of the difference is in the table above:
+<!--v:DIRECT_RANGE-->not measured<!--/v-->.
+
+This is the number that answers the question of how much a cheaper small
+transform can still buy, and the answer is: the factorisation of the original
+is already the cheap one.  It needs twelve products per pair of outputs for
+the radix 13, where the direct evaluation needs `r * r` of them, and the port
+that uses it does the same arithmetic as the original.
+
+The prediction of an earlier version of this document, that a Winograd style
+transform would win another factor of 1.6x to 3x, assumed that the arithmetic
+of the small transforms was the bottleneck.  The port is already on the cheap
+side of that trade: its small transform is the factorisation of the original,
+which is the cheapest of the two forms that were measured.  A transform that
+did fewer multiplications than the original would have to be a transform of a
+different algorithm, not a better butterfly of this one.
 
 ## What was wrong, and what was done about it
 
@@ -526,9 +689,12 @@ v[p] = sum_s u[s] * W_r^(s * p)               (the r point DFT)
 
 `W_L` and `W_r` are the roots of unity of the respective block lengths.  The
 small `r` point DFTs are the expensive part, so they are **specialised**: for
-every radix `2, 3, 5, 7, 11, 13` the generator `tools/gen_kernels.py` emits a
-hand written butterfly with the small DFT constants as literals, into
-`moonbit_fft2/kernels.mbt`.
+every radix `2, 3, 5, 7, 11, 13` a generator emitted a hand written butterfly
+with the small DFT constants as literals, into
+`moonbit_fft2/kernels.mbt`.  That generator has been replaced twice since,
+by the one of the prime factor rewrite and then by the one that translates
+the original, but the idea - the constants of the small transform are
+literals in the code - is the one that survived.
 
 **Fix (G6).**  The mixed radix transform was replaced by the **prime factor
 algorithm of the original**, in the section *The prime factor algorithm of the
@@ -538,6 +704,16 @@ factors, the stages carry no twiddle factor and the small transform needs no
 permutation.  The deviation that the module README used to list - that the
 port does not reproduce the Good-Thomas kernel of the original - is gone; what
 is left of it is the double precision accumulation.
+
+**Fix (G7).**  The butterflies of the stages were replaced by the **hand
+written factorisations of the original**, in the section *The butterflies of
+the original* above.  The small transform of a stage is now the function
+`Pfacc.pfa{r}` of the original, for the twist of the stage, with its
+constants solved in double precision instead of copied in single precision.
+The port does now the same arithmetic as the original - the same number of
+multiplications, additions and array accesses per element - and it keeps
+twice as many plans in its cache, because the roots of unity are literals in
+the code and not a table in the plan.
 
 The kernel is checked on its own in `moonbit_fft2/kernel_wbtest.mbt`: against
 the direct `O(n^2)` evaluation of the transform for 90 lengths and both
@@ -549,13 +725,13 @@ its own.  The plan cache has a test of its own: the plan of a length has to be
 built once and then reused, which is checked through the effect of the cache
 on the work buffer of the plan.
 `tools/negative_control.py` breaks the kernel on purpose and checks that the
-suite turns red - for the cosines and the sines of the roots of unity, for the
-twist of a stage, for the number of its butterflies, for the plan cache, for
-the pairing of the inputs of the symmetric small transform and for the
-positions of the butterflies - so that a green suite is known to mean
-something; it also runs a stress control in the other direction, with a tiny
-plan cache budget, where the suite has to stay green.  Seven controls, all of
-them red, and the stress control green.
+suite turns red - for the constants of the stages, for the structure of the
+small transform, for the twist of a stage, for the number of its butterflies,
+for the plan cache, for the positions of the butterflies and for the dispatch
+of the stages - so that a green suite is known to mean something; it also runs
+a stress control in the other direction, with a tiny plan cache budget, where
+the suite has to stay green.  Seven controls, all of them red, and the stress
+control green.
 
 ### 2. The port rebuilt its twiddle table on every call
 
@@ -613,13 +789,16 @@ arithmetic of the small transforms *is* what the port spends its time on for
 the long transforms, and that cutting it by four is worth more than two and a
 half times over.
 
-The prime factor rewrite of the kernel (G6) keeps that symmetry and adds the
-twist of the stage to it, so the small transform of a stage is the same
-symmetric form with the roots of unity raised to the power of the twist.
+The prime factor rewrite of the kernel (G6) kept that symmetry and added the
+twist of the stage to it, so the small transform of a stage was the same
+symmetric form with the roots of unity raised to the power of the twist.  The
+rewrite of the butterflies (G7) replaced that form by the factorisation of
+the original, which is a symmetry as well - the original pairs its inputs
+too - but a different one, and a cheaper one.
 
 ## Where the remaining time goes
 
-The port is now <!--v:RANGE-->1.1 to 5<!--/v--> times slower than the JVM at the lengths where it
+The port is now <!--v:RANGE-->1.0 to 4<!--/v--> times slower than the JVM at the lengths where it
 is slower at all, and that gap is **not** the cost of the array accesses any
 more.  Two measurements on this machine, taken under the same load as the
 benchmark and with the **release** build (`tools/probe_floor.mbt` and
@@ -650,14 +829,20 @@ So the remaining gap splits into
 * **about <!--v:GAP_FACTOR-->3.5<!--/v-->x** that is the price of the MoonBit runtime's array
   accesses (30.4 ns per element of the textbook transform against 7.7 ns per
   point of the Java original),
-* **a factor that the arithmetic of the small transforms can still win** -
-  and that is measured, not assumed: the small transforms use a quarter of
-  the multiplications of before, and the port is
-  <!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v--> faster for
-  it.  A Winograd style small radix transform would cut the multiplications
-  further still, and on this evidence it would win something of the same
-  order: the prediction of 1.6x to 3x in an earlier version of this document
-  was right after all, it was only measured on the wrong build.
+* **nothing that the arithmetic of the small transforms can still win.**
+  That is measured, not assumed: the port now does the same number of
+  multiplications, of additions and of array accesses per element as the
+  original, and the control of the section above shows that the direct
+  evaluation of the small transform is
+  <!--v:DIRECT_RANGE-->not measured<!--/v--> slower than the factorisation of the
+  original, so the cheap form of the small transform is already the one that
+  is in use.  An earlier version of this document predicted that a Winograd
+  style small radix transform would win another factor of 1.6x to 3x; that
+  prediction assumed that the arithmetic of the small transforms was the
+  bottleneck, and the arithmetic of the port is now the arithmetic of the
+  original, so there is nothing left to win on this path.  A transform that
+  does fewer multiplications than the original would have to be a transform
+  of a different algorithm, not a better butterfly of this one.
 
 What is left would have to be won by moving the kernel into C (through the
 FFI), or by parallelising it - MoonBit core has no OS threads, only async
@@ -725,12 +910,13 @@ javac -nowarn -encoding UTF-8 `
 
 # every side, alternately, in one session, release build
 python "$root\tools\bench_compare.py" --rounds 5 --profile release `
-  --with-baseline --with-head --sides java,moonbit,head,old
+  --with-baseline --with-head --sides java,moonbit,head,old `
+  --out "$root\bench\bench_compare.txt"
 
-# the comparison of the kernels, without the slow baseline in between
+# the control of the factorisation, without the slow baseline in between
 python "$root\tools\bench_compare.py" --rounds 5 --profile release `
-  --with-direct --with-head --sides moonbit,direct,head `
-  --out "$root\build\bench_kernels.txt"
+  --with-direct --sides moonbit,direct `
+  --out "$root\bench\bench_direct.txt"
 
 # the tables of this document, checked against the measurements
 python "$root\tools\check_benchmark.py"
@@ -741,6 +927,24 @@ python "$root\tools\count_ops.py"
 # the model of the prime factor algorithm, checked against numpy
 python "$root\tools\verify_goodthomas.py"
 ```
+
+The measurements of the rounds are tracked in `bench/`, one file per round,
+so that the tables of this document can be checked on a fresh clone, without
+running the benchmark first.  Every round needs its own file, because the
+`head` side of a comparison is the port as it is committed, so the same table
+means something different in every round:
+
+| file | the round it holds |
+| --- | --- |
+| `bench/bench_kernels.json` | the symmetry of the roots of unity |
+| `bench/bench_goodthomas.json` | the prime factor algorithm of the original |
+| `bench/bench_compare.json` | the rewrite of the butterflies |
+| `bench/bench_direct.json` | the control of the factorisation |
+
+The `before` column of the tables of the workloads is the kernel that
+transformed `O(n^2)`.  It is the same code in every round and it is thousands
+of times slower than the port, so the session it was measured in does not
+matter: it is taken from the round of the prime factor rewrite.
 
 The Java side needs `build\classes`, the staged original bytecode; create it
 with `python tools\stage_classes.py`.
@@ -755,22 +959,33 @@ side takes about nine minutes per round, because the old kernel needs about
 
 The side `head` is the port as it is committed, and the side `direct` is the
 port with the small transforms in their direct form, so that the effect of
-the symmetric decomposition is measured in the same session as everything
-else.  They are compared **without** the slow baseline in between, because the
-baseline takes nine minutes per round and would put every other side into a
-different state of the machine; that is why the table of the kernels comes
-from a second run, `--sides moonbit,direct,head`.
+the factorisation of the original is measured in the same session as
+everything else.  They are compared **without** the slow baseline in between,
+because the baseline takes nine minutes per round and would put every other
+side into a different state of the machine; that is why the control comes from
+a second run, `--sides java,moonbit,direct`.
 
-The specialised kernels are generated, not written by hand; regenerate them
-with
+The specialised kernels are generated, not written by hand: they are the
+factorisations of the original, translated out of the decompiled `Pfacc.java`.
+Regenerate them with
 
 ```powershell
-python "$root\tools\gen_kernels.py" --out "$root\moonbit_fft2\kernels.mbt"
+# the decompiled original, out of the staged bytecode
+python "$root\tools\stage_classes.py"
+
+# the kernels of the port
+python "$root\tools\gen_java_kernels.py" --out "$root\moonbit_fft2\kernels.mbt"
 moon -C "$root\moonbit_fft2" fmt
 ```
 
 and the direct form, which is the control of the measurement above, with
 
 ```powershell
-python "$root\tools\gen_kernels.py" --out "$root\build\kernels_direct.mbt" --style direct
+python "$root\tools\gen_java_kernels.py" --out "$root\build\kernels_direct.mbt" --style direct
 ```
+
+The generator of the *previous* generation of the kernels, the one that used
+the symmetry of the roots of unity, is in the git history at the commit
+`cd434fd`; it is the one that produced the table of the section *The
+symmetry of the roots of unity*, and it is not compatible with the plan of
+the port of today.

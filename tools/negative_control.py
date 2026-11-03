@@ -6,15 +6,15 @@ restored byte by byte and their checksums are verified.
 
 There are seven negative controls:
 
-* the cosines of the roots of unity of the stages,
-* the sines of the roots of unity of the stages,
-* the twist of the stages, which is the inverse of the number of butterflies
-  modulo the radix,
+* the constants of the small transform of the radix 13,
+* the structure of the small transform of the radix 13,
+* the twist of the stages, which is the exponent of the roots of unity of
+  the small transform,
 * the number of butterflies of a stage,
 * the plan cache itself: without it every call builds its plan again, which
   is correct but slow, so the tests have to notice,
-* the pairing of the inputs of the symmetric small transform,
-* the positions of the butterflies of the radix 13.
+* the positions of the butterflies of the radix 13,
+* the dispatch of the stages, which picks the kernel of a radix and a twist.
 
 and one **stress** control, which is the other way round: with a tiny plan
 cache budget the cache drops and rebuilds its plans over and over again, and
@@ -49,23 +49,42 @@ KERNELS = MODULE / "kernels.mbt"
 BACKUP = ROOT / "build" / "mixed_radix.mbt.negative_control_backup"
 BACKUP_KERNELS = ROOT / "build" / "kernels.mbt.negative_control_backup"
 
-# The cosines of the roots of unity of the stages.
-COSINE = (
-    "      let angle = two_pi * (kk * w).to_double() / r.to_double()\n"
-    "      consts.push(@math.cos(angle))\n"
-)
-COSINE_BROKEN = (
-    "      let angle = two_pi * 1.0001 * (kk * w).to_double() / r.to_double()\n"
-    "      consts.push(@math.cos(angle))\n"
+# The header of the butterfly of the radix 13 with the twist 1.  The
+# butterflies are generated per radix and per twist, so the anchors have to
+# name the one they break.
+HEADER_13 = (
+    "fn stage_r13_mu1(\n"
+    "  m : Int32,\n"
+    "  kfac : Int32,\n"
+    "  re : Array[Double],\n"
+    "  im : Array[Double],\n"
+    ") -> Unit {\n"
 )
 
-# The sines of the roots of unity of the stages.
-SINE = "      consts.push(@math.sin(angle))\n"
-SINE_BROKEN = "      consts.push(@math.sin(angle + 0.001))\n"
+# The constants of the small transform of the radix 13.  They are solved in
+# double precision, see `tools/solve_constants.py`.
+CONSTANT = re.compile(
+    r"(fn stage_r13_mu1\((?:.|\n)*?\n  let c1 = )(-?\d+\.\d+)\n"
+)
+
+# The pairing of the inputs of the small transform of the radix 13.  The
+# butterflies are generated, so the anchor is a pattern: the first pair of
+# the round is the sum of the two values of the first pair.
+PAIRING = re.compile(r"(fn stage_r13_mu1\((?:.|\n)*?let t1r = re\[p1\] )\+ re\[p12\]")
+PAIRING_BROKEN = r"\g<1>- re[p12]"
+
+# The positions of the butterflies of the radix 13.  Every stage starts its
+# first butterfly at a different place.
+POSITION = re.compile(r"(fn stage_r13_mu1\((?:.|\n)*?let mut p0 = m \* \()0 \* kfac % 13\)")
+POSITION_BROKEN = r"\g<1>1 * kfac % 13)"
+
+# The dispatch of the stages, which picks the kernel of a radix and a twist.
+DISPATCH = "      stage_r13_mu1(m, kfac, re, im)\n"
+DISPATCH_BROKEN = "      stage_r13_mu2(m, kfac, re, im)\n"
 
 # The twist of a stage.  Without the right twist the transform is wrong.
-TWIST = "    let kk = mod_inverse(mi, r)\n"
-TWIST_BROKEN = "    let kk = 1\n"
+TWIST = "    let mu = r - kk\n"
+TWIST_BROKEN = "    let mu = kk\n"
 
 # The number of butterflies of a stage.  The stage has to visit every group
 # of the transform, and one group too few leaves the result wrong.
@@ -82,16 +101,6 @@ BUDGET_TINY = "let plan_cache_budget : Int32 = 1000\n"
 # plan again, which is correct but slow, so the tests have to notice.
 CACHE = "      plan_cache[index] = Some(plan)\n"
 CACHE_BROKEN = "      plan_cache[index] = None\n"
-
-# The pairing of the inputs of the symmetric small transform.  The line
-# belongs to the radix 13, the other radices pair their inputs differently.
-PAIRING = "    let a1_re = v1_re + v12_re\n"
-PAIRING_BROKEN = "    let a1_re = v1_re - v12_re\n"
-
-# The positions of the butterflies of the radix 13.  Every stage starts its
-# first butterfly at a different place.
-POSITION = "  let mut p0 = m * (0 * kfac % 13)\n"
-POSITION_BROKEN = "  let mut p0 = m * (1 * kfac % 13)\n"
 
 
 def sha256(path: Path) -> str:
@@ -159,6 +168,39 @@ def control(
         print(f"[{name}] restored, sha256 {after[:16]}")
 
 
+def control_regex(
+    name: str,
+    pattern: re.Pattern,
+    replacement: str,
+    target: Path = KERNELS,
+    backup: Path = BACKUP_KERNELS,
+) -> bool:
+    """Breaks the kernel with a pattern, checks that the suite turns red."""
+    original = target.read_text(encoding="utf-8")
+    matches = pattern.findall(original)
+    if len(matches) != 1:
+        print(f"[{name}] SKIPPED: the pattern matched {len(matches)} times")
+        return False
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(target, backup)
+    before = sha256(backup)
+    try:
+        broken = pattern.sub(replacement, original, count=1)
+        if broken == original:
+            print(f"[{name}] SKIPPED: the pattern changed nothing")
+            return False
+        target.write_text(broken, encoding="utf-8", newline="")
+        code, output = run_tests()
+        return report(name, code, output)
+    finally:
+        shutil.copy2(backup, target)
+        after = sha256(target)
+        if after != before:
+            raise SystemExit(f"[{name}] FAILED to restore {target}")
+        backup.unlink(missing_ok=True)
+        print(f"[{name}] restored, sha256 {after[:16]}")
+
+
 def stress(name: str, old: str, new: str) -> bool:
     """Changes the kernel in a way that must not change the results.
 
@@ -189,25 +231,13 @@ def stress(name: str, old: str, new: str) -> bool:
 
 def main() -> int:
     results = [
-        control("the cosines of the stages", COSINE, COSINE_BROKEN),
-        control("the sines of the stages", SINE, SINE_BROKEN),
+        control_regex("the constants of the stages", CONSTANT, r"\g<1>-0.000001\n"),
+        control_regex("the structure of the stages", PAIRING, PAIRING_BROKEN),
         control("the twist of the stages", TWIST, TWIST_BROKEN),
         control("the number of butterflies", BUTTERFLIES, BUTTERFLIES_BROKEN),
         control("the plan cache", CACHE, CACHE_BROKEN),
-        control(
-            "the pairing of the inputs",
-            PAIRING,
-            PAIRING_BROKEN,
-            KERNELS,
-            BACKUP_KERNELS,
-        ),
-        control(
-            "the positions of the butterflies",
-            POSITION,
-            POSITION_BROKEN,
-            KERNELS,
-            BACKUP_KERNELS,
-        ),
+        control_regex("the positions of the butterflies", POSITION, POSITION_BROKEN),
+        control("the dispatch of the stages", DISPATCH, DISPATCH_BROKEN, KERNELS, BACKUP_KERNELS),
     ]
     stress_ok = stress("a tiny plan cache budget", BUDGET, BUDGET_TINY)
     if not all(results) or not stress_ok:

@@ -1,0 +1,70 @@
+checksums:
+  java     -62107.018879670184
+  moonbit  -62107.00744686906
+  old      -62107.00744686906
+  direct   -62107.00744686906
+  head     -62107.00744686906
+
+work          n     java ns/op  spread  moonbit ns/op  spread      old ns/op  spread   direct ns/op  spread     head ns/op  spread
+----------------------------------------------------------------------------------------------------------------------------------
+# FftComplex / FftComplex  (complex to complex)
+c2c          16            108   1.25x            174   1.09x            600   1.07x            173   1.13x            179   1.07x
+c2c         120            458   1.08x           1333   1.15x          26315   1.05x           1537   1.07x           1319   1.14x
+c2c         240           1021   1.17x           6842   1.15x         215150   4.03x           3613   9.32x           6723   4.15x
+c2c         720           3075   1.16x          22440   1.13x        1826201   3.95x          24849   9.15x          22001   4.40x
+c2c        4095          33923   1.21x         148841   1.12x       62442981   3.92x         419481  11.08x         140607   4.42x
+c2c        5460          42056   1.16x         200996   1.06x      108615329   3.99x         551541   9.42x         198639   4.18x
+c2c       10920          80144   1.13x         450231   1.09x      439968300   4.03x        1320990   4.22x         417061   5.22x
+c2c       32760         260388   1.20x        1474629   1.08x     4616021000   4.71x        3503946   4.46x        1417145   4.16x
+
+# FftReal / FftReal  (real to complex)
+r2c          32            162   1.19x            431   1.01x           1418   4.39x            427   4.49x            440   4.33x
+r2c         480           1777   1.33x           7481   1.09x         238482   4.28x           8067   4.36x           7903   4.30x
+r2c        1440           7646   1.16x          23952   1.06x        2025701   4.42x          26971   4.26x          26081   4.27x
+r2c        8190          65450   1.06x         147121   1.05x       68660879   4.30x         411258   4.29x         160572   4.30x
+r2c       21840         198162   1.12x         458505   1.05x      511115200   4.31x        1131643   4.16x         481698   4.36x
+r2c       65520         636947   1.07x        1653660   1.27x     4425179200   6.49x        3556735   4.25x        1572695   3.63x
+
+# FFTMethods.realToComplex / real_to_complex
+api          16          18814   1.31x           1845   4.03x           2515   6.99x           1759   4.27x           1787   2.70x
+api         120           5138   2.26x           4519   3.99x          18234   7.81x           4673   4.29x           4726   1.45x
+api         240           5895   1.09x           7582   3.93x          63999   8.67x           9029   4.40x           7580   1.50x
+api         720          11364   1.13x          19088   4.09x         517683   4.38x          22300   4.30x          19404   1.22x
+api        5460          84246   1.12x         153304   4.01x       28272861   3.97x         328957   4.11x         156371   1.21x
+api       10920         203286   1.13x         312466   4.20x      108184438   8.09x         646320   4.30x         320903   1.12x
+api       32760         610309   1.07x         986789   3.88x     1093982400   8.91x        1980674   4.06x        1018468   1.04x
+api       65520        1552321   1.04x        2122654   4.25x     4582354500   9.08x        4244778   4.07x        2131004   1.14x
+
+the ratios, per round and then medianed:
+
+# FftComplex / FftComplex  (complex to complex)
+work          n java/moonbit     java/old  java/direct    java/head moonbit/java  moonbit/old moonbit/direct moonbit/head     old/java  old/moonbit   old/direct     old/head  direct/java direct/moonbit   direct/old  direct/head    head/java head/moonbit     head/old  head/direct
+c2c          16        0.64x        0.18x        0.64x        0.61x        1.55x        0.29x        0.99x        1.00x        5.42x        3.44x        3.39x        3.42x        1.56x        1.01x        0.29x        0.97x        1.64x        1.00x        0.29x        1.03x
+c2c         120        0.34x        0.02x        0.30x        0.35x        2.95x        0.05x        0.90x        1.02x       58.66x       19.46x       17.35x       19.67x        3.38x        1.11x        0.06x        1.12x        2.89x        0.98x        0.05x        0.89x
+c2c         240        0.15x        0.00x        0.31x        0.15x        6.70x        0.03x        1.81x        0.97x      213.66x       32.92x       59.56x       32.00x        3.27x        0.55x        0.02x        0.54x        6.65x        1.03x        0.03x        1.86x
+c2c         720        0.14x        0.00x        0.12x        0.14x        7.30x        0.01x        0.90x        1.02x      620.36x       81.38x       73.49x       83.01x        8.08x        1.11x        0.01x        1.08x        7.40x        0.98x        0.01x        0.93x
+c2c        4095        0.23x        0.00x        0.08x        0.20x        4.39x        0.00x        0.33x        1.04x     2189.83x      429.30x      142.44x      444.10x       12.16x        3.01x        0.01x        2.86x        4.93x        0.96x        0.00x        0.35x
+c2c        5460        0.21x        0.00x        0.08x        0.20x        4.78x        0.00x        0.36x        1.01x     2833.69x      555.83x      196.28x      545.23x       13.11x        2.74x        0.01x        2.78x        4.94x        0.99x        0.00x        0.36x
+c2c       10920        0.19x        0.00x        0.07x        0.20x        5.30x        0.00x        0.34x        1.05x     5477.30x     1034.36x      371.29x     1054.92x       14.56x        2.93x        0.00x        2.79x        5.05x        0.95x        0.00x        0.36x
+c2c       32760        0.18x        0.00x        0.07x        0.20x        5.60x        0.00x        0.41x        1.04x    16998.41x     3130.29x     1372.75x     3420.19x       13.49x        2.41x        0.00x        2.71x        4.97x        0.96x        0.00x        0.37x
+
+# FftReal / FftReal  (real to complex)
+work          n java/moonbit     java/old  java/direct    java/head moonbit/java  moonbit/old moonbit/direct moonbit/head     old/java  old/moonbit   old/direct     old/head  direct/java direct/moonbit   direct/old  direct/head    head/java head/moonbit     head/old  head/direct
+r2c          32        0.37x        0.11x        0.36x        0.36x        2.68x        0.30x        1.01x        0.98x        9.27x        3.30x        3.14x        3.18x        2.76x        0.99x        0.32x        0.99x        2.80x        1.02x        0.31x        1.01x
+r2c         480        0.23x        0.01x        0.18x        0.21x        4.43x        0.03x        0.90x        1.00x      162.45x       33.03x       25.34x       29.22x        5.49x        1.12x        0.04x        1.16x        4.74x        1.00x        0.03x        0.86x
+r2c        1440        0.32x        0.00x        0.28x        0.29x        3.13x        0.01x        0.88x        0.92x      266.61x       85.29x       72.23x       81.31x        3.53x        1.13x        0.01x        1.13x        3.41x        1.09x        0.01x        0.89x
+r2c        8190        0.44x        0.00x        0.16x        0.41x        2.26x        0.00x        0.36x        0.91x     1063.50x      466.70x      149.67x      410.80x        6.28x        2.80x        0.01x        2.74x        2.45x        1.09x        0.00x        0.36x
+r2c       21840        0.43x        0.00x        0.17x        0.41x        2.31x        0.00x        0.39x        0.95x     2713.78x     1163.64x      401.27x      976.04x        6.01x        2.58x        0.00x        2.43x        2.43x        1.05x        0.00x        0.41x
+r2c       65520        0.39x        0.00x        0.17x        0.41x        2.60x        0.00x        0.41x        1.01x     6947.48x     2675.99x     1250.83x     2813.76x        5.73x        2.43x        0.00x        2.45x        2.47x        0.99x        0.00x        0.41x
+
+# FFTMethods.realToComplex / real_to_complex
+work          n java/moonbit     java/old  java/direct    java/head moonbit/java  moonbit/old moonbit/direct moonbit/head     old/java  old/moonbit   old/direct     old/head  direct/java direct/moonbit   direct/old  direct/head    head/java head/moonbit     head/old  head/direct
+api          16        8.41x        7.48x        9.34x        9.07x        0.12x        0.81x        0.98x        1.08x        0.13x        1.24x        1.21x        1.41x        0.11x        1.02x        0.82x        0.98x        0.11x        0.93x        0.71x        1.02x
+api         120        1.14x        0.53x        1.14x        1.18x        0.88x        0.24x        0.95x        1.04x        1.89x        4.11x        3.83x        3.86x        0.88x        1.05x        0.26x        1.04x        0.84x        0.96x        0.26x        0.96x
+api         240        0.72x        0.09x        0.66x        0.78x        1.40x        0.11x        0.86x        1.11x       10.79x        8.79x        7.09x        8.44x        1.52x        1.16x        0.14x        1.19x        1.28x        0.90x        0.12x        0.84x
+api         720        0.60x        0.02x        0.51x        0.60x        1.68x        0.04x        0.86x        1.06x       45.55x       26.17x       22.54x       26.68x        1.96x        1.16x        0.04x        1.17x        1.68x        0.94x        0.04x        0.85x
+api        5460        0.55x        0.00x        0.26x        0.60x        1.82x        0.01x        0.45x        1.18x      335.62x      184.42x       81.75x      216.79x        3.90x        2.24x        0.01x        2.41x        1.66x        0.85x        0.00x        0.42x
+api       10920        0.58x        0.00x        0.28x        0.64x        1.72x        0.00x        0.46x        1.00x      595.78x      346.23x      166.19x      324.80x        3.51x        2.16x        0.01x        2.17x        1.57x        1.00x        0.00x        0.46x
+api       32760        0.60x        0.00x        0.30x        0.61x        1.67x        0.00x        0.49x        0.98x     1792.51x     1125.84x      552.33x     1101.38x        3.34x        2.04x        0.00x        1.99x        1.63x        1.02x        0.00x        0.50x
+api       65520        0.73x        0.00x        0.36x        0.75x        1.36x        0.00x        0.52x        1.04x     2858.45x     2158.79x     1117.49x     2150.33x        2.75x        1.93x        0.00x        2.10x        1.33x        0.96x        0.00x        0.48x
+

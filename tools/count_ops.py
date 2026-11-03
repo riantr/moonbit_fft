@@ -107,8 +107,12 @@ def moonbit_kernel(text: str, r: int) -> tuple[int, int, int, int]:
     number of accesses of the transform and the number of reads of the roots
     of unity.  The roots of unity are read once per stage, before the rounds
     of the butterflies.
+
+    The kernels are generated per radix *and* per twist, and the structure of
+    the butterfly is the same for every twist of a radix, so the first
+    variant of the radix is counted.
     """
-    start = text.index("fn stage_r%d(" % r)
+    start = text.index("fn stage_r%d_mu" % r)
     end = text.find("\nfn ", start + 1)
     body = text[start : end if end > 0 else len(text)]
     body = strip_comments(body)
@@ -116,9 +120,13 @@ def moonbit_kernel(text: str, r: int) -> tuple[int, int, int, int]:
     loop = body.index("while i < m {")
     head = body[:loop]
     rounds = body[loop:]
-    # The values of the transform are the ones whose name ends with `_re` or
-    # `_im`; the positions of the rounds are the other ones.
-    values = [ln for ln in rounds.splitlines() if "_re" in ln or "_im" in ln]
+    # The values of the transform are the ones the butterfly computes; the
+    # lines that move the positions of the rounds are the address arithmetic.
+    values = [
+        ln
+        for ln in rounds.splitlines()
+        if not re.match(r"\s*(if p\d+ < limit|p\d+ = p\d+ \+|limit = limit|i = i)", ln)
+    ]
     text_of_values = "\n".join(values)
     mults = len(re.findall(r"\*", text_of_values))
     adds = len(re.findall(r"[+-]", text_of_values))

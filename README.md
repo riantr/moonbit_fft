@@ -24,7 +24,8 @@ list of deviations from the Java original are in
 | `tools/gen_parity.py` | turns the golden data into the generated MoonBit parity test | yes |
 | `tools/measure_deviation.py` | measures the numerical margin between the port and the original | yes |
 | `tools/gen_tables.py` | generates `moonbit_fft2/tables.mbt` from the transform length tables of the original | yes |
-| `tools/gen_kernels.py` | generates the specialised small radix butterflies of `moonbit_fft2/kernels.mbt` | yes |
+| `tools/gen_java_kernels.py` | translates the small radix butterflies of the original into `moonbit_fft2/kernels.mbt` | yes |
+| `tools/solve_constants.py` | solves the constants of the butterflies in double precision | yes |
 | `tools/verify_goodthomas.py` | checks the model of the prime factor algorithm of the original against `numpy.fft` | yes |
 | `tools/count_ops.py` | counts the multiplications, the additions and the accesses of both sides | yes |
 | `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
@@ -32,10 +33,12 @@ list of deviations from the Java original are in
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
 | `tools/bench_baseline.py` | measures the port as it was before the kernel was rewritten, from a revision of the git history | yes |
 | `tools/check_benchmark.py` | checks that the tables of `BENCHMARK.md` agree with the benchmark results | yes |
+| `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
 | `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation | yes |
+| `bench/` | the measurements of the rounds, one file per round, so that the tables of `BENCHMARK.md` can be checked | yes |
 | `tools/_tmp/` | the upstream sources of `imglib2-fft`, fetched for reference | no, local only |
 | `build/` | generated artefacts: the compiled oracle, the test cases, the golden data, the decompiled sources | no, local only |
 
@@ -135,7 +138,7 @@ The port now uses the **prime factor algorithm of the original**: the length
 is split into pairwise coprime factors, every factor selects a small kernel,
 and the stages carry no twiddle factor at all.  The `n = 32 760` complex to
 complex transform went from **<!--v:OLD_C2C_S-->4.1<!--/v--> s to <!--v:C2C_MS-->0.9<!--/v--> ms**
-(<!--v:C2C_SPEEDUP-->4397<!--/v-->x), and the port is now between <!--v:RANGE-->1.1 to 5<!--/v--> times slower than
+(<!--v:C2C_SPEEDUP-->4824<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4<!--/v--> times slower than
 the JVM at the lengths where it is slower at all.
 
 Two details of the measurement matter as much as the numbers.  The benchmark
@@ -154,9 +157,13 @@ additions, and which is worth
 - the arithmetic of the butterflies *is* a large part of the run time of the
 long transforms.  The prime factor rewrite of the kernel, which removed the
 twiddle factors between the stages and the permutation of the output, was
-worth another **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->**.  What is left of the gap is the
-price of the runtime: a single array element access costs about 0.67 ns in
-MoonBit, against about 0.15 ns on the JVM.
+worth another **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->**, and the rewrite of the butterflies
+by the **factorisations of the original** was worth
+**<!--v:ORIG_RANGE-->1.01x to 1.24x<!--/v-->**.  The port now does the same number of
+multiplications, of additions and of array accesses per element as the
+original, so what is left of the gap is the price of the runtime: a single
+array element access costs about 0.67 ns in MoonBit, against about 0.15 ns on
+the JVM.
 
 ## License
 

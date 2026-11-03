@@ -22,17 +22,17 @@ fn check_sign(sign : Int32) -> Unit {
 /// convention of `edu.mines.jtk.dsp.FftComplex`, where the inverse transform
 /// does not divide by `n`.
 ///
-/// The transform is the mixed radix decimation in time transform of
-/// `mixed_radix.mbt`, which is `O(n log n)` for every valid length, just like
-/// the prime factor algorithm of the Java original.  The plan of the length
-/// holds the twiddle factors and the permutation, they are built once and
-/// then reused.
+/// The transform is the prime factor algorithm of `mixed_radix.mbt`, which is
+/// the algorithm of the Java original itself and `O(n log n)` for every valid
+/// length.  The plan of the length holds the work buffers, they are built
+/// once and then reused; the roots of unity of the stages are literals in the
+/// butterflies of `kernels.mbt`.
 ///
-/// The Java original evaluates the transform in single precision with a mixed
-/// radix PFA kernel.  The port accumulates in double precision and rounds the
-/// result back to single precision, so the difference to the original is
-/// dominated by the rounding error of the original instead of by the error of
-/// the port.
+/// The Java original evaluates the transform in single precision with the
+/// prime factor kernel of `Pfacc`.  The port accumulates in double precision
+/// and rounds the result back to single precision, so the difference to the
+/// original is dominated by the rounding error of the original instead of by
+/// the error of the port.
 fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
   if n <= 1 {
     return

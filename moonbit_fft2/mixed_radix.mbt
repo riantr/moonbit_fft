@@ -24,11 +24,10 @@
 /// The number of transform elements that are kept in the plan cache at the
 /// same time.
 ///
-/// A plan holds the factors of one length, the roots of unity of its stages
-/// and the work buffers.  Every element of a length costs about four doubles
-/// of roots of unity and two doubles of work buffer, so a plan costs about
-/// forty eight bytes per element of its length: the budget of two million
-/// elements holds about hundred megabytes of plans.
+/// A plan holds the factors of one length and the work buffers.  Every element
+/// of a length costs two doubles of work buffer, so a plan costs about sixteen
+/// bytes per element of its length: the budget of two million elements holds
+/// about thirty megabytes of plans.
 ///
 /// The 240 valid lengths of the original add up to 3.2 million elements, so
 /// the budget holds 237 of them.  A program that uses more lengths than that
@@ -44,8 +43,10 @@ let plan_cache_budget : Int32 = 2000000
 /// A transform plan: everything that depends on the length of the transform
 /// but not on its direction.
 ///
-/// The plan holds the factors of the length, the roots of unity of every stage
-/// and the work buffers of the transform.
+/// The plan holds the factors of the length, the twist of every stage and the
+/// work buffers of the transform.  The roots of unity of the stages are
+/// literals in the butterflies of `kernels.mbt`, so the plan does not hold
+/// them.
 priv struct FftPlan {
   /// The radix of every stage, the stages are applied from the largest radix
   /// to the smallest one.
@@ -56,10 +57,6 @@ priv struct FftPlan {
   /// The inverse of the number of butterflies modulo the radix, of every
   /// stage.  It is the twist of the roots of unity of the stage.
   kfac : Array[Int32]
-  /// The roots of unity of all the stages.
-  consts : Array[Double]
-  /// The offset of the roots of unity of every stage.
-  const_off : Array[Int32]
   /// The real parts of the working buffer of the transform.
   buf_re : Array[Double]
   /// The imaginary parts of the working buffer of the transform.
@@ -122,41 +119,19 @@ fn build_plan(n : Int32) -> FftPlan {
   let k = radix.length()
   let m = Array::Array(capacity=k)
   let kfac = Array::Array(capacity=k)
-  let const_off = Array::Array(capacity=k)
-  // The roots of unity of all the stages, the cosines of a stage come first,
-  // then the sines.
-  let consts = Array::Array(capacity=16 * k)
   let mut j = 0
   while j < k {
     let r = radix[j]
     let mi = n / r
     m.push(mi)
-    let kk = mod_inverse(mi, r)
-    kfac.push(kk)
-    const_off.push(consts.length())
-    // The roots of unity of the stage are raised to the power of the twist.
-    // The small transform pairs the inputs, so it needs the cosine and the
-    // sine of the angle with the positive sign.
-    let half = r / 2
-    let mut w = 0
-    while w <= half {
-      let angle = two_pi * (kk * w).to_double() / r.to_double()
-      consts.push(@math.cos(angle))
-      w = w + 1
-    }
-    w = 0
-    while w <= half {
-      let angle = two_pi * (kk * w).to_double() / r.to_double()
-      consts.push(@math.sin(angle))
-      w = w + 1
-    }
+    kfac.push(mod_inverse(mi, r))
     j = j + 1
   }
   // The working buffer of the transform is part of the plan, so that a
   // transform does not allocate.
   let buf_re = zerosd(n)
   let buf_im = zerosd(n)
-  { radix, m, kfac, consts, const_off, buf_re, buf_im, }
+  { radix, m, kfac, buf_re, buf_im, }
 }
 
 ///|
@@ -219,38 +194,18 @@ fn dft_plan(plan : FftPlan, re : Array[Double], im : Array[Double]) -> Unit {
   let radices = plan.radix
   let counts = plan.m
   let twists = plan.kfac
-  let consts = plan.consts
-  let offsets = plan.const_off
   let mut stage = 0
   while stage < radices.length() {
     let r = radices[stage]
     let mi = counts[stage]
     let kk = twists[stage]
-    let off = offsets[stage]
+    // The twist of the stage is the exponent of the roots of unity of its
+    // small transform.  The original uses `r - kfac` for the forward
+    // transform, which is the same roots of unity as the ones of the port,
+    // in the order in which the original uses them.
+    let mu = r - kk
     // The specialised butterflies of `kernels.mbt`.
-    if r == 2 {
-      stage_r2(mi, kk, consts, off, re, im)
-    } else if r == 3 {
-      stage_r3(mi, kk, consts, off, re, im)
-    } else if r == 4 {
-      stage_r4(mi, kk, consts, off, re, im)
-    } else if r == 5 {
-      stage_r5(mi, kk, consts, off, re, im)
-    } else if r == 7 {
-      stage_r7(mi, kk, consts, off, re, im)
-    } else if r == 8 {
-      stage_r8(mi, kk, consts, off, re, im)
-    } else if r == 9 {
-      stage_r9(mi, kk, consts, off, re, im)
-    } else if r == 11 {
-      stage_r11(mi, kk, consts, off, re, im)
-    } else if r == 13 {
-      stage_r13(mi, kk, consts, off, re, im)
-    } else if r == 16 {
-      stage_r16(mi, kk, consts, off, re, im)
-    } else {
-      abort("the transform length has a factor without a butterfly")
-    }
+    stage_dispatch(r, mu, mi, kk, re, im)
     stage = stage + 1
   }
 }
