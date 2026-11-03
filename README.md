@@ -49,10 +49,13 @@ parity tests inline, so `moon test` works on a fresh clone without the
 generated data of `build/`.  The golden data itself is reproduced by the
 pipeline below.
 
-The jars of `tools/lib/` that are not tracked are the JTransforms artifacts
-and an older `edu.mines:mines-jtk`: the original depends on
-`edu.mines:mines-jtk`, and the JTransforms jars were only fetched during the
-investigation of the kernel.
+The jars of `tools/lib/` that are **not** tracked are the JTransforms
+artifacts and an older `edu.mines:mines-jtk`: the JTransforms jars were only
+fetched during the investigation of the kernel.  The three jars that the
+verification needs are tracked: `imglib2-6.1.0.jar` holds the library that the
+original bytecode of `fft2/` depends on, `mines-jtk-20151125.jar` holds the
+JTransforms kernel that the original calls, and `cfr-0.152.jar` is the
+decompiler that turns that kernel back into readable Java.
 
 ## How the port was built
 
