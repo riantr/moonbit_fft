@@ -6,19 +6,28 @@ restored byte by byte and their checksums are verified.
 
 There are seven negative controls:
 
-* all the twiddle factors of the plan,
-* the twiddle factors of the radix 13 alone,
-* the size of the table of the small Fourier matrices of the generic path,
-* the size of the scratch space of the generic path,
+* the cosines of the roots of unity of the stages,
+* the sines of the roots of unity of the stages,
+* the twist of the stages, which is the inverse of the number of butterflies
+  modulo the radix,
+* the number of butterflies of a stage,
 * the plan cache itself: without it every call builds its plan again, which
   is correct but slow, so the tests have to notice,
 * the pairing of the inputs of the symmetric small transform,
-* a constant of the symmetric small transform of the radix 13.
+* the positions of the butterflies of the radix 13.
 
 and one **stress** control, which is the other way round: with a tiny plan
 cache budget the cache drops and rebuilds its plans over and over again, and
 the suite has to stay green, because that is not a defect but a different
 memory budget.
+
+The order of the factors of the length is *not* one of them, and it cannot be
+one: the stages of the Good-Thomas transform act on different coordinates of
+the transform, so they commute and the result does not depend on their order.
+A control that reorders them therefore breaks nothing, and a green suite would
+say nothing about the tests.  The invariance is checked by
+`tools/verify_goodthomas.py` instead, where it is a fact and not a hole in
+the tests.
 
 Usage:
     python tools/negative_control.py
@@ -40,34 +49,28 @@ KERNELS = MODULE / "kernels.mbt"
 BACKUP = ROOT / "build" / "mixed_radix.mbt.negative_control_backup"
 BACKUP_KERNELS = ROOT / "build" / "kernels.mbt.negative_control_backup"
 
-TWIDDLE = "      let ang = -two_pi * k0.to_double() / l.to_double()\n"
-TWIDDLE_BROKEN = (
-    "      let ang = -two_pi * 1.0001 * k0.to_double() / l.to_double()\n"
+# The cosines of the roots of unity of the stages.
+COSINE = (
+    "      let angle = two_pi * (kk * w).to_double() / r.to_double()\n"
+    "      consts.push(@math.cos(angle))\n"
+)
+COSINE_BROKEN = (
+    "      let angle = two_pi * 1.0001 * (kk * w).to_double() / r.to_double()\n"
+    "      consts.push(@math.cos(angle))\n"
 )
 
-PUSH = "      base_re.push(@math.cos(ang))\n      base_im.push(@math.sin(ang))\n"
-PUSH_BROKEN = (
-    "      let delta = if r == 13 { 0.001 } else { 0.0 }\n"
-    "      base_re.push(@math.cos(ang + delta))\n"
-    "      base_im.push(@math.sin(ang + delta))\n"
-)
+# The sines of the roots of unity of the stages.
+SINE = "      consts.push(@math.sin(angle))\n"
+SINE_BROKEN = "      consts.push(@math.sin(angle + 0.001))\n"
 
-# The sizes of the scratch space of the butterfly and of the table of the
-# small Fourier matrices.  Before the fix they were the constant 13, the
-# largest radix of the valid lengths of the original, and a plan of a larger
-# radix ran out of both of them.
-SIZES = (
-    "  let matrix_off = zeros(max_r + 1)\n"
-    "  let used = zeros(max_r + 1)\n"
-)
-SIZES_BROKEN = (
-    "  let matrix_off = zeros(13 + 1)\n"
-    "  let used = zeros(13 + 1)\n"
-)
-SCRATCH = "  let scratch_re = zerosd(max_r)\n  let scratch_im = zerosd(max_r)\n"
-SCRATCH_BROKEN = (
-    "  let scratch_re = zerosd(13)\n  let scratch_im = zerosd(13)\n"
-)
+# The twist of a stage.  Without the right twist the transform is wrong.
+TWIST = "    let kk = mod_inverse(mi, r)\n"
+TWIST_BROKEN = "    let kk = 1\n"
+
+# The number of butterflies of a stage.  The stage has to visit every group
+# of the transform, and one group too few leaves the result wrong.
+BUTTERFLIES = "    let mi = counts[stage]\n"
+BUTTERFLIES_BROKEN = "    let mi = counts[stage] - 1\n"
 
 # The budget of the plan cache.  A tiny budget makes the cache drop its
 # plans over and over again, which has to leave the results of the suite
@@ -81,15 +84,14 @@ CACHE = "      plan_cache[index] = Some(plan)\n"
 CACHE_BROKEN = "      plan_cache[index] = None\n"
 
 # The pairing of the inputs of the symmetric small transform.  The line
-# belongs to the radix 3, the radices 5, 7, 11 and 13 pair their inputs
-# differently.
-PAIRING = "      let a1_re = u1_re + u2_re\n"
-PAIRING_BROKEN = "      let a1_re = u1_re - u2_re\n"
+# belongs to the radix 13, the other radices pair their inputs differently.
+PAIRING = "    let a1_re = v1_re + v12_re\n"
+PAIRING_BROKEN = "    let a1_re = v1_re - v12_re\n"
 
-# A constant of the symmetric small transform of the radix 13.  The variable
-# `c6` only exists for the radix 13, the radix 11 stops at `c5`.
-CONSTANT = "      let mut c6_re = u0_re\n"
-CONSTANT_BROKEN = "      let mut c6_re = u0_re * 2.0\n"
+# The positions of the butterflies of the radix 13.  Every stage starts its
+# first butterfly at a different place.
+POSITION = "  let mut p0 = m * (0 * kfac % 13)\n"
+POSITION_BROKEN = "  let mut p0 = m * (1 * kfac % 13)\n"
 
 
 def sha256(path: Path) -> str:
@@ -187,13 +189,25 @@ def stress(name: str, old: str, new: str) -> bool:
 
 def main() -> int:
     results = [
-        control("all twiddles", TWIDDLE, TWIDDLE_BROKEN),
-        control("radix 13 only", PUSH, PUSH_BROKEN),
-        control("the size of the table of the generic path", SIZES, SIZES_BROKEN),
-        control("the size of the scratch space", SCRATCH, SCRATCH_BROKEN),
+        control("the cosines of the stages", COSINE, COSINE_BROKEN),
+        control("the sines of the stages", SINE, SINE_BROKEN),
+        control("the twist of the stages", TWIST, TWIST_BROKEN),
+        control("the number of butterflies", BUTTERFLIES, BUTTERFLIES_BROKEN),
         control("the plan cache", CACHE, CACHE_BROKEN),
-        control("the pairing of the inputs", PAIRING, PAIRING_BROKEN, KERNELS, BACKUP_KERNELS),
-        control("a constant of the radix 13", CONSTANT, CONSTANT_BROKEN, KERNELS, BACKUP_KERNELS),
+        control(
+            "the pairing of the inputs",
+            PAIRING,
+            PAIRING_BROKEN,
+            KERNELS,
+            BACKUP_KERNELS,
+        ),
+        control(
+            "the positions of the butterflies",
+            POSITION,
+            POSITION_BROKEN,
+            KERNELS,
+            BACKUP_KERNELS,
+        ),
     ]
     stress_ok = stress("a tiny plan cache budget", BUDGET, BUDGET_TINY)
     if not all(results) or not stress_ok:

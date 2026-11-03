@@ -1,37 +1,47 @@
 #!/usr/bin/env python3
-"""Generate the specialised butterflies of the mixed radix transform.
+"""Generate the specialised butterflies of the Good-Thomas transform.
 
-The generic transform of `moonbit_fft2/mixed_radix.mbt` evaluates the small
-discrete Fourier transform of every stage with a precomputed matrix.  That
-matrix costs `r * r` complex multiplications and, worse, `r * r` array
-accesses per butterfly, which dominates the run time in MoonBit.
+The transform of `moonbit_fft2/mixed_radix.mbt` is the prime factor algorithm
+of the Java original: the length is split into pairwise coprime factors and
+every factor selects a small kernel.  Because the factors are coprime, the
+stages need no twiddle factor at all, which is where most of the work of the
+transform is saved.
 
-This generator writes one specialised butterfly per radix instead.  The
-constants of the small transform are compile time literals, exactly like the
-`P120`, `P142`, ... constants of the prime factor algorithm of the Java
-original, so the inner loop of the butterfly needs no matrix at all.  The
-twiddle factors of the stage still depend on the length of the transform and
-are read from the plan.
+The structure of one stage is this.  The stage has the radix `r`, the length is
+`n`, and `m = n / r` is the number of butterflies of the stage.  The value
+`kfac` is the inverse of `m` modulo `r`.  The butterfly of the round `i` takes
+its `r` values from the positions
 
-Two styles are available for the odd radices:
+    p[t] = i + m * ((t - i) * kfac mod r)      for t = 0 .. r - 1
 
-``direct``
-    The small transform is evaluated the obvious way, every output is the
-    sum of the `r` inputs times the `r` roots of unity.  That costs `4 * (r
-    - 1) * (r - 1)` real multiplications and as many additions.
+applies a discrete Fourier transform of the size `r` to them and writes the
+result back to the same positions.  The roots of unity of that small transform
+are raised to the power `kfac`, which is the twist of the original.  The twist
+is in the roots of unity and not in the indices, so the small transform needs
+no permutation at all.
+
+The constants of the small transform therefore depend on the length of the
+transform and are read from the plan of the stage.  They are loaded into
+locals before the rounds, so that the inner loop reads them from the
+registers.
+
+Two styles are available:
 
 ``symmetric``
     The small transform uses the symmetry of the roots of unity.  For an odd
     radix `r` the inputs are paired, `A_s = x_s + x_{r-s}` and `B_s = x_s -
     x_{r-s}`, and the output `p` becomes
 
-        X[p] = x_0 + sum over s of (A_s * cos(2 pi s p / r)
-                                    - i * B_s * sin(2 pi s p / r))
+        X[p] = x_0 + sum over s of (A_s * cos(2 pi kfac s p / r)
+                                    - i * B_s * sin(2 pi kfac s p / r))
 
-    while `X[r-p]` uses the same two sums with the opposite sign of the
-    sine.  That costs `(r - 1) * (r - 1)` real multiplications, a quarter
-    of the direct form, and fewer additions as well.  The prime factor
-    algorithm of the Java original uses the same idea.
+    while `X[r-p]` uses the same two sums with the opposite sign of the sine.
+    The prime factor algorithm of the Java original uses the same idea.
+
+``direct``
+    The small transform is evaluated the obvious way, every output is the sum
+    of the `r` inputs times the `r` roots of unity.  That costs `4 * (r - 1) *
+    (r - 1)` real multiplications and as many additions.
 
 Usage::
 
@@ -42,256 +52,363 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import math
 import pathlib
 
-# The radices the valid transform lengths are built from.
-RADICES = [2, 3, 5, 7, 11, 13]
+# The radices the valid transform lengths are built from.  They are the prime
+# powers of the primes 2, 3, 5, 7, 11 and 13 that the valid lengths of the
+# original use.
+RADICES = [2, 3, 4, 5, 7, 8, 9, 11, 13, 16]
 
 
-def fmt(value: float) -> str:
-    """Formats a double as a literal that keeps all of its bits."""
-    if value == 0.0:
-        return "0.0"
-    if value == 1.0:
-        return "1.0"
-    if value == -1.0:
-        return "-1.0"
-    text = repr(value)
-    if "." not in text and "e" not in text and "E" not in text:
-        text += ".0"
-    return text
+def pairs_of(r: int) -> tuple[bool, int, int]:
+    """The shape of the small transform of one radix.
 
-
-def root(r: int, k: int) -> tuple[float, float]:
-    """The root of unity `exp(-2 * pi * i * k / r)`.
-
-    The trivial roots of unity are returned exactly, so that the generated
-    code uses an addition or a subtraction instead of a multiplication by a
-    constant that is one or minus one.
+    It returns whether the radix is even, the middle of the radix, and the
+    last index of the pairs.  For an odd radix the pairs run from one to
+    `(r - 1) / 2`, for an even radix they run from one to `r / 2 - 1`, because
+    the input `r / 2` is paired with itself.
     """
-    k = k % r
-    if k == 0:
-        return (1.0, 0.0)
-    if r % 2 == 0 and k == r // 2:
-        return (-1.0, 0.0)
-    if r % 4 == 0 and k == r // 4:
-        return (0.0, -1.0)
-    if r % 4 == 0 and k == 3 * r // 4:
-        return (0.0, 1.0)
-    angle = -2.0 * math.pi * k / r
-    cr = math.cos(angle)
-    ci = math.sin(angle)
-    # The remaining roots have a vanishing component, which the trigonometry
-    # does not return exactly.
-    if abs(cr) < 1e-15:
-        cr = 0.0
-    if abs(ci) < 1e-15:
-        ci = 0.0
-    return (cr, ci)
+    if r % 2 == 0:
+        return True, r // 2, r // 2 - 1
+    return False, (r - 1) // 2, (r - 1) // 2
 
 
-def cossin(r: int, k: int) -> tuple[float, float]:
-    """The cosine and the sine of `2 * pi * k / r`.
+class Coefficient:
+    """The coefficient of one term of the small transform.
 
-    The signs are the ones of the forward transform of the port, which uses
-    `exp(-2 * pi * i * j * k / n)`.
+    The value is `cos(2 pi kfac * v / r)` or `sin(2 pi kfac * v / r)`, where
+    `v` is the product of the two indices of the term.  The value is read from
+    the plan of the stage, unless it does not depend on `kfac` at all.
     """
-    k = k % r
-    angle = 2.0 * math.pi * k / r
-    cr = math.cos(angle)
-    ci = math.sin(angle)
-    if abs(cr) < 1e-15:
-        cr = 0.0
-    if abs(ci) < 1e-15:
-        ci = 0.0
-    return (cr, ci)
+
+    def __init__(self, r: int, v: int, sine: bool) -> None:
+        self.r = r
+        self.v = v
+        self.sine = sine
+        self.local = ""
+        self.sign = 1
+        self.literal: str | None = None
+
+    def resolve(self) -> None:
+        """Finds out whether the value is a literal or a local of the plan."""
+        r = self.r
+        v = self.v
+        if v == 0:
+            self.literal = "0.0" if self.sine else "1.0"
+            return
+        if r % 2 == 0 and v == r // 2:
+            # cos(pi * kfac) is minus one and sin(pi * kfac) is zero, because
+            # kfac is odd for an even radix.
+            self.literal = "0.0" if self.sine else "-1.0"
+            return
+        w = v if v <= r // 2 else r - v
+        # The cosine of the root v and the cosine of the root r - v are the
+        # same, only the sine changes its sign.
+        self.sign = -1 if (self.sine and v > r // 2) else 1
+        if r % 4 == 0 and w == r // 4 and not self.sine:
+            # cos(pi * kfac / 2) is zero, because kfac is odd.
+            self.literal = "0.0"
+            return
+        self.local = ("s" if self.sine else "c") + str(w)
+
+    def action(self) -> tuple[str, str]:
+        """How the term is added: an addition, a subtraction or a product."""
+        if self.literal is not None:
+            if self.literal == "0.0":
+                return ("skip", "")
+            if self.literal == "1.0":
+                return ("add", "")
+            return ("sub", "")
+        if self.sign < 0:
+            return ("submul", self.local)
+        return ("mul", self.local)
 
 
-def emit_dft_term(
+def emit_term(
     out: list[str],
     indent: str,
-    s: int,
-    p: int,
-    r: int,
-    re_name: str,
-    im_name: str,
     acc_re: str,
     acc_im: str,
+    re_name: str,
+    im_name: str,
+    coefficient: Coefficient,
 ) -> None:
-    """Emits one term of the small discrete Fourier transform."""
-    cr, ci = root(r, (s * p) % r)
-    # The trivial roots of unity are written out, so that the compiler does
-    # not have to fold them.
-    if ci == 0.0 and cr == 1.0:
+    """Emits one term of the small transform."""
+    kind, text = coefficient.action()
+    if kind == "skip":
+        return
+    if kind == "add":
         out.append(f"{indent}{acc_re} = {acc_re} + {re_name}")
         out.append(f"{indent}{acc_im} = {acc_im} + {im_name}")
         return
-    if ci == 0.0 and cr == -1.0:
+    if kind == "sub":
         out.append(f"{indent}{acc_re} = {acc_re} - {re_name}")
         out.append(f"{indent}{acc_im} = {acc_im} - {im_name}")
         return
-    if cr == 0.0 and ci == 1.0:
-        out.append(f"{indent}{acc_re} = {acc_re} - {im_name}")
-        out.append(f"{indent}{acc_im} = {acc_im} + {re_name}")
+    if kind == "submul":
+        out.append(f"{indent}{acc_re} = {acc_re} - {re_name} * {text}")
+        out.append(f"{indent}{acc_im} = {acc_im} - {im_name} * {text}")
         return
-    if cr == 0.0 and ci == -1.0:
+    out.append(f"{indent}{acc_re} = {acc_re} + {re_name} * {text}")
+    out.append(f"{indent}{acc_im} = {acc_im} + {im_name} * {text}")
+
+
+def emit_term_imag(
+    out: list[str],
+    indent: str,
+    acc_re: str,
+    acc_im: str,
+    re_name: str,
+    im_name: str,
+    coefficient: Coefficient,
+) -> None:
+    """Emits one term of the small transform, where the sine multiplies the
+    imaginary part of the input and changes the sign of the real part."""
+    kind, text = coefficient.action()
+    if kind == "skip":
+        return
+    if kind == "add":
         out.append(f"{indent}{acc_re} = {acc_re} + {im_name}")
         out.append(f"{indent}{acc_im} = {acc_im} - {re_name}")
         return
-    out.append(
-        f"{indent}{acc_re} = {acc_re} + {re_name} * {fmt(cr)}"
-    )
-    out.append(
-        f"{indent}{acc_re} = {acc_re} - {im_name} * {fmt(ci)}"
-    )
-    out.append(
-        f"{indent}{acc_im} = {acc_im} + {re_name} * {fmt(ci)}"
-    )
-    out.append(
-        f"{indent}{acc_im} = {acc_im} + {im_name} * {fmt(cr)}"
-    )
+    if kind == "sub":
+        out.append(f"{indent}{acc_re} = {acc_re} - {im_name}")
+        out.append(f"{indent}{acc_im} = {acc_im} + {re_name}")
+        return
+    if kind == "submul":
+        out.append(f"{indent}{acc_re} = {acc_re} - {im_name} * {text}")
+        out.append(f"{indent}{acc_im} = {acc_im} + {re_name} * {text}")
+        return
+    out.append(f"{indent}{acc_re} = {acc_re} + {im_name} * {text}")
+    out.append(f"{indent}{acc_im} = {acc_im} - {re_name} * {text}")
 
 
-def emit_header(out: list[str], r: int) -> None:
+def collect_locals(r: int, style: str) -> list[str]:
+    """The roots of unity that the butterfly of one radix needs."""
+    even, half, last = pairs_of(r)
+    names: set[str] = set()
+    if style == "direct":
+        for t in range(r):
+            for s in range(r):
+                v = (s * t) % r
+                for sine in (False, True):
+                    coefficient = Coefficient(r, v, sine)
+                    coefficient.resolve()
+                    if coefficient.local:
+                        names.add(coefficient.local)
+        return sorted(names)
+    for p in range(1, last + 1):
+        for s in range(1, last + 1):
+            v = (s * p) % r
+            for sine in (False, True):
+                coefficient = Coefficient(r, v, sine)
+                coefficient.resolve()
+                if coefficient.local:
+                    names.add(coefficient.local)
+    return sorted(names)
+
+
+def emit_header(out: list[str], r: int, style: str) -> None:
     """Emits the documentation and the signature of one butterfly."""
     out.append("///|")
-    out.append(f"/// The butterfly of the radix {r} stage of the mixed radix transform.")
+    out.append(
+        f"/// The butterfly of the radix {r} stage of the Good-Thomas transform."
+    )
     out.append("///")
     out.append("/// The values of the butterfly are read from `re` and `im`, the")
-    out.append("/// twiddle factors of the stage from `tw_re` and `tw_im`, and the")
-    out.append("/// result is written back to `re` and `im`.")
-    out.append("fn stage_r" + str(r) + "(")
-    out.append("  n : Int32,")
-    out.append("  l : Int32,")
+    out.append("/// roots of unity of the stage from `consts`, and the result is")
+    out.append("/// written back to `re` and `im`.")
+    out.append("///")
+    out.append("/// The constants of the stage start at `off` in `consts`: the")
+    out.append(f"/// cosines of the {r // 2 + 1} roots come first, then the sines.")
+    # The radix two needs no root of unity at all, the parameters are then
+    # unused and the compiler would warn about them.
+    used = "" if collect_locals(r, style) else "_"
+    out.append(f"fn stage_r{r}(")
     out.append("  m : Int32,")
-    out.append("  tw_off : Int32,")
-    out.append("  tw_re : Array[Double],")
-    out.append("  tw_im : Array[Double],")
+    out.append("  kfac : Int32,")
+    out.append(f"  {used}consts : Array[Double],")
+    out.append(f"  {used}off : Int32,")
     out.append("  re : Array[Double],")
     out.append("  im : Array[Double],")
     out.append(") -> Unit {")
-    out.append("  let nblocks = n / l")
-    out.append("  let mut b = 0")
-    out.append("  while b < nblocks {")
-    out.append("    let base = b * l")
-    out.append("    let mut k0 = 0")
-    out.append("    while k0 < m {")
-    # Gather the values of the butterfly and apply the twiddle factors.  The
-    # factor of the first value is one, it is skipped.
-    for s in range(r):
-        idx = f"base + k0 + {s} * m"
-        out.append(f"      let x{s}_re = re[{idx}]")
-        out.append(f"      let x{s}_im = im[{idx}]")
-        if s == 0:
-            out.append(f"      let u{s}_re = x{s}_re")
-            out.append(f"      let u{s}_im = x{s}_im")
-        else:
-            tw = f"tw_off + k0 * {r} + {s}"
-            out.append(f"      let t{s} = {tw}")
-            # The two twiddle factors are read into locals, so that the
-            # butterfly reads them from the table once instead of twice.
-            out.append(f"      let w{s}_re = tw_re[t{s}]")
-            out.append(f"      let w{s}_im = tw_im[t{s}]")
-            out.append(
-                f"      let u{s}_re = x{s}_re * w{s}_re - x{s}_im * w{s}_im"
-            )
-            out.append(
-                f"      let u{s}_im = x{s}_re * w{s}_im + x{s}_im * w{s}_re"
-            )
+    out.append(f"  let mr = m * {r}")
+    out.append("  let delta = 1 - m * kfac")
+    out.append("  let mut limit = m * kfac")
+    for t in range(r):
+        out.append(f"  let mut p{t} = m * (({t} * kfac) % {r})")
 
 
-def emit_direct(r: int) -> list[str]:
-    """Emits the butterfly of one radix, with the direct small transform."""
-    out: list[str] = []
-    emit_header(out, r)
-    # The small discrete Fourier transform of the butterfly.
-    for p in range(r):
-        out.append(f"      let mut v{p}_re = 0.0")
-        out.append(f"      let mut v{p}_im = 0.0")
-        for s in range(r):
-            emit_dft_term(
-                out,
-                "      ",
-                s,
-                p,
-                r,
-                f"u{s}_re",
-                f"u{s}_im",
-                f"v{p}_re",
-                f"v{p}_im",
-            )
-    for p in range(r):
-        out.append(f"      re[base + k0 + {p} * m] = v{p}_re")
-        out.append(f"      im[base + k0 + {p} * m] = v{p}_im")
-    out.append("      k0 = k0 + 1")
-    out.append("    }")
-    out.append("    b = b + 1")
-    out.append("  }")
-    out.append("}")
-    return out
+def emit_constants(out: list[str], r: int, names: list[str]) -> None:
+    """Emits the loads of the roots of unity into locals.
 
-
-def emit_symmetric(r: int) -> list[str]:
-    """Emits the butterfly of one odd radix, with the symmetric small transform.
-
-    The inputs are paired, `A_s = u_s + u_{r-s}` and `B_s = u_s - u_{r-s}`,
-    and the output `p` is
-
-        X[p] = u_0 + sum over s of (A_s * cos(2 pi s p / r)
-                                    - i * B_s * sin(2 pi s p / r))
-
-    The output `r - p` uses the same sums with the opposite sign of the
-    sine, so both of them cost the same four dot products.
+    The constants of the stage are the cosines of the roots first, then the
+    sines, so the sine of the root `w` sits at `r / 2 + 1 + w` in the stage.
     """
-    out: list[str] = []
-    half = (r - 1) // 2
-    emit_header(out, r)
+    half = r // 2 + 1
+    for name in names:
+        kind = name[0]
+        index = int(name[1:])
+        offset = 0 if kind == "c" else half
+        out.append(f"  let {name} = consts[off + {offset + index}]")
+
+
+def emit_symmetric_body(out: list[str], r: int) -> None:
+    """Emits the small transform of one butterfly."""
+    even, half, last = pairs_of(r)
+    # The terms of the small transform, and whether they use the sums and the
+    # differences of the pairs at all.  The radix four is an example: all of
+    # its cosines are zero, because the twist is odd.
+    actions = []
+    cosine_used = False
+    sine_used = False
+    for p in range(1, last + 1):
+        for s in range(1, last + 1):
+            v = (s * p) % r
+            cosine = Coefficient(r, v, False)
+            sine = Coefficient(r, v, True)
+            cosine.resolve()
+            sine.resolve()
+            actions.append((p, s, cosine, sine))
+            if cosine.action()[0] != "skip":
+                cosine_used = True
+            if sine.action()[0] != "skip":
+                sine_used = True
     # The pairs of the inputs.
-    for s in range(1, half + 1):
+    for s in range(1, last + 1):
         other = r - s
-        out.append(f"      let a{s}_re = u{s}_re + u{other}_re")
-        out.append(f"      let a{s}_im = u{s}_im + u{other}_im")
-        out.append(f"      let b{s}_re = u{s}_re - u{other}_re")
-        out.append(f"      let b{s}_im = u{s}_im - u{other}_im")
+        if cosine_used:
+            out.append(f"    let a{s}_re = v{s}_re + v{other}_re")
+            out.append(f"    let a{s}_im = v{s}_im + v{other}_im")
+        if sine_used:
+            out.append(f"    let b{s}_re = v{s}_re - v{other}_re")
+            out.append(f"    let b{s}_im = v{s}_im - v{other}_im")
     # The output zero is the sum of all the inputs.
-    out.append("      let mut v0_re = u0_re")
-    out.append("      let mut v0_im = u0_im")
-    for s in range(1, half + 1):
-        out.append(f"      v0_re = v0_re + a{s}_re")
-        out.append(f"      v0_im = v0_im + a{s}_im")
+    if even:
+        out.append("    let mut out0_re = 0.0")
+        out.append("    let mut out0_im = 0.0")
+        for s in range(r):
+            out.append(f"    out0_re = out0_re + v{s}_re")
+            out.append(f"    out0_im = out0_im + v{s}_im")
+    else:
+        out.append("    let mut out0_re = v0_re")
+        out.append("    let mut out0_im = v0_im")
+        for s in range(1, last + 1):
+            out.append(f"    out0_re = out0_re + a{s}_re")
+            out.append(f"    out0_im = out0_im + a{s}_im")
+    # The middle output of an even radix is the sum of the even inputs minus
+    # the sum of the odd ones.
+    if even:
+        out.append(f"    let mut out{half}_re = 0.0")
+        out.append(f"    let mut out{half}_im = 0.0")
+        for s in range(r):
+            sign = " + " if s % 2 == 0 else " - "
+            out.append(f"    out{half}_re = out{half}_re{sign}v{s}_re")
+            out.append(f"    out{half}_im = out{half}_im{sign}v{s}_im")
     # The outputs one to half, and their partners.
-    #
-    # With A_s = a_s + i * alpha_s and B_s = b_s + i * beta_s the output p is
-    #
-    #   Re(X[p]) = Re(x_0) + sum (Re(A_s) cos + Im(B_s) sin)
-    #   Im(X[p]) = Im(x_0) + sum (Im(A_s) cos - Re(B_s) sin)
-    #
-    # and the output r - p has the opposite sign of the sine part.  So four
-    # dot products per output pair are enough.
-    for p in range(1, half + 1):
-        out.append(f"      let mut c{p}_re = u0_re")
-        out.append(f"      let mut c{p}_im = u0_im")
-        out.append(f"      let mut d{p}_re = 0.0")
-        out.append(f"      let mut d{p}_im = 0.0")
-        for s in range(1, half + 1):
-            cr, ci = cossin(r, (s * p) % r)
-            out.append(f"      c{p}_re = c{p}_re + a{s}_re * {fmt(cr)}")
-            out.append(f"      c{p}_im = c{p}_im + a{s}_im * {fmt(cr)}")
-            out.append(f"      d{p}_re = d{p}_re + b{s}_re * {fmt(ci)}")
-            out.append(f"      d{p}_im = d{p}_im + b{s}_im * {fmt(ci)}")
-    # Write the results back.
-    out.append("      re[base + k0 + 0 * m] = v0_re")
-    out.append("      im[base + k0 + 0 * m] = v0_im")
-    for p in range(1, half + 1):
+    for p in range(1, last + 1):
         other = r - p
-        out.append(f"      re[base + k0 + {p} * m] = c{p}_re + d{p}_im")
-        out.append(f"      im[base + k0 + {p} * m] = c{p}_im - d{p}_re")
-        out.append(f"      re[base + k0 + {other} * m] = c{p}_re - d{p}_im")
-        out.append(f"      im[base + k0 + {other} * m] = c{p}_im + d{p}_re")
-    out.append("      k0 = k0 + 1")
-    out.append("    }")
-    out.append("    b = b + 1")
+        out.append(f"    let mut out{p}_re = 0.0")
+        out.append(f"    let mut out{p}_im = 0.0")
+        out.append(f"    let mut out{other}_re = 0.0")
+        out.append(f"    let mut out{other}_im = 0.0")
+        if cosine_used:
+            out.append(f"    let mut c{p}_re = 0.0")
+            out.append(f"    let mut c{p}_im = 0.0")
+            out.append(f"    c{p}_re = v0_re")
+            out.append(f"    c{p}_im = v0_im")
+        else:
+            out.append(f"    let c{p}_re = v0_re")
+            out.append(f"    let c{p}_im = v0_im")
+        if sine_used:
+            out.append(f"    let mut d{p}_re = 0.0")
+            out.append(f"    let mut d{p}_im = 0.0")
+        else:
+            out.append(f"    let d{p}_re = 0.0")
+            out.append(f"    let d{p}_im = 0.0")
+        for s in range(1, last + 1):
+            v = (s * p) % r
+            cosine = Coefficient(r, v, False)
+            sine = Coefficient(r, v, True)
+            cosine.resolve()
+            sine.resolve()
+            emit_term(
+                out, "    ", f"c{p}_re", f"c{p}_im", f"a{s}_re", f"a{s}_im", cosine
+            )
+            emit_term(
+                out, "    ", f"d{p}_re", f"d{p}_im", f"b{s}_re", f"b{s}_im", sine
+            )
+        if even:
+            # The middle input of an even radix contributes the same value to
+            # the output p and to the output r - p.
+            sign = " + " if p % 2 == 0 else " - "
+            out.append(f"    out{p}_re = c{p}_re + d{p}_im{sign}v{half}_re")
+            out.append(f"    out{p}_im = c{p}_im - d{p}_re{sign}v{half}_im")
+            out.append(f"    out{other}_re = c{p}_re - d{p}_im{sign}v{half}_re")
+            out.append(f"    out{other}_im = c{p}_im + d{p}_re{sign}v{half}_im")
+        else:
+            out.append(f"    out{p}_re = c{p}_re + d{p}_im")
+            out.append(f"    out{p}_im = c{p}_im - d{p}_re")
+            out.append(f"    out{other}_re = c{p}_re - d{p}_im")
+            out.append(f"    out{other}_im = c{p}_im + d{p}_re")
+
+
+def emit_round(out: list[str], r: int) -> None:
+    """Emits the round of the butterfly: the gather, the transform, the write."""
+    for t in range(r):
+        out.append(f"    let v{t}_re = re[p{t}]")
+        out.append(f"    let v{t}_im = im[p{t}]")
+    emit_symmetric_body(out, r)
+    for t in range(r):
+        out.append(f"    re[p{t}] = out{t}_re")
+        out.append(f"    im[p{t}] = out{t}_im")
+
+
+def emit_direct_body(out: list[str], r: int) -> None:
+    """Emits the small transform of one butterfly, in its direct form."""
+    for t in range(r):
+        out.append(f"    let mut out{t}_re = 0.0")
+        out.append(f"    let mut out{t}_im = 0.0")
+        for s in range(r):
+            v = (s * t) % r
+            cosine = Coefficient(r, v, False)
+            sine = Coefficient(r, v, True)
+            cosine.resolve()
+            sine.resolve()
+            emit_term(
+                out, "    ", f"out{t}_re", f"out{t}_im", f"v{s}_re", f"v{s}_im", cosine
+            )
+            emit_term_imag(
+                out, "    ", f"out{t}_re", f"out{t}_im", f"v{s}_re", f"v{s}_im", sine
+            )
+
+
+def emit_kernel(r: int, style: str) -> list[str]:
+    """Emits one butterfly."""
+    out: list[str] = []
+    emit_header(out, r, style)
+    emit_constants(out, r, collect_locals(r, style))
+    out.append("  let mut i = 0")
+    out.append("  while i < m {")
+    for t in range(r):
+        out.append(f"    let v{t}_re = re[p{t}]")
+        out.append(f"    let v{t}_im = im[p{t}]")
+    if style == "direct":
+        emit_direct_body(out, r)
+    else:
+        emit_symmetric_body(out, r)
+    for t in range(r):
+        out.append(f"    re[p{t}] = out{t}_re")
+        out.append(f"    im[p{t}] = out{t}_im")
+    # The positions of the next round: every offset loses kfac and wraps
+    # around.
+    for t in range(r):
+        out.append(f"    if p{t} < limit {{")
+        out.append(f"      p{t} = p{t} + mr")
+        out.append("    }")
+        out.append(f"    p{t} = p{t} + delta")
+    out.append("    limit = limit + 1")
+    out.append("    i = i + 1")
     out.append("  }")
     out.append("}")
     return out
@@ -304,22 +421,19 @@ def main() -> None:
         "--style",
         choices=["symmetric", "direct"],
         default="symmetric",
-        help="the style of the small transform of the odd radices",
+        help="the style of the small transform",
     )
     args = parser.parse_args()
 
     lines: list[str] = []
     lines.append("///|")
-    lines.append("/// The specialised butterflies of the mixed radix transform.")
+    lines.append("/// The specialised butterflies of the Good-Thomas transform.")
     lines.append("///")
     lines.append("/// This file is generated by `tools/gen_kernels.py`, do not edit it")
     lines.append("/// by hand.")
     lines.append("")
     for r in RADICES:
-        if r % 2 == 0 or args.style == "direct":
-            lines.extend(emit_direct(r))
-        else:
-            lines.extend(emit_symmetric(r))
+        lines.extend(emit_kernel(r, args.style))
         lines.append("")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

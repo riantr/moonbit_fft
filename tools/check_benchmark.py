@@ -60,6 +60,18 @@ ROW_KERNELS = re.compile(
     r"\s*\**\s*(?P<over_direct>[\d.]+)x\s*\**\s*\|$"
 )
 
+# A row of the table of the prime factor rewrite:
+#
+#   | workload | n | java ns/op | head ns/op | today ns/op | head / today | today / java |
+ROW_GOODTHOMAS = re.compile(
+    r"^\|\s*(?P<workload>\w+)\s*\|\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<java>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<head>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<today>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<over_head>[\d.]+)x\s*\**\s*\|"
+    r"\s*\**\s*(?P<over_java>[\d.]+)x\s*\**\s*\|$"
+)
+
 # A line of a table that is neither a header nor a separator.
 DATA_ROW = re.compile(r"^\|\s*\**\s*[\d]")
 
@@ -71,7 +83,10 @@ SECTIONS = {
 }
 
 # The section that holds the table of the kernels.
-KERNEL_SECTION = "The kernels of today"
+KERNEL_SECTION = "The kernels of the committed port"
+
+# The section that holds the table of the prime factor rewrite.
+GOODTHOMAS_SECTION = "The prime factor algorithm of the original"
 
 
 def number(text: str) -> int:
@@ -115,12 +130,55 @@ def main() -> int:
     checked = 0
     workload = None
     in_kernels = False
+    in_goodthomas = False
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()
             workload = SECTIONS.get(title)
             in_kernels = title == KERNEL_SECTION
+            in_goodthomas = title == GOODTHOMAS_SECTION
         if line.startswith("| n |") or line.startswith("| ---"):
+            continue
+
+        m = ROW_GOODTHOMAS.match(line)
+        if m and in_goodthomas:
+            checked += 1
+            name = m.group("workload")
+            n = number(m.group("n"))
+            key = f"{name}/{n}"
+            java = best["java"].get(key)
+            head = best.get("head", {}).get(key)
+            today = best["moonbit"].get(key)
+            if java is None or head is None or today is None:
+                problems.append(f"{key}: the measurement is missing a side")
+                continue
+            if number(m.group("java")) != int(java):
+                problems.append(
+                    f"{key}: the document says java = {number(m.group('java'))}, "
+                    f"the measurement is {java:.0f}"
+                )
+            if number(m.group("head")) != int(head):
+                problems.append(
+                    f"{key}: the document says head = {number(m.group('head'))}, "
+                    f"the measurement is {head:.0f}"
+                )
+            if number(m.group("today")) != int(today):
+                problems.append(
+                    f"{key}: the document says today = {number(m.group('today'))}, "
+                    f"the measurement is {today:.0f}"
+                )
+            names = ratios.get(key, {})
+            for given, measured, what in (
+                (m.group("over_head"), names.get("head/moonbit"), "head / today"),
+                (m.group("over_java"), names.get("moonbit/java"), "today / java"),
+            ):
+                if measured is None:
+                    continue
+                if not close(float(given), measured, 0.02, 0.01):
+                    problems.append(
+                        f"{key}: the document says {what} = {given}x, "
+                        f"the measurement is {measured:.2f}x"
+                    )
             continue
 
         m = ROW_KERNELS.match(line)

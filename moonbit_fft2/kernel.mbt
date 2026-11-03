@@ -44,12 +44,12 @@ fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
   // The inverse transform is the conjugate of the forward transform of the
   // conjugated input, so only the forward transform is implemented.
   let inverse = sign > 0
-  // Read the samples in the order of the permutation of the transform.
+  // The prime factor algorithm works in the natural order of the samples, so
+  // there is no permutation to apply.
   let mut j = 0
   while j < n {
-    let src = plan.perm[j]
-    let vr = c[2 * src].to_double()
-    let vi = c[2 * src + 1].to_double()
+    let vr = c[2 * j].to_double()
+    let vi = c[2 * j + 1].to_double()
     re[j] = vr
     im[j] = if inverse { -vi } else { vi }
     j = j + 1

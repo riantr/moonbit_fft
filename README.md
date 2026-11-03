@@ -25,6 +25,8 @@ list of deviations from the Java original are in
 | `tools/measure_deviation.py` | measures the numerical margin between the port and the original | yes |
 | `tools/gen_tables.py` | generates `moonbit_fft2/tables.mbt` from the transform length tables of the original | yes |
 | `tools/gen_kernels.py` | generates the specialised small radix butterflies of `moonbit_fft2/kernels.mbt` | yes |
+| `tools/verify_goodthomas.py` | checks the model of the prime factor algorithm of the original against `numpy.fft` | yes |
+| `tools/count_ops.py` | counts the multiplications, the additions and the accesses of both sides | yes |
 | `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
 | `tools/compare_bench.py` | joins the results of the two benchmarks into one table | yes |
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
@@ -66,8 +68,8 @@ The port was then validated against the original: the oracle runs the
 original classes over deterministic inputs and writes the raw `float32`
 results, and the generated test `moonbit_fft2/parity_wbtest.mbt` replays
 them against the MoonBit implementation.  The suite currently holds 629
-parity cases, 28 hand written unit tests and 5 tests of the transform
-kernel, 662 in total; all of them pass.
+parity cases, 28 hand written unit tests and 6 tests of the transform
+kernel, 663 in total; all of them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
@@ -129,16 +131,17 @@ a mixed radix PFA kernel while the port transformed `O(n^2)` for every length
 that is not a power of two - and the length table of the original caps the
 power of two at `2^4`.
 
-The port now uses a generic mixed radix Cooley-Tukey kernel with cached
-twiddle factors and reused work buffers.  The `n = 32 760` complex to
-complex transform went from **<!--v:OLD_C2C_S-->4.6<!--/v--> s to <!--v:C2C_MS-->1.5<!--/v--> ms**
-(<!--v:C2C_SPEEDUP-->3130<!--/v-->x), and the port is now between <!--v:RANGE-->1.3 to 7<!--/v--> times slower than
+The port now uses the **prime factor algorithm of the original**: the length
+is split into pairwise coprime factors, every factor selects a small kernel,
+and the stages carry no twiddle factor at all.  The `n = 32 760` complex to
+complex transform went from **<!--v:OLD_C2C_S-->4.1<!--/v--> s to <!--v:C2C_MS-->0.9<!--/v--> ms**
+(<!--v:C2C_SPEEDUP-->4397<!--/v-->x), and the port is now between <!--v:RANGE-->1.1 to 5<!--/v--> times slower than
 the JVM at the lengths where it is slower at all.
 
 Two details of the measurement matter as much as the numbers.  The benchmark
 runs the **release** build, because `moon run` produces the debug build by
 default and that one is about thirty times slower - the debug build would
-make the port look 169x slower than the original instead of 5.6x.  And the
+make the port look 169x slower than the original instead of 3.6x.  And the
 noise of a busy machine is bimodal, so a "keep the fastest run" statistic
 measures the luck of the schedule rather than the program; `BENCHMARK.md`
 describes the protocol that replaces it - the median of the rounds, the
@@ -149,9 +152,11 @@ unity, which is a quarter of the multiplications and a quarter of the
 additions, and which is worth
 **<!--v:KERNEL_RANGE-->1.83x to 2.77x for the long transforms, and 0.97x to 1.22x for the short ones<!--/v-->**
 - the arithmetic of the butterflies *is* a large part of the run time of the
-long transforms.  What is left of the gap is the price of the runtime: a
-single array element access costs about 0.67 ns in MoonBit, against about
-0.15 ns on the JVM.
+long transforms.  The prime factor rewrite of the kernel, which removed the
+twiddle factors between the stages and the permutation of the output, was
+worth another **<!--v:GT_RANGE-->1.03x to 1.40x<!--/v-->**.  What is left of the gap is the
+price of the runtime: a single array element access costs about 0.67 ns in
+MoonBit, against about 0.15 ns on the JVM.
 
 ## License
 

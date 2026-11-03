@@ -1,5 +1,5 @@
 ///|
-/// Tests of the mixed radix kernel of `mixed_radix.mbt`.
+/// Tests of the prime factor kernel of `mixed_radix.mbt`.
 ///
 /// The parity suite of `parity_wbtest.mbt` checks the port against the
 /// original Java bytecode, but it reaches the kernel only through the image
@@ -10,7 +10,7 @@
 
 ///|
 /// The direct evaluation of the discrete Fourier transform, `O(n^2)`, which is
-/// the reference of the mixed radix kernel.
+/// the reference of the prime factor kernel.
 ///
 /// `sign` is `-1` for the forward transform and `1` for the inverse one.
 fn naive_dft(sign : Int32, re : Array[Double], im : Array[Double]) -> Unit {
@@ -128,23 +128,13 @@ fn dft_plan_double(
   re : Array[Double],
   im : Array[Double],
 ) -> Unit {
-  let n = plan.n
+  let n = re.length()
   let inverse = sign > 0
-  let src_re = Array::Array(capacity=n)
-  let src_im = Array::Array(capacity=n)
   let mut j = 0
   while j < n {
-    let src = plan.perm[j]
-    let vr = re[src]
-    let vi = im[src]
-    src_re.push(vr)
-    src_im.push(if inverse { -vi } else { vi })
-    j = j + 1
-  }
-  j = 0
-  while j < n {
-    re[j] = src_re[j]
-    im[j] = src_im[j]
+    if inverse {
+      im[j] = -im[j]
+    }
     j = j + 1
   }
   dft_plan(plan, re, im)
@@ -158,10 +148,10 @@ fn dft_plan_double(
 }
 
 ///|
-/// The mixed radix kernel has to reproduce the direct evaluation of the
+/// The prime factor kernel has to reproduce the direct evaluation of the
 /// discrete Fourier transform, for every radix it uses and for both
 /// directions.
-test "the mixed radix kernel agrees with the direct transform" {
+test "the prime factor kernel agrees with the direct transform" {
   let lengths = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22, 24, 26,
     28, 30, 33, 35, 36, 39, 40, 42, 44, 45, 48, 52, 55, 56, 60, 63, 65, 66, 70, 72,
@@ -323,38 +313,69 @@ fn assert_double_spectrum_close(
 }
 
 ///|
-/// The valid lengths of the original only use the radices 2, 3, 5, 7, 11 and
-/// 13, all of which have a specialised butterfly.  The generic butterfly,
-/// which evaluates the small transform with a matrix, is the fallback for
-/// every other radix, and it has to work as well.
+/// The greatest common divisor of two numbers.
+fn gcd(a : Int32, b : Int32) -> Int32 {
+  let mut x = a
+  let mut y = b
+  while y != 0 {
+    let t = x % y
+    x = y
+    y = t
+  }
+  x
+}
+
+///|
+/// The factors of a length have to be pairwise coprime: that is what lets the
+/// transform run without twiddle factors, and it is the property the prime
+/// factor algorithm of the original rests on.
 ///
-/// The length 17 is a prime that the original does not support, so it
-/// exercises the generic butterfly with a radix that is larger than every
-/// radix of the valid lengths.
-test "the generic butterfly handles a radix without a specialised kernel" {
-  let lengths = [17, 19, 23, 29, 31, 34, 46, 51, 58, 62, 69, 87, 93, 116, 124]
+/// Every valid length has to be covered by the factors, and the factors of a
+/// length have to multiply to the length.
+test "the factors of every valid length are pairwise coprime" {
+  let mut index = 0
+  while index < ntable.length() {
+    let n = ntable[index]
+    let factors = coprime_factors(n)
+    let mut product = 1
+    let mut i = 0
+    while i < factors.length() {
+      product = product * factors[i]
+      let mut j = 0
+      while j < factors.length() {
+        if i != j {
+          assert_true(
+            gcd(factors[i], factors[j]) == 1,
+            msg="the factors of the length \{n} are not coprime",
+          )
+        }
+        j = j + 1
+      }
+      i = i + 1
+    }
+    assert_int_eq(product, n)
+    index = index + 1
+  }
+}
+
+///|
+/// The lengths that need a composite butterfly, like 36 with the factors 9
+/// and 4, have to reproduce the direct evaluation of the discrete Fourier
+/// transform in double precision.
+test "the composite butterflies reproduce the direct transform" {
+  let lengths = [4, 8, 9, 16, 36, 48, 72, 144, 240, 720]
   let mut index = 0
   while index < lengths.length() {
     let n = lengths[index]
-    let plan = build_plan(n)
     let (re, im) = test_signal(n)
     let forward_re = re.copy()
     let forward_im = im.copy()
     naive_dft(-1, forward_re, forward_im)
-    let inverse_re = re.copy()
-    let inverse_im = im.copy()
-    naive_dft(1, inverse_re, inverse_im)
     let got_re = re.copy()
     let got_im = im.copy()
-    dft_plan_double(-1, plan, got_re, got_im)
+    dft_double(-1, n, got_re, got_im)
     assert_double_spectrum_close(
       got_re, got_im, forward_re, forward_im, 1.0e-12,
-    )
-    let back_re = re.copy()
-    let back_im = im.copy()
-    dft_plan_double(1, plan, back_re, back_im)
-    assert_double_spectrum_close(
-      back_re, back_im, inverse_re, inverse_im, 1.0e-12,
     )
     index = index + 1
   }

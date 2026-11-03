@@ -11,6 +11,7 @@ The placeholders are:
 * `{{TABLE_C2C}}`, `{{TABLE_R2C}}`, `{{TABLE_API}}` - the tables of the three
   workloads,
 * `{{TABLE_KERNELS}}` - the table of the kernels,
+* `{{TABLE_GOODTHOMAS}}` - the table of the prime factor rewrite of the kernel,
 * `{{CHECKSUM_JAVA}}`, `{{CHECKSUM_MOONBIT}}` - the checksums of the two sides,
 * `{{RANGE}}`, `{{RANGE_LOW}}`, `{{RANGE_HIGH}}` - how much slower the port is
   than the JVM, over all the lengths of the three workloads,
@@ -138,6 +139,51 @@ def table(best: dict, workload: str, old: dict | None, spread: dict, ratios: dic
     return "\n".join(lines)
 
 
+def goodthomas_table(best: dict, ratios: dict) -> str:
+    """The table of the prime factor rewrite.
+
+    The `head` side is the port as it is committed, the `moonbit` side is the
+    port of the working tree, which uses the prime factor algorithm of the
+    original.  The ratio `head / moonbit` is taken per round and then
+    medianed, so that the part of the noise that both sides see cancels out.
+    A value above one means that the committed port is the slower one.
+    """
+    lines = [
+        "| workload | n | Java ns/op | head ns/op | today ns/op | head / today | today / Java |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for workload in WORKLOADS:
+        keys = sorted(
+            (k for k in best["moonbit"] if k.startswith(workload + "/")),
+            key=lambda k: int(k.split("/")[1]),
+        )
+        if not keys:
+            continue
+        if len(lines) > 2:
+            lines.append("")
+        for key in keys:
+            n = int(key.split("/")[1])
+            today = best["moonbit"][key]
+            head = best.get("head", {}).get(key)
+            java = best["java"].get(key)
+            names = ratios.get(key, {})
+            over_head = names.get("head/moonbit")
+            over_java = names.get("moonbit/java")
+            lines.append(
+                "| %s | %d | %s | %s | %s | %s | %s |"
+                % (
+                    workload,
+                    n,
+                    grouped(java) if java else "-",
+                    grouped(head) if head else "-",
+                    grouped(today),
+                    f"{over_head:.2f}x" if over_head else "-",
+                    f"{over_java:.2f}x" if over_java else "-",
+                )
+            )
+    return "\n".join(lines)
+
+
 def kernel_table(best: dict, ratios: dict) -> str:
     """The table of the kernels, for the three workloads.
 
@@ -208,14 +254,24 @@ def replace_value(text: str, name: str, value: str) -> str:
     """Replaces the value of a marked span.
 
     The span is written as `<!--v:NAME--> ... <!--/v-->`, and the plain
-    `{{NAME}}` placeholder is accepted as well.
+    `{{NAME}}` placeholder is accepted as well.  A name may be used more than
+    once in a document, and every use is replaced.
     """
     start = f"<!--v:{name}-->"
     end = "<!--/v-->"
     if start in text and end in text:
-        head, rest = text.split(start, 1)
-        _, tail = rest.split(end, 1)
-        return head + start + value + end + tail
+        out: list[str] = []
+        rest = text
+        while start in rest:
+            head, tail = rest.split(start, 1)
+            _, tail = tail.split(end, 1)
+            out.append(head)
+            out.append(start)
+            out.append(value)
+            out.append(end)
+            rest = tail
+        out.append(rest)
+        return "".join(out)
     return text.replace("{{" + name + "}}", value)
 
 
@@ -270,21 +326,42 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
     else:
         kernel_range = "not measured"
 
+    # How much the prime factor rewrite of the kernel bought: the ratio of
+    # the committed port to the port of the working tree, per round.  The
+    # ratio of the two sides is the time of the committed port divided by
+    # the time of the port of today, so a value above one is the gain.
+    gains = []
+    long_gains = []
+    for key in best.get("moonbit", {}):
+        value = ratios.get(key, {}).get("head/moonbit")
+        if not value:
+            continue
+        gains.append(value)
+        if int(key.split("/")[1]) >= 4095:
+            long_gains.append(value)
+    if gains:
+        gt_range = "%.2fx to %.2fx" % (min(gains), max(gains))
+        gt_long = "%.2fx to %.2fx" % (min(long_gains), max(long_gains))
+    else:
+        gt_range = "not measured"
+        gt_long = "not measured"
+
     return {
         "TABLE_C2C": table(best, "c2c", old, spread, ratios),
         "TABLE_R2C": table(best, "r2c", old, spread, ratios),
         "TABLE_API": table(best, "api", old, spread, ratios),
         "TABLE_KERNELS": kernel_table(kernel_best, kernel_ratios),
+        "TABLE_GOODTHOMAS": goodthomas_table(best, ratios),
         "CHECKSUM_JAVA": checksums.get("java", "-"),
         "CHECKSUM_MOONBIT": checksums.get("moonbit", "-"),
         "RANGE": f"{slow_low:.1f} to {slow_high:.0f}",
         "RANGE_LOW": f"{slow_low:.1f}",
         "RANGE_HIGH": f"{slow_high:.0f}",
-        "RANGE_ALL": f"{low:.1f} to {high:.0f}",
+        "RANGE_ALL": f"{low:.1f} to {high:.1f}",
         "SLOWEST_CASE": slow_case,
         "C2C_MS": f"{c2c_ms:.1f}",
         "C2C_FACTOR": f"{c2c_ms / TEXTBOOK_MS:.1f}",
-        "C2C_RATIO": f"{c2c / java_c2c:.0f}",
+        "C2C_RATIO": f"{c2c / java_c2c:.1f}",
         "C2C_SPEEDUP": f"{old_c2c / c2c:.0f}",
         "OLD_C2C_S": f"{old_c2c / 1e9:.1f}",
         # The price of the array accesses: the cost of one element of the
@@ -292,6 +369,8 @@ def values_of(data: dict, kernel_data: dict) -> dict[str, str]:
         # original.
         "GAP_FACTOR": f"{30.4 / 8.6:.1f}",
         "KERNEL_RANGE": kernel_range,
+        "GT_RANGE": gt_range,
+        "GT_LONG": gt_long,
     }
 
 
