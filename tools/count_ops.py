@@ -236,6 +236,13 @@ def main() -> int:
     args = parser.parse_args()
 
     kernels = args.kernels.read_text(encoding="utf-8")
+    if not args.java.exists():
+        print(
+            "%s does not exist, the decompiled original is needed to count the "
+            "work of the Java side.  Create it with "
+            "`python tools/decompile.py`." % args.java
+        )
+        return 1
     java = args.java.read_text(encoding="utf-8")
 
     mb_mult: dict[int, int] = {}

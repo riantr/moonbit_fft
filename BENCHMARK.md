@@ -1021,8 +1021,8 @@ factorisations of the original, translated out of the decompiled `Pfacc.java`.
 Regenerate them with
 
 ```powershell
-# the decompiled original, out of the staged bytecode
-python "$root\tools\stage_classes.py"
+# the decompiled original, out of the jar of the original
+python "$root\tools\decompile.py"
 
 # the kernels of the port
 python "$root\tools\gen_java_kernels.py" --out "$root\moonbit_fft2\kernels.mbt"

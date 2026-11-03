@@ -63,8 +63,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# The decompiled original.  It is produced by the decompiler of `tools/lib`
-# out of the bytecode that `tools/stage_classes.py` lays out.
+# The decompiled original.  It is produced by `tools/decompile.py` out of the
+# bytecode of the jar of the original, see the header of that script.
 DEFAULT_JAVA = ROOT / "build" / "jtsrc" / "src" / "edu" / "mines" / "jtk" / "dsp" / "Pfacc.java"
 
 # The radices of the valid lengths and the twists that they need.  The twists
@@ -530,7 +530,17 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    text = "" if args.style == "direct" else args.java.read_text(encoding="utf-8")
+    if args.style == "direct":
+        text = ""
+    else:
+        if not args.java.exists():
+            print(
+                "%s does not exist, the decompiled original is needed to "
+                "translate its butterflies.  Create it with "
+                "`python tools/decompile.py`." % args.java
+            )
+            return 1
+        text = args.java.read_text(encoding="utf-8")
     lines: list[str] = []
     lines.append("///|")
     lines.append("/// The specialised butterflies of the prime factor transform.")

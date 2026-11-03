@@ -30,6 +30,7 @@ list of deviations from the Java original are in
 | `tools/count_ops.py` | counts the multiplications, the additions and the accesses of both sides | yes |
 | `tools/count_live_values.py` | counts the values that are alive at the same time in one butterfly | yes |
 | `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
+| `tools/decompile.py` | decompiles the bytecode of the original into readable Java, out of the jar of `tools/lib` | yes |
 | `tools/compare_bench.py` | joins the results of the two benchmarks into one table | yes |
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
 | `tools/bench_baseline.py` | measures the port as it was before the kernel was rewritten, from a revision of the git history | yes |
@@ -63,7 +64,9 @@ from the bytecode:
   disassembly in `javap_*.txt`;
 * the decompiler CFR (in `tools/lib`) turned the same classes back into
   readable Java (`build/fft2src`, `build/jtsrc`), which was used to
-  confirm the reading of the disassembly;
+  confirm the reading of the disassembly; `python tools\decompile.py` rebuilds
+  the sources of `build/jtsrc` from the jar of the original, so that the
+  translation of the butterflies can be repeated on a fresh clone;
 * the upstream sources of `imglib2-fft` (`tools/_tmp/upstream_*.java`)
   were fetched for comparison - note that they are *not* identical to the
   shipped bytecode, the bytecode is the reference.
@@ -124,6 +127,24 @@ moon info          # refresh the published interface file
 
 Requires a JDK 11 (the original classes are Java 8), Python with NumPy
 and the MoonBit toolchain (`moon` 0.1.20261012 or newer).
+
+The butterflies of the port are generated, not written by hand: they are the
+factorisations of the original, translated out of the decompiled `Pfacc.java`.
+The decompiled sources are rebuilt from the jar of the original with
+
+```powershell
+python tools\decompile.py
+```
+
+and the kernels with
+
+```powershell
+python tools\gen_java_kernels.py --out moonbit_fft2\kernels.mbt
+moon -C moonbit_fft2 fmt
+```
+
+Both scripts are needed by the tools that read the original, and they tell
+what to run when the decompiled sources are missing.
 
 ## Runtime comparison
 

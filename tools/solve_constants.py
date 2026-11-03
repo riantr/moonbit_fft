@@ -273,6 +273,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--java", type=pathlib.Path, default=DEFAULT_JAVA)
     args = parser.parse_args()
+    if not args.java.exists():
+        print(
+            "%s does not exist, the decompiled original is needed to solve the "
+            "constants of its butterflies.  Create it with "
+            "`python tools/decompile.py`." % args.java
+        )
+        return 1
     text = args.java.read_text(encoding="utf-8")
 
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
