@@ -116,6 +116,11 @@ def moonbit_kernel(text: str, r: int) -> tuple[int, int, int, int]:
     end = text.find("\nfn ", start + 1)
     body = text[start : end if end > 0 else len(text)]
     body = strip_comments(body)
+    # The signature of the function is not part of its work: the two brackets
+    # of `Array[Double]` are the type of the two arguments, not a read of a
+    # table.  The body starts at the opening brace of the function.
+    opening = body.index("{")
+    body = body[opening:]
     # The roots of unity are loaded before the loop of the rounds.
     loop = body.index("while i < m {")
     head = body[:loop]
@@ -131,7 +136,10 @@ def moonbit_kernel(text: str, r: int) -> tuple[int, int, int, int]:
     mults = len(re.findall(r"\*", text_of_values))
     adds = len(re.findall(r"[+-]", text_of_values))
     accesses = len(re.findall(r"\[", rounds))
-    tables = len(re.findall(r"\[", head))
+    # The reads of the table of the roots of unity, which the port does not
+    # have any more: the constants of the small transform are literals in
+    # the code.
+    tables = len(re.findall(r"consts\[", head))
     return mults, adds, accesses, tables
 
 
@@ -146,15 +154,40 @@ def java_kernel(text: str, r: int) -> tuple[int, int, int]:
     if match is None:
         raise ValueError("the Java original has no kernel of the radix %d" % r)
     start = match.start()
-    end = text.find("\n    private static ", start + 1)
-    body = text[start : end if end > 0 else len(text)]
+    # The body of the function ends at its closing brace, which is found by
+    # matching the braces.  The next function of the class is not a boundary:
+    # `pfa16` is followed by `transform2a` and `transform2b`, which are not
+    # kernels, and counting them would charge the radix 16 for the work of
+    # another algorithm.
+    opening = text.index("{", match.end())
+    depth = 0
+    closing = opening
+    for index in range(opening, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                closing = index
+                break
+    body = text[start : closing + 1]
     body = strip_comments(body)
     loop = body.index("for (int i = 0; i < m; ++i) {")
     rounds = body[loop:]
     # The lines that declare an integer hold the addresses, the other ones
     # hold the arithmetic of the values.  The addresses inside the brackets
     # are removed, they are not arithmetic of the values.
-    values = [ln for ln in rounds.splitlines() if "int " not in ln]
+    #
+    # The rotation of the positions at the end of the round is address
+    # arithmetic as well, and it is not caught by the rule above: the line
+    # `int jt = j12 + 2;` declares an integer, but the lines that follow it,
+    # `j12 = j11 + 2;` and the like, do not.  They are caught here, so that
+    # the additions of the addresses are not counted, as the rule says.
+    values = [
+        ln
+        for ln in rounds.splitlines()
+        if "int " not in ln and not (re.match(r"\s*j\d+\s*=", ln) and "z[" not in ln)
+    ]
     text_of_values = "\n".join(values)
     text_of_values = re.sub(r"\[[^\]]*\]", "[]", text_of_values)
     mults = len(re.findall(r"\*", text_of_values))

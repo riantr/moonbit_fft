@@ -28,6 +28,7 @@ list of deviations from the Java original are in
 | `tools/solve_constants.py` | solves the constants of the butterflies in double precision | yes |
 | `tools/verify_goodthomas.py` | checks the model of the prime factor algorithm of the original against `numpy.fft` | yes |
 | `tools/count_ops.py` | counts the multiplications, the additions and the accesses of both sides | yes |
+| `tools/count_live_values.py` | counts the values that are alive at the same time in one butterfly | yes |
 | `tools/stage_classes.py` | lays the original bytecode out under its package path, so that the oracle can be compiled | yes |
 | `tools/compare_bench.py` | joins the results of the two benchmarks into one table | yes |
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |

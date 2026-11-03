@@ -3,9 +3,13 @@
 
 The generated parity test is instrumented so that every case reports the
 largest ratio between the observed deviation and the tolerance that the
-test allows.  The test suite is run, the maximum over all cases is printed
-and the parity test is regenerated afterwards, so the working tree is left
-unchanged.
+test allows.  The test suite is run, the maximum over all cases is printed.
+
+The instrumented test is **not** written into the module of the port: the
+module is copied into a shadow directory under `build/` first, and the copy is
+the one that is patched and run.  The tracked sources are therefore left
+exactly as they were, and the measurement can be taken on a read only
+checkout.
 
 A ratio well below 1 means that the port reproduces the original with a
 comfortable margin.
@@ -19,12 +23,13 @@ from __future__ import annotations
 
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKG = ROOT / "moonbit_fft2"
-PARITY = PKG / "parity_wbtest.mbt"
+SHADOW = ROOT / "build" / "deviationmodule"
 
 OLD = """    let allowed = tolerance * (scale + want.abs())
     assert_true(
@@ -57,8 +62,22 @@ SCALE_NEW = """  let mut worst = Float::from_double(0.0)
     let magnitude"""
 
 
-def patch() -> None:
-    text = PARITY.read_text(encoding="utf-8")
+def patch() -> pathlib.Path:
+    """Copies the module into a shadow directory and instruments the copy.
+
+    The tracked sources of the port are not touched, so that the measurement
+    can be taken on a read only checkout and cannot leave the working tree in
+    a state that has to be cleaned up.
+    """
+    if SHADOW.exists():
+        shutil.rmtree(SHADOW)
+    shutil.copytree(
+        PKG,
+        SHADOW,
+        ignore=shutil.ignore_patterns("_build", ".mooncakes"),
+    )
+    parity = SHADOW / "parity_wbtest.mbt"
+    text = parity.read_text(encoding="utf-8")
     if OLD not in text:
         raise SystemExit(
             "the parity test does not have the expected helper, regenerate it "
@@ -66,37 +85,20 @@ def patch() -> None:
         )
     text = text.replace(OLD, NEW, 1)
     text = text.replace(SCALE, SCALE_NEW, 1)
-    PARITY.write_text(text, encoding="utf-8", newline="")
-
-
-def regenerate() -> None:
-    subprocess.run(
-        [
-            sys.executable,
-            str(ROOT / "tools" / "gen_parity.py"),
-            "--cases",
-            str(ROOT / "build" / "cases"),
-            "--out",
-            str(PARITY),
-        ],
-        check=True,
-    )
-    subprocess.run(["moon", "fmt"], cwd=str(PKG), check=True)
+    parity.write_text(text, encoding="utf-8", newline="")
+    return SHADOW
 
 
 def main() -> None:
-    patch()
-    try:
-        proc = subprocess.run(
-            ["moon", "test"],
-            cwd=str(PKG),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-    finally:
-        regenerate()
+    module = patch()
+    proc = subprocess.run(
+        ["moon", "test"],
+        cwd=str(module),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     ratios = []
     output = (proc.stdout or "") + "\n" + (proc.stderr or "")
     for line in output.splitlines():

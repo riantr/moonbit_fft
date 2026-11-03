@@ -84,16 +84,23 @@ def transform(x: np.ndarray, factors: list[int]) -> np.ndarray:
         m = n // r
         kfac = pow(m, -1, r)
         w = np.exp(-2j * np.pi * np.arange(r) / r)
+        # The matrix of the small transform, built once per stage.  The root
+        # of the order `s` is raised to the power `kfac * t`, so the entry
+        # of the row `t` and the column `s` is `w[(kfac * t * s) mod r]`.
+        # Writing it out once and taking a product per round keeps the
+        # model of the transform itself unchanged and lets the long lengths
+        # be checked as well: the inner loop of the small transform would
+        # otherwise cost `r * r` operations of Python per round.
+        matrix = np.array(
+            [[w[(kfac * t * s) % r] for s in range(r)] for t in range(r)]
+        )
         p = [m * ((t * kfac) % r) for t in range(r)]
         limit = m * kfac
         delta = 1 - m * kfac
         for _ in range(m):
-            v = np.array([a[p[t]] for t in range(r)])
-            y = np.array(
-                [sum(v[s] * w[(kfac * t * s) % r] for s in range(r)) for t in range(r)]
-            )
-            for t in range(r):
-                a[p[t]] = y[t]
+            v = a[p]
+            y = matrix @ v
+            a[p] = y
             for t in range(r):
                 if p[t] < limit:
                     p[t] += m * r
@@ -107,8 +114,9 @@ def main() -> int:
     parser.add_argument(
         "--max-length",
         type=int,
-        default=4096,
-        help="the lengths up to this one are checked one by one",
+        default=0,
+        help="the lengths up to this one are checked one by one, zero checks "
+        "every valid length",
     )
     args = parser.parse_args()
 
@@ -141,7 +149,7 @@ def main() -> int:
     worst = 0.0
     checked = 0
     for n in lengths:
-        if n > args.max_length:
+        if args.max_length > 0 and n > args.max_length:
             continue
         x = rng.normal(size=n) + 1j * rng.normal(size=n)
         got = transform(x, factors_of(n))

@@ -417,7 +417,7 @@ decompiled `Pfacc.java` was run with a probe that dumps the intermediate
 state of every stage, and the Python model was fitted against those dumps
 until it reproduced them for every length.  The model is checked against
 `numpy.fft` for every valid length by `tools/verify_goodthomas.py`, and the
-worst relative error over the 240 valid lengths is **9.4e-16**.
+worst relative error over the 240 valid lengths is **1.1e-15**.
 
 The operation counts of the two sides, per element of a transform of
 `n = 32 760`, are in the table below.  `tools/count_ops.py` counts the
@@ -427,8 +427,8 @@ and the additions of the values and the accesses of the array:
 | | the original | the port |
 | --- | ---: | ---: |
 | multiplications | 21.4 | 29.1 |
-| additions | 49.5 | 55.4 |
-| floating point operations | 70.9 | 84.5 |
+| additions | 45.1 | 55.4 |
+| floating point operations | 66.5 | 84.5 |
 | array accesses | 30.0 | 20.0 |
 
 That kernel did **more** arithmetic than the original, because the small
@@ -436,9 +436,15 @@ transform of an even radix used the symmetry of the roots of unity as well,
 which the original does for the odd radices only.  It did **fewer** array
 accesses, because it kept the values of a butterfly in local variables where
 the original reads them from the array again.  Its arithmetic was within a
-factor of **1.19** of the arithmetic of the original, and its array accesses
+factor of **1.27** of the arithmetic of the original, and its array accesses
 were a third cheaper.  The rewrite of the butterflies removed both
 differences, see *The butterflies of the original*.
+
+(The counts of the original in this table are the ones of the current
+`tools/count_ops.py`.  An earlier version of that script counted the
+additions of the **addresses** of the original as well - the rotation of its
+positions at the end of a round - so the additions of the original used to be
+quoted as `49.5` and its floating point operations as `70.9`.)
 
 And here is what it bought, measured in the same session.  The `head` side is
 the port as it is committed, the `today` side is the port of the working
@@ -504,12 +510,14 @@ by adopting the ones of the original itself.
 `Pfacc` does not evaluate the small transform of a stage as a sum of `r`
 products.  It has one hand written function per radix, `pfa2` ... `pfa16`, and
 each of them is a **factorisation** of the discrete Fourier transform of that
-size.  The factorisation of `pfa13` needs twelve products per pair of
-outputs, where the direct evaluation needs `r * r` of them, and it keeps only
-about two dozen values alive at a time.  The butterfly of the port, which used
-the symmetry of the roots of unity, kept about fifty of them alive for the
-radix 13, which does not fit into the sixteen registers of the machine, so the
-compiler had to spill most of them to the stack.
+size.  The factorisation of `pfa13` costs **134 real multiplications** per
+butterfly, where the direct evaluation of the sum costs **576** of them - a
+factor of **4.3**.  That, and not the number of values that the butterfly
+keeps alive, is where the gain comes from: `tools/count_live_values.py`
+counts the values that are alive at the same time in a round, and the two
+butterflies of the radix 13 - the factorisation of the original and the
+symmetric one of the previous generation - need about the same number of
+them, sixty against sixty five.
 
 The port now translates those functions line by line.
 `tools/gen_java_kernels.py` reads the decompiled `Pfacc.java` and emits one
@@ -527,29 +535,38 @@ as the original, and two of the tests of the kernel are strict enough to
 notice.  `tools/solve_constants.py` therefore treats the structure of the
 original as an unknown linear function of its constants and fits them against
 the transform it has to reproduce, by least squares.  The residual of the fit
-is about `1e-15`, and the values it finds agree with the literals of the
-original to six digits - the radix 3 gives `+-0.866025`, the radix 5 gives
-`0.559017`, `0.951057` and `0.587785`.
+is between `1e-15` and `3e-13` - the worst one is the radix 16, whose
+structure has the most terms - and the values it finds agree with the
+literals of the original to six digits: the radix 3 gives `+-0.866025`, the
+radix 5 gives `0.559017`, `0.951057` and `0.587785`.
 
 Because the constants are literals, the plan no longer holds a table of the
-roots of unity: a plan costs about sixteen bytes per element of its length
-instead of about forty eight, and the plan cache holds twice as many lengths
-for the same budget.
+roots of unity.  That table held a fixed number of entries per stage, so it
+never was a large part of the memory of a plan - the work buffers are two
+doubles per element, and they are what the budget of the cache counts, so the
+number of lengths that fit into the cache does not change.
 
 The operation counts of the two sides, per element of a transform of
-`n = 32 760`, are now the same:
+`n = 32 760`, are now **the same, item by item**:
 
 | | the original | the port |
 | --- | ---: | ---: |
 | multiplications | 21.4 | 21.4 |
-| additions | 49.5 | 45.1 |
-| floating point operations | 70.9 | 66.5 |
-| array accesses | 32.7 | 32.7 |
+| additions | 45.1 | 45.1 |
+| floating point operations | 66.5 | 66.5 |
+| array accesses | 30.0 | 30.0 |
 
-The port does the same number of multiplications and it reads the same number
-of array elements as the original, and it does slightly fewer additions.  The
-two sides are now the same program, in the sense that matters for the run
-time.
+That is the expected outcome of a line by line translation, and it is what
+`tools/count_ops.py` reports: the counts of the two sides agree for every
+radix and for every one of the 240 valid lengths.
+
+Two remarks about the count, because they are easy to get wrong.  The
+additions of the **addresses** are not counted on either side: the original
+rotates its positions at the end of a round with `j12 = j11 + 2;` and the
+like, and the port advances its own positions with `p0 = p0 + delta`, and
+neither of those is arithmetic on the values of the transform.  The count of
+the accesses of the **table of the roots of unity** is zero on both sides as
+well: the original holds its constants in the code, and so does the port.
 
 And here is what it bought, measured in the same session.  The `head` side is
 the port as it is committed, the `today` side is the port of the working
@@ -604,34 +621,33 @@ factorisation.  `tools/gen_java_kernels.py --style direct` generates that
 form, and the whole test suite passes with it, so the two kernels really do
 compute the same thing.
 
-This measurement has its own session, with the two sides of the comparison in
-it and nothing else.  It is **not measured yet**: the machine was busy with an
-unrelated workload when it was scheduled, and a measurement of two sides of
-the same language in a busy session is not worth taking.  The table below is
-the place where its result will appear.
+**This measurement is not taken yet.**  The first attempt at it was scheduled
+while the machine was busy with an unrelated workload, and a measurement of
+two sides of the same language in a busy session is not worth taking: the
+load of the machine slows the port down about 2.3 times, and it slows it
+down and the other side at the same time, so the absolute numbers of such a
+session are twice as high as the ones of the tables above.  The table below
+is the place where the result will appear when the machine is idle.
 
 <!--t:TABLE_DIRECT-->
 | workload | n | direct ns/op | today ns/op | direct / today |
 | --- | ---: | ---: | ---: | ---: |
 <!--/t-->
 
-**The direct evaluation is slower than the factorisation of the original.**
-The size of the difference is in the table above:
-<!--v:DIRECT_RANGE-->not measured<!--/v-->.
-
-This is the number that answers the question of how much a cheaper small
-transform can still buy, and the answer is: the factorisation of the original
-is already the cheap one.  It needs twelve products per pair of outputs for
-the radix 13, where the direct evaluation needs `r * r` of them, and the port
-that uses it does the same arithmetic as the original.
+What the control is expected to show is that the factorisation is the cheap
+form: the direct evaluation of the radix 13 costs **576** real
+multiplications per butterfly, where the factorisation of the original costs
+**134** of them, a factor of **4.3**.  The measurement is what turns that
+expectation into a fact, and until it is taken the arithmetic of the small
+transform is the one thing of this document that rests on the code alone.
 
 The prediction of an earlier version of this document, that a Winograd style
 transform would win another factor of 1.6x to 3x, assumed that the arithmetic
-of the small transforms was the bottleneck.  The port is already on the cheap
-side of that trade: its small transform is the factorisation of the original,
-which is the cheapest of the two forms that were measured.  A transform that
-did fewer multiplications than the original would have to be a transform of a
-different algorithm, not a better butterfly of this one.
+of the small transforms was the bottleneck.  The port is on the cheap side of
+that trade already: its small transform is the factorisation of the original,
+and it does the same arithmetic as the original.  A transform that did fewer
+multiplications than the original would have to be a transform of a different
+algorithm, not a better butterfly of this one.
 
 ## What was wrong, and what was done about it
 
@@ -711,9 +727,9 @@ the original* above.  The small transform of a stage is now the function
 `Pfacc.pfa{r}` of the original, for the twist of the stage, with its
 constants solved in double precision instead of copied in single precision.
 The port does now the same arithmetic as the original - the same number of
-multiplications, additions and array accesses per element - and it keeps
-twice as many plans in its cache, because the roots of unity are literals in
-the code and not a table in the plan.
+multiplications, additions and array accesses per element - and its plan no
+longer holds a table of the roots of unity, because they are literals in the
+code.
 
 The kernel is checked on its own in `moonbit_fft2/kernel_wbtest.mbt`: against
 the direct `O(n^2)` evaluation of the transform for 90 lengths and both
@@ -832,17 +848,16 @@ So the remaining gap splits into
 * **nothing that the arithmetic of the small transforms can still win.**
   That is measured, not assumed: the port now does the same number of
   multiplications, of additions and of array accesses per element as the
-  original, and the control of the section above shows that the direct
-  evaluation of the small transform is
-  <!--v:DIRECT_RANGE-->not measured<!--/v--> slower than the factorisation of the
-  original, so the cheap form of the small transform is already the one that
-  is in use.  An earlier version of this document predicted that a Winograd
-  style small radix transform would win another factor of 1.6x to 3x; that
-  prediction assumed that the arithmetic of the small transforms was the
-  bottleneck, and the arithmetic of the port is now the arithmetic of the
-  original, so there is nothing left to win on this path.  A transform that
-  does fewer multiplications than the original would have to be a transform
-  of a different algorithm, not a better butterfly of this one.
+  original, and its small transform is the factorisation of the original,
+  which is the cheap form of it - 134 real multiplications per butterfly for
+  the radix 13, where the direct evaluation of the sum costs 576 of them.
+  An earlier version of this document predicted that a Winograd style small
+  radix transform would win another factor of 1.6x to 3x; that prediction
+  assumed that the arithmetic of the small transforms was the bottleneck, and
+  the arithmetic of the port is now the arithmetic of the original, so there
+  is nothing left to win on this path.  A transform that does fewer
+  multiplications than the original would have to be a transform of a
+  different algorithm, not a better butterfly of this one.
 
 What is left would have to be won by moving the kernel into C (through the
 FFI), or by parallelising it - MoonBit core has no OS threads, only async

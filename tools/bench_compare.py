@@ -237,15 +237,21 @@ def baseline_side(rev: str, profile: str = "release") -> Side:
     return Side("old", moonbit_command(shadow, profile))
 
 
-def head_side(profile: str = "release") -> Side:
-    """The port as it is committed, without the changes of the working tree."""
+def head_side(rev: str = "HEAD", profile: str = "release") -> Side:
+    """The port as it is committed, without the changes of the working tree.
+
+    The revision is given, because the `head` side has to be the port of the
+    round **before** the one that is measured: once a round is committed, the
+    port of the working tree and the port of `HEAD` are the same program, and
+    their ratio says nothing at all.
+    """
     shadow = BUILD / "headmodule"
     subprocess.run(
         [
             sys.executable,
             str(ROOT / "tools" / "bench_baseline.py"),
             "--rev",
-            "HEAD",
+            rev,
             "--assemble-only",
             "--shadow",
             str(shadow),
@@ -314,6 +320,14 @@ def main() -> int:
         "the working tree",
     )
     parser.add_argument(
+        "--head-rev",
+        default="HEAD",
+        help="the revision of the `head` side.  It has to be the port of the "
+        "round **before** the one that is measured: once a round is "
+        "committed, the port of the working tree and the port of `HEAD` are "
+        "the same program, and their ratio says nothing at all.",
+    )
+    parser.add_argument(
         "--sides",
         default="",
         help="the sides to measure, comma separated, out of java, moonbit, "
@@ -368,8 +382,8 @@ def main() -> int:
         print("the direct side is the port of today with the direct small transform")
         sides.append(direct_side(args.profile))
     if args.with_head:
-        print("the head side is the port as it is committed")
-        sides.append(head_side(args.profile))
+        print(f"the head side is the port at {args.head_rev}")
+        sides.append(head_side(args.head_rev, args.profile))
 
     # An explicit list of sides overrides the flags.  It exists so that a
     # measurement can be repeated with a different set of sides without

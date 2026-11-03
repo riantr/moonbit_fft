@@ -284,9 +284,15 @@ def main() -> int:
         function.split()
         body = kernels.round_body(function.body)
         statements = parse_statements(body)
-        names = sorted(kernels.constant_names(function.prologue), key=lambda x: (len(x), x))
+        names = sorted(kernels.branch_constants(function.prologue), key=lambda x: (len(x), x))
+        # The constants that the original derives from the other ones, `c5 =
+        # c1 * c4`, are not unknowns: they follow from the ones that are.
+        derived = {
+            name: Parser(expression).expression()
+            for name, expression in kernels.derived_constants(function.prologue)
+        }
         for mu in kernels.TWISTS[r]:
-            values, residual = solve(statements, r, mu, names)
+            values, residual = solve(statements, r, mu, names, derived)
             print(
                 "radix %2d twist %2d: %s residual %.3e"
                 % (r, mu, " ".join("%+.6f" % value for value in values), residual)

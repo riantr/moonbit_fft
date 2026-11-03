@@ -171,16 +171,16 @@ of a stage is therefore evaluated in place, with no permutation of the array.
 The small transform of a stage is the **factorisation of the original**,
 `Pfacc.pfa2` ... `Pfacc.pfa16`, one kernel per radix and per twist.  Those
 functions are hand written factorisations of the discrete Fourier transform of
-their size: the one of the radix 13 needs twelve products per pair of
-outputs, where the direct evaluation of the sum needs `r * r` of them, and it
-keeps only about two dozen values alive at a time.  The port translates them
-line by line, see `../tools/gen_java_kernels.py`.
+their size: the one of the radix 13 costs 134 real multiplications per
+butterfly, where the direct evaluation of the sum costs 576 of them, a factor
+of 4.3.  The port translates them line by line, see
+`../tools/gen_java_kernels.py`.
 
 Their constants are **solved in double precision**, not copied from the
 original, which holds them in single precision: `../tools/solve_constants.py`
 treats the structure of the original as an unknown linear function of its
 constants and fits them against the transform it has to reproduce, by least
-squares.  The residual of the fit is about `1e-15`, and the values it finds
+squares.  The residual of the fit is between `1e-15` and `3e-13`, and the values it finds
 agree with the literals of the original to six digits.  The accumulation of
 the port is done in **double** precision as well and rounded back to single
 precision at the end, so the difference to the original is dominated by the
@@ -198,7 +198,7 @@ so a per sample relative tolerance would be meaningless.
 
 The model of the algorithm, in Python, is checked against `numpy.fft` for
 every valid length by `../tools/verify_goodthomas.py`; the worst relative
-error over the 240 valid lengths is `9.4e-16`.  That model is the reference of
+error over the 240 valid lengths is `1.1e-15`.  That model is the reference of
 the implementation: it was fitted against the intermediate state of the
 original, which was dumped by an instrumented copy of `Pfacc.java`.
 
