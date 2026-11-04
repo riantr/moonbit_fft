@@ -175,17 +175,16 @@ ROW_TARGET = re.compile(
     r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
 )
 
-# A row of the table of the ecosystem:
+# A row of the table of the ecosystem, one per side and window:
 #
-#   | 4 096 | 4 095 | 41 953 ns | 41 815 ns | 0.997x | 0.854 | 0.851 |
+#   | 4 096 | port | 4 095 | 40 997 ns | 0.834 | 1.000x |
 ROW_ECO = re.compile(
     r"^\|\s*\**\s*(?P<window>[\d ]+)\s*\**\s*\|"
-    r"\s*\**\s*(?P<port_n>[\d ]+)\s*\**\s*\|"
-    r"\s*\**\s*(?P<port>[\d ]+)\s*ns\s*\**\s*\|"
-    r"\s*\**\s*(?P<package>[\d ]+)\s*ns\s*\**\s*\|"
-    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|"
-    r"\s*\**\s*(?P<port_unit>[\d.]+)\s*\**\s*\|"
-    r"\s*\**\s*(?P<package_unit>[\d.]+)\s*\**\s*\|$"
+    r"\s*(?P<side>[a-z0-9/]+)\s*\|"
+    r"\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<ns>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<unit>[\d.]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
 )
 
 # The section that holds the table of the ecosystem.
@@ -707,8 +706,9 @@ def main() -> int:
                             f"measurement is {expected:.3f}x"
                         )
 
-    # The table of the ecosystem holds one row per window of the package, with
-    # the closest valid length of the port next to it.
+    # The table of the ecosystem holds one row per side and window, with the
+    # length each side is measured at: the port at the closest entry of its own
+    # table, and the packages at the window itself.
     if eco_rows:
         if not eco_data:
             problems.append(
@@ -716,84 +716,87 @@ def main() -> int:
                 f"{ECO_DATA} does not exist"
             )
         else:
-            lengths = eco_data.get("lengths", {})
-            medians = eco_data.get("median", {})
+            eco_lengths = eco_data.get("lengths", {})
+            eco_medians = eco_data.get("median", {})
             eco_ratios = eco_data.get("ratios", {})
             eco_unit = eco_data.get("per_unit", {})
-            seen: set[str] = set()
+            seen: set[tuple[str, str]] = set()
             for row in eco_rows:
-                window = number(row.group("window"))
-                key = str(window)
-                if key not in lengths:
+                window = str(number(row.group("window")))
+                side = row.group("side").strip()
+                if window not in eco_medians:
                     problems.append(
                         f"the document has a row for the window {window}, the "
                         f"measurement has none"
                     )
                     continue
-                seen.add(key)
-                if number(row.group("port_n")) != lengths[key]["port"]:
+                if side not in eco_medians[window]:
                     problems.append(
-                        f"{key}: the document says the port is measured at "
-                        f"{number(row.group('port_n'))}, the measurement is at "
-                        f"{lengths[key]['port']}"
+                        f"the document has a row for the side {side} at the "
+                        f"window {window}, the measurement has none"
                     )
-                for given, measured, what in (
-                    (row.group("port"), medians.get(key, {}).get("port"),
-                     "the port"),
-                    (row.group("package"), medians.get(key, {}).get("hkdsp"),
-                     "the package"),
+                    continue
+                if (window, side) in seen:
+                    problems.append(
+                        f"the row of {side} at the window {window} is written "
+                        f"twice"
+                    )
+                seen.add((window, side))
+                if number(row.group("n")) != eco_lengths[window][side]:
+                    problems.append(
+                        f"{side} at {window}: the document says it is measured "
+                        f"at {number(row.group('n'))}, the measurement is at "
+                        f"{eco_lengths[window][side]}"
+                    )
+                measured = eco_medians[window][side]
+                if abs(number(row.group("ns")) - measured) > max(
+                    1.0, 0.005 * abs(measured)
                 ):
-                    if measured is None:
-                        problems.append(f"{key}: the measurement has no {what}")
-                        continue
-                    if abs(number(given) - measured) > max(
-                        1.0, 0.005 * abs(measured)
-                    ):
-                        problems.append(
-                            f"{key}: the document says {what} takes "
-                            f"{number(given)} ns, the measurement is "
-                            f"{measured:.0f} ns"
-                        )
-                for given, measured, what in (
-                    (row.group("ratio"),
-                     eco_ratios.get(key, {}).get("hkdsp/port"), "the ratio"),
-                    (row.group("port_unit"),
-                     eco_unit.get(key, {}).get("port"),
-                     "the cost of an element of the port"),
-                    (row.group("package_unit"),
-                     eco_unit.get(key, {}).get("hkdsp"),
-                     "the cost of an element of the package"),
+                    problems.append(
+                        f"{side} at {window}: the document says "
+                        f"{number(row.group('ns'))} ns, the measurement is "
+                        f"{measured:.0f} ns"
+                    )
+                for given, actual, what in (
+                    (row.group("unit"), eco_unit[window][side],
+                     "the cost of an element"),
+                    (row.group("ratio"), eco_ratios[window][f"{side}/port"],
+                     "the ratio to the port"),
                 ):
-                    if measured is None:
-                        problems.append(f"{key}: the measurement has no {what}")
-                        continue
-                    if not close(float(given), measured, 0.02, 0.01):
+                    if not close(float(given), actual, 0.02, 0.01):
                         problems.append(
-                            f"{key}: the document says {what} is {given}, the "
-                            f"measurement is {measured:.3f}"
+                            f"{side} at {window}: the document says {what} is "
+                            f"{given}, the measurement is {actual:.3f}"
                         )
-            missing = set(lengths) - seen
+            missing = {
+                (window, side)
+                for window, sides in eco_medians.items()
+                for side in sides
+            } - seen
             if missing:
                 problems.append(
-                    f"the table of the ecosystem has no row for the window "
+                    "the table of the ecosystem has no row for "
                     f"{sorted(missing)}"
                 )
             # The section says how many rounds the measurement has and which
-            # version of the package it measured.  Both are numbers of the
+            # version of every package it measured.  Both are numbers of the
             # measurement, and a document that drifts from them is a drift.
             eco_text = "\n".join(eco_lines)
             eco_rounds = eco_data.get("rounds")
-            if eco_rounds and not re.search(r"\b%d rounds\b" % eco_rounds, eco_text):
+            if eco_rounds and not re.search(
+                r"\b%d rounds\b" % eco_rounds, eco_text
+            ):
                 problems.append(
-                    f"the section of the ecosystem does not say that the "
+                    "the section of the ecosystem does not say that the "
                     f"measurement has {eco_rounds} rounds"
                 )
-            version = eco_data.get("ecosystem", {}).get("version")
-            if version and version not in eco_text:
-                problems.append(
-                    f"the section of the ecosystem does not name the version "
-                    f"{version} of the package that was measured"
-                )
+            for entry in eco_data.get("ecosystem", []):
+                version = entry.get("version")
+                if version and version not in eco_text:
+                    problems.append(
+                        "the section of the ecosystem does not name the version "
+                        f"{version} of {entry.get('package')}"
+                    )
 
     # The two documents of the repository repeat two numbers of the
     # benchmark: how many orders of magnitude the old port was slower, and

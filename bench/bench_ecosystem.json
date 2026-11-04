@@ -1,69 +1,225 @@
 {
-  "checksum": "-130.4640007019043",
-  "ecosystem": {
-    "package": "HK-SHAO/dsp",
-    "version": "0.1.4"
-  },
+  "checksum": "-146.4640007019043",
+  "ecosystem": [
+    {
+      "entry": "slot_open then forward, plan and slot cached",
+      "package": "HK-SHAO/dsp",
+      "side": "hkdsp",
+      "version": "0.1.4"
+    },
+    {
+      "entry": "fft_radix4, in place",
+      "package": "hwlxmm/dsp",
+      "side": "hx/radix4",
+      "version": "0.1.0"
+    },
+    {
+      "entry": "fft_bluestein",
+      "package": "hwlxmm/dsp",
+      "side": "hx/bluestein",
+      "version": "0.1.0"
+    },
+    {
+      "entry": "fft_radix4",
+      "package": "lcyllp/moonbit-nlse-ssfm",
+      "side": "lc/radix4",
+      "version": "0.1.0"
+    },
+    {
+      "entry": "fft_bluestein, what its fft entry calls",
+      "package": "lcyllp/moonbit-nlse-ssfm",
+      "side": "lc/bluestein",
+      "version": "0.1.0"
+    },
+    {
+      "entry": "fft, which dispatches to its radix-2",
+      "package": "amor2025/moonNum",
+      "side": "moonnum",
+      "version": "0.1.0"
+    },
+    {
+      "entry": "fft",
+      "package": "chgttyyr/MoonSpectrum",
+      "side": "mspec",
+      "version": "0.2.2"
+    },
+    {
+      "entry": "fft, real input",
+      "package": "2227057182/moonbit-dsp",
+      "side": "mdsp",
+      "version": "0.1.0"
+    }
+  ],
   "lengths": {
     "1024": {
       "hkdsp": 1024,
+      "hx/bluestein": 1024,
+      "hx/radix4": 1024,
+      "lc/bluestein": 1024,
+      "lc/radix4": 1024,
+      "mdsp": 1024,
+      "moonnum": 1024,
+      "mspec": 1024,
       "port": 1008
     },
     "4096": {
       "hkdsp": 4096,
+      "hx/bluestein": 4096,
+      "hx/radix4": 4096,
+      "lc/bluestein": 4096,
+      "lc/radix4": 4096,
+      "mdsp": 4096,
+      "moonnum": 4096,
+      "mspec": 4096,
       "port": 4095
     }
   },
   "median": {
     "1024": {
-      "hkdsp": 7478.999999999999,
-      "port": 8053.791666666666
+      "hkdsp": 7897.287735849056,
+      "hx/bluestein": 586714.2857142857,
+      "hx/radix4": 507733.3333333334,
+      "lc/bluestein": 572375.0,
+      "lc/radix4": 571828.5714285715,
+      "mdsp": 310146.1538461539,
+      "moonnum": 827880.0,
+      "mspec": 921659.9999999999,
+      "port": 7658.536585365853
     },
     "4096": {
-      "hkdsp": 41815.0,
-      "port": 41952.65625
+      "hkdsp": 40836.11111111111,
+      "hx/bluestein": 2887650.0,
+      "hx/radix4": 2520375.0,
+      "lc/bluestein": 2840275.0,
+      "lc/radix4": 2836775.0,
+      "mdsp": 1558483.333333333,
+      "moonnum": 3833550.0,
+      "mspec": 4220300.0,
+      "port": 42487.83783783784
     }
   },
   "per_unit": {
     "1024": {
-      "hkdsp": 0.7303710937499999,
-      "port": 0.8008067074841004
+      "hkdsp": 0.7712195054540094,
+      "hx/bluestein": 57.29631696428571,
+      "hx/radix4": 49.583333333333336,
+      "lc/bluestein": 55.89599609375,
+      "lc/radix4": 55.84263392857143,
+      "mdsp": 30.287710336538463,
+      "moonnum": 80.84765625,
+      "mspec": 90.00585937499999,
+      "port": 0.7615056014494235
     },
     "4096": {
-      "hkdsp": 0.8507283528645834,
-      "port": 0.8537624708692364
+      "hkdsp": 0.8308128074363426,
+      "hx/bluestein": 58.7493896484375,
+      "hx/radix4": 51.27716064453125,
+      "lc/bluestein": 57.785542805989586,
+      "lc/radix4": 57.714335123697914,
+      "mdsp": 31.707424587673604,
+      "moonnum": 77.9937744140625,
+      "mspec": 85.86222330729167,
+      "port": 0.8646537467892481
     }
   },
   "ratios": {
     "1024": {
-      "hkdsp/port": 0.9390396615133629
+      "hkdsp/port": 1.0380139400019983,
+      "hx/bluestein/port": 76.80541600086724,
+      "hx/radix4/port": 67.18578779013598,
+      "lc/bluestein/port": 74.34910203941979,
+      "lc/radix4/port": 75.07258967585858,
+      "mdsp/port": 40.45265204557809,
+      "moonnum/port": 107.34892704470454,
+      "mspec/port": 119.3510565112175,
+      "port/port": 1.0
     },
     "4096": {
-      "hkdsp/port": 0.9970414466437743
+      "hkdsp/port": 0.9597970777525082,
+      "hx/bluestein/port": 66.73839907426438,
+      "hx/radix4/port": 61.173856577602784,
+      "lc/bluestein/port": 67.54742843581386,
+      "lc/radix4/port": 66.05548980167542,
+      "mdsp/port": 37.125092801721976,
+      "moonnum/port": 90.09549155205006,
+      "mspec/port": 100.06687044749896,
+      "port/port": 1.0
     }
   },
   "reference": {
     "clock": {
-      "max": 62407.0,
-      "median": 59486.1,
-      "min": 57223.4
+      "max": 60675.5,
+      "median": 59853.899999999994,
+      "min": 57306.200000000004
     },
     "memory": {
-      "max": 0.720977783203125,
-      "median": 0.6122589111328125,
-      "min": 0.566864013671875
+      "max": 1.44195556640625,
+      "median": 0.608062744140625,
+      "min": 0.586700439453125
     },
     "rounds": 16
+  },
+  "repeats": {
+    "hkdsp": {
+      "1024": 426,
+      "4096": 78
+    },
+    "hx/bluestein": {
+      "1024": 7,
+      "4096": 2
+    },
+    "hx/radix4": {
+      "1024": 6,
+      "4096": 2
+    },
+    "lc/bluestein": {
+      "1024": 8,
+      "4096": 2
+    },
+    "lc/radix4": {
+      "1024": 7,
+      "4096": 2
+    },
+    "mdsp": {
+      "1024": 13,
+      "4096": 3
+    },
+    "moonnum": {
+      "1024": 5,
+      "4096": 1
+    },
+    "mspec": {
+      "1024": 5,
+      "4096": 1
+    },
+    "port": {
+      "1008": 328,
+      "4095": 74
+    }
   },
   "rounds": 16,
   "spread": {
     "1024": {
-      "hkdsp": 1.1422671271233902,
-      "port": 1.1695886304335759
+      "hkdsp": 1.106848633692915,
+      "hx/bluestein": 1.125273819034611,
+      "hx/radix4": 1.3917543497696168,
+      "lc/bluestein": 1.1371568171242439,
+      "lc/radix4": 1.1483435487625107,
+      "mdsp": 1.0950741593974065,
+      "moonnum": 1.3546204491633485,
+      "mspec": 1.2006206850023613,
+      "port": 1.156196590103798
     },
     "4096": {
-      "hkdsp": 1.1575947766149175,
-      "port": 1.1886716244149305
+      "hkdsp": 1.2549973180761667,
+      "hx/bluestein": 1.2658621524479952,
+      "hx/radix4": 2.3638377785280213,
+      "lc/bluestein": 1.3242683838325762,
+      "lc/radix4": 1.3428625413320736,
+      "mdsp": 1.6911156533726293,
+      "moonnum": 1.0938811093554188,
+      "mspec": 1.2059658733948184,
+      "port": 1.114031852472758
     }
   },
   "statistic": "the median of the rounds; the ratios are taken per round and medianed"

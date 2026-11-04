@@ -1,82 +1,324 @@
-round 0 side port length 4096 39458.43749999999 ns
-round 0 side hkdsp length 4096 40988.4375 ns
-round 0 side port length 1024 7505.416666666667 ns
-round 0 side hkdsp length 1024 7142.666666666665 ns
-round 0 reference clock 58422.2 us | memory 0.681304931640625 ns/elem | mem0 -8.83423532389192e+71 sink -8.154000043869019 x -1951311047 acc 131072
-round 1 side hkdsp length 4096 41554.37500000001 ns
-round 1 side port length 1024 8033.75 ns
-round 1 side hkdsp length 1024 7485.75 ns
-round 1 side port length 4096 41683.125 ns
-round 1 reference clock 59875 us | memory 0.5973815917968751 ns/elem | mem0 -8.83423532389192e+71 sink -16.308000087738037 x -1951311047 acc 131072
-round 2 side port length 1024 8359.666666666666 ns
-round 2 side hkdsp length 1024 7579.166666666667 ns
-round 2 side port length 4096 46903.125 ns
-round 2 side hkdsp length 4096 43311.25 ns
-round 2 reference clock 59647.6 us | memory 0.566864013671875 ns/elem | mem0 -8.83423532389192e+71 sink -24.462000131607056 x -1951311047 acc 131072
-round 3 side hkdsp length 1024 7343.666666666667 ns
-round 3 side port length 4096 44899.0625 ns
-round 3 side hkdsp length 4096 41844.68749999999 ns
-round 3 side port length 1024 8004.083333333333 ns
-round 3 reference clock 58827.4 us | memory 0.6500244140625 ns/elem | mem0 -8.83423532389192e+71 sink -32.616000175476074 x -1951311047 acc 131072
-round 4 side port length 4096 44556.25 ns
-round 4 side hkdsp length 4096 42540.9375 ns
-round 4 side port length 1024 8778.250000000002 ns
-round 4 side hkdsp length 1024 7472.249999999998 ns
-round 4 reference clock 58278.200000000004 us | memory 0.612640380859375 ns/elem | mem0 -8.83423532389192e+71 sink -40.77000021934509 x -1951311047 acc 131072
-round 5 side hkdsp length 4096 42245.3125 ns
-round 5 side port length 1024 8599.5 ns
-round 5 side hkdsp length 1024 7683.333333333333 ns
-round 5 side port length 4096 40480.93750000001 ns
-round 5 reference clock 58673 us | memory 0.604248046875 ns/elem | mem0 -8.83423532389192e+71 sink -48.92400026321411 x -1951311047 acc 131072
-round 6 side port length 1024 7832.833333333333 ns
-round 6 side hkdsp length 1024 7403.583333333333 ns
-round 6 side port length 4096 44753.74999999999 ns
-round 6 side hkdsp length 4096 43920.62499999999 ns
-round 6 reference clock 60213.5 us | memory 0.653839111328125 ns/elem | mem0 -8.83423532389192e+71 sink -57.07800030708313 x -1951311047 acc 131072
-round 7 side hkdsp length 1024 7363.166666666667 ns
-round 7 side port length 4096 40614.6875 ns
-round 7 side hkdsp length 4096 41744.0625 ns
-round 7 side port length 1024 8073.833333333333 ns
-round 7 reference clock 59324.6 us | memory 0.609588623046875 ns/elem | mem0 -8.83423532389192e+71 sink -65.23200035095215 x -1951311047 acc 131072
-round 8 side port length 4096 41720.3125 ns
-round 8 side hkdsp length 4096 41367.1875 ns
-round 8 side port length 1024 8088.083333333332 ns
-round 8 side hkdsp length 1024 8158.833333333333 ns
-round 8 reference clock 62407 us | memory 0.61187744140625 ns/elem | mem0 -8.83423532389192e+71 sink -73.38600039482117 x -1951311047 acc 131072
-round 9 side hkdsp length 4096 43144.375 ns
-round 9 side port length 1024 8701.833333333334 ns
-round 9 side hkdsp length 1024 7968.166666666667 ns
-round 9 side port length 4096 42281.5625 ns
-round 9 reference clock 60854.2 us | memory 0.68359375 ns/elem | mem0 -8.83423532389192e+71 sink -81.54000043869019 x -1951311047 acc 131072
-round 10 side port length 1024 8532.25 ns
-round 10 side hkdsp length 1024 8138.75 ns
-round 10 side port length 4096 44420 ns
-round 10 side hkdsp length 4096 45764.0625 ns
-round 10 reference clock 61616.200000000004 us | memory 0.720977783203125 ns/elem | mem0 -8.83423532389192e+71 sink -89.6940004825592 x -1951311047 acc 131072
-round 11 side hkdsp length 1024 7939.916666666667 ns
-round 11 side port length 4096 44265.9375 ns
-round 11 side hkdsp length 4096 43392.8125 ns
-round 11 side port length 1024 8437.583333333334 ns
-round 11 reference clock 61534.1 us | memory 0.5813598632812499 ns/elem | mem0 -8.83423532389192e+71 sink -97.84800052642822 x -1951311047 acc 131072
-round 12 side port length 4096 42184.99999999999 ns
-round 12 side hkdsp length 4096 41785.3125 ns
-round 12 side port length 1024 8000.750000000002 ns
-round 12 side hkdsp length 1024 7565.916666666667 ns
-round 12 reference clock 58675 us | memory 0.606536865234375 ns/elem | mem0 -8.83423532389192e+71 sink -106.00200057029724 x -1951311047 acc 131072
-round 13 side hkdsp length 4096 40104.37500000001 ns
-round 13 side port length 1024 7638.833333333333 ns
-round 13 side hkdsp length 1024 7192.25 ns
-round 13 side port length 4096 40218.12500000001 ns
-round 13 reference clock 59826.4 us | memory 0.666046142578125 ns/elem | mem0 -8.83423532389192e+71 sink -114.15600061416626 x -1951311047 acc 131072
-round 14 side port length 1024 7856.916666666668 ns
-round 14 side hkdsp length 1024 7372.416666666667 ns
-round 14 side port length 4096 40378.125 ns
-round 14 side hkdsp length 4096 40355.3125 ns
-round 14 reference clock 57669 us | memory 0.61798095703125 ns/elem | mem0 -8.83423532389192e+71 sink -122.31000065803528 x -1951311047 acc 131072
-round 15 side hkdsp length 1024 7191.083333333333 ns
-round 15 side port length 4096 39545.93749999999 ns
-round 15 side hkdsp length 4096 39533.75000000001 ns
-round 15 side port length 1024 7652.166666666667 ns
-round 15 reference clock 57223.4 us | memory 0.5828857421875 ns/elem | mem0 -8.83423532389192e+71 sink -130.4640007019043 x -1951311047 acc 131072
-CHECKSUM -130.4640007019043
-the port: false accepts 4096
+side port length 4095 repeats 74
+side hkdsp length 4096 repeats 78
+side hx/radix4 length 4096 repeats 2
+side hx/bluestein length 4096 repeats 2
+side lc/radix4 length 4096 repeats 2
+side lc/bluestein length 4096 repeats 2
+side moonnum length 4096 repeats 1
+side mspec length 4096 repeats 1
+side mdsp length 4096 repeats 3
+side port length 1008 repeats 328
+side hkdsp length 1024 repeats 426
+side hx/radix4 length 1024 repeats 6
+side hx/bluestein length 1024 repeats 7
+side lc/radix4 length 1024 repeats 7
+side lc/bluestein length 1024 repeats 8
+side moonnum length 1024 repeats 5
+side mspec length 1024 repeats 5
+side mdsp length 1024 repeats 13
+round 0 side port length 4095 44636.48648648649 ns
+round 0 side hkdsp length 4096 41937.5 ns
+round 0 side hx/radix4 length 4096 3673150 ns
+round 0 side hx/bluestein length 4096 2940150 ns
+round 0 side lc/radix4 length 4096 2882250 ns
+round 0 side lc/bluestein length 4096 2877400 ns
+round 0 side moonnum length 4096 4015200 ns
+round 0 side mspec length 4096 4379300 ns
+round 0 side mdsp length 4096 1566933.3333333333 ns
+round 0 side port length 1008 7730.792682926831 ns
+round 0 side hkdsp length 1024 8225.707547169812 ns
+round 0 side hx/radix4 length 1024 674583.3333333334 ns
+round 0 side hx/bluestein length 1024 582871.4285714285 ns
+round 0 side lc/radix4 length 1024 559000 ns
+round 0 side lc/bluestein length 1024 558062.5 ns
+round 0 side moonnum length 1024 831440 ns
+round 0 side mspec length 1024 923200 ns
+round 0 side mdsp length 1024 297176.92307692306 ns
+round 0 reference clock 59361.299999999996 us | memory 0.586700439453125 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -9.154000043869019 x -1951311047 acc 131072
+round 1 side hkdsp length 4096 43737.50000000001 ns
+round 1 side hx/radix4 length 4096 5601349.999999999 ns
+round 1 side hx/bluestein length 4096 2922250 ns
+round 1 side lc/radix4 length 4096 2871100 ns
+round 1 side lc/bluestein length 4096 2844100 ns
+round 1 side moonnum length 4096 3832400 ns
+round 1 side mspec length 4096 4211600 ns
+round 1 side mdsp length 4096 1547933.3333333333 ns
+round 1 side port length 1008 7737.804878048781 ns
+round 1 side hkdsp length 1024 8042.688679245283 ns
+round 1 side hx/radix4 length 1024 501933.3333333333 ns
+round 1 side hx/bluestein length 1024 594642.8571428572 ns
+round 1 side lc/radix4 length 1024 593328.5714285715 ns
+round 1 side lc/bluestein length 1024 583500 ns
+round 1 side moonnum length 1024 836220.0000000001 ns
+round 1 side mspec length 1024 892820 ns
+round 1 side mdsp length 1024 298023.0769230769 ns
+round 1 side port length 4095 40791.8918918919 ns
+round 1 reference clock 57394.2 us | memory 0.595855712890625 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -18.308000087738037 x -1951311047 acc 131072
+round 2 side hx/radix4 length 4096 2373500 ns
+round 2 side hx/bluestein length 4096 2901150 ns
+round 2 side lc/radix4 length 4096 2813800 ns
+round 2 side lc/bluestein length 4096 2794650 ns
+round 2 side moonnum length 4096 3712300 ns
+round 2 side mspec length 4096 4082500 ns
+round 2 side mdsp length 4096 1537833.3333333333 ns
+round 2 side port length 1008 7313.719512195121 ns
+round 2 side hkdsp length 1024 7730.1886792452815 ns
+round 2 side hx/radix4 length 1024 497233.3333333333 ns
+round 2 side hx/bluestein length 1024 573800.0000000001 ns
+round 2 side lc/radix4 length 1024 570685.7142857142 ns
+round 2 side lc/bluestein length 1024 568475 ns
+round 2 side moonnum length 1024 901260 ns
+round 2 side mspec length 1024 939580 ns
+round 2 side mdsp length 1024 325430.76923076925 ns
+round 2 side port length 4095 43802.7027027027 ns
+round 2 side hkdsp length 4096 42409.72222222222 ns
+round 2 reference clock 60214.799999999996 us | memory 0.616455078125 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -27.462000131607056 x -1951311047 acc 131072
+round 3 side hx/bluestein length 4096 3092950.0000000005 ns
+round 3 side lc/radix4 length 4096 2894350 ns
+round 3 side lc/bluestein length 4096 2894350 ns
+round 3 side moonnum length 4096 3910700 ns
+round 3 side mspec length 4096 4344100 ns
+round 3 side mdsp length 4096 1634400 ns
+round 3 side port length 1008 7628.658536585366 ns
+round 3 side hkdsp length 1024 8049.056603773586 ns
+round 3 side hx/radix4 length 1024 514766.6666666667 ns
+round 3 side hx/bluestein length 1024 580485.7142857143 ns
+round 3 side lc/radix4 length 1024 573028.5714285715 ns
+round 3 side lc/bluestein length 1024 563787.5 ns
+round 3 side moonnum length 1024 883300 ns
+round 3 side mspec length 1024 900220 ns
+round 3 side mdsp length 1024 303592.3076923077 ns
+round 3 side port length 4095 41250 ns
+round 3 side hkdsp length 4096 41340.277777777774 ns
+round 3 side hx/radix4 length 4096 2490100 ns
+round 3 reference clock 60675.5 us | memory 1.44195556640625 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -36.616000175476074 x -1951311047 acc 131072
+round 4 side lc/radix4 length 4096 2997900 ns
+round 4 side lc/bluestein length 4096 2924000 ns
+round 4 side moonnum length 4096 3994500 ns
+round 4 side mspec length 4096 4380099.999999999 ns
+round 4 side mdsp length 4096 1646500 ns
+round 4 side port length 1008 7713.719512195122 ns
+round 4 side hkdsp length 1024 8120.990566037734 ns
+round 4 side hx/radix4 length 1024 572166.6666666666 ns
+round 4 side hx/bluestein length 1024 614828.5714285715 ns
+round 4 side lc/radix4 length 1024 570585.7142857143 ns
+round 4 side lc/bluestein length 1024 577362.5 ns
+round 4 side moonnum length 1024 1041080 ns
+round 4 side mspec length 1024 920119.9999999998 ns
+round 4 side mdsp length 1024 316600 ns
+round 4 side port length 4095 42928.37837837839 ns
+round 4 side hkdsp length 4096 40841.666666666664 ns
+round 4 side hx/radix4 length 4096 2406549.9999999995 ns
+round 4 side hx/bluestein length 4096 2911100 ns
+round 4 reference clock 58267.3 us | memory 0.649261474609375 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -45.77000021934509 x -1951311047 acc 131072
+round 5 side lc/bluestein length 4096 2878400 ns
+round 5 side moonnum length 4096 3743600.0000000005 ns
+round 5 side mspec length 4096 4229000 ns
+round 5 side mdsp length 4096 1708600 ns
+round 5 side port length 1008 7624.085365853659 ns
+round 5 side hkdsp length 1024 7904.7169811320755 ns
+round 5 side hx/radix4 length 1024 512116.6666666667 ns
+round 5 side hx/bluestein length 1024 603114.2857142857 ns
+round 5 side lc/radix4 length 1024 576757.1428571428 ns
+round 5 side lc/bluestein length 1024 572837.5000000001 ns
+round 5 side moonnum length 1024 800279.9999999999 ns
+round 5 side mspec length 1024 1067760 ns
+round 5 side mdsp length 1024 314069.2307692308 ns
+round 5 side port length 4095 42277.02702702703 ns
+round 5 side hkdsp length 4096 40702.77777777778 ns
+round 5 side hx/radix4 length 4096 2620400 ns
+round 5 side hx/bluestein length 4096 3079250 ns
+round 5 side lc/radix4 length 4096 3022000 ns
+round 5 reference clock 60167.8 us | memory 0.603485107421875 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -54.92400026321411 x -1951311047 acc 131072
+round 6 side moonnum length 4096 3842000 ns
+round 6 side mspec length 4096 4730000 ns
+round 6 side mdsp length 4096 1844233.3333333333 ns
+round 6 side port length 1008 7514.9390243902435 ns
+round 6 side hkdsp length 1024 7809.669811320755 ns
+round 6 side hx/radix4 length 1024 509650 ns
+round 6 side hx/bluestein length 1024 619857.1428571428 ns
+round 6 side lc/radix4 length 1024 586071.4285714285 ns
+round 6 side lc/bluestein length 1024 583850 ns
+round 6 side moonnum length 1024 809140.0000000001 ns
+round 6 side mspec length 1024 1041920 ns
+round 6 side mdsp length 1024 312130.76923076925 ns
+round 6 side port length 4095 42891.89189189189 ns
+round 6 side hkdsp length 4096 41040.277777777774 ns
+round 6 side hx/radix4 length 4096 2806050 ns
+round 6 side hx/bluestein length 4096 3130899.9999999995 ns
+round 6 side lc/radix4 length 4096 3176700.0000000005 ns
+round 6 side lc/bluestein length 4096 3200450.0000000005 ns
+round 6 reference clock 59838.799999999996 us | memory 0.858306884765625 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -64.07800030708313 x -1951311047 acc 131072
+round 7 side mspec length 4096 4798900 ns
+round 7 side mdsp length 4096 1967266.6666666663 ns
+round 7 side port length 1008 7533.841463414634 ns
+round 7 side hkdsp length 1024 8021.226415094341 ns
+round 7 side hx/radix4 length 1024 534200.0000000001 ns
+round 7 side hx/bluestein length 1024 587600 ns
+round 7 side lc/radix4 length 1024 571928.5714285715 ns
+round 7 side lc/bluestein length 1024 571912.5 ns
+round 7 side moonnum length 1024 833060 ns
+round 7 side mspec length 1024 896500 ns
+round 7 side mdsp length 1024 308161.5384615385 ns
+round 7 side port length 4095 41622.97297297297 ns
+round 7 side hkdsp length 4096 48744.44444444445 ns
+round 7 side hx/radix4 length 4096 2470950 ns
+round 7 side hx/bluestein length 4096 3398650 ns
+round 7 side lc/radix4 length 4096 3553549.9999999995 ns
+round 7 side lc/bluestein length 4096 3454950 ns
+round 7 side moonnum length 4096 3834700 ns
+round 7 reference clock 59869 us | memory 0.6187438964843751 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -73.23200035095215 x -1951311047 acc 131072
+round 8 side mdsp length 4096 2371733.3333333335 ns
+round 8 side port length 1008 8456.097560975611 ns
+round 8 side hkdsp length 1024 7764.386792452831 ns
+round 8 side hx/radix4 length 1024 503216.66666666657 ns
+round 8 side hx/bluestein length 1024 585828.5714285715 ns
+round 8 side lc/radix4 length 1024 579528.5714285715 ns
+round 8 side lc/bluestein length 1024 610937.5 ns
+round 8 side moonnum length 1024 841719.9999999998 ns
+round 8 side mspec length 1024 908400 ns
+round 8 side mdsp length 1024 323961.53846153844 ns
+round 8 side port length 4095 44208.1081081081 ns
+round 8 side hkdsp length 4096 40830.55555555555 ns
+round 8 side hx/radix4 length 4096 2458900 ns
+round 8 side hx/bluestein length 4096 2874149.9999999995 ns
+round 8 side lc/radix4 length 4096 2777299.9999999995 ns
+round 8 side lc/bluestein length 4096 2730400 ns
+round 8 side moonnum length 4096 3859700.0000000005 ns
+round 8 side mspec length 4096 4664599.999999999 ns
+round 8 reference clock 60203.2 us | memory 0.600433349609375 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -82.38600039482117 x -1951311047 acc 131072
+round 9 side port length 1008 7585.365853658536 ns
+round 9 side hkdsp length 1024 8397.169811320755 ns
+round 9 side hx/radix4 length 1024 493216.6666666667 ns
+round 9 side hx/bluestein length 1024 572728.5714285715 ns
+round 9 side lc/radix4 length 1024 563185.7142857143 ns
+round 9 side lc/bluestein length 1024 608324.9999999999 ns
+round 9 side moonnum length 1024 787020.0000000001 ns
+round 9 side mspec length 1024 891600 ns
+round 9 side mdsp length 1024 302492.3076923077 ns
+round 9 side port length 4095 42647.2972972973 ns
+round 9 side hkdsp length 4096 40015.27777777778 ns
+round 9 side hx/radix4 length 4096 2476050 ns
+round 9 side hx/bluestein length 4096 2796050 ns
+round 9 side lc/radix4 length 4096 2859750 ns
+round 9 side lc/bluestein length 4096 2684300 ns
+round 9 side moonnum length 4096 3724700.0000000005 ns
+round 9 side mspec length 4096 4200700 ns
+round 9 side mdsp length 4096 1402466.6666666667 ns
+round 9 reference clock 58518.7 us | memory 0.595855712890625 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -91.54000043869019 x -1951311047 acc 131072
+round 10 side hkdsp length 1024 7732.783018867925 ns
+round 10 side hx/radix4 length 1024 501649.99999999994 ns
+round 10 side hx/bluestein length 1024 554328.5714285715 ns
+round 10 side lc/radix4 length 1024 552385.7142857143 ns
+round 10 side lc/bluestein length 1024 537250 ns
+round 10 side moonnum length 1024 768540.0000000001 ns
+round 10 side mspec length 1024 897380.0000000002 ns
+round 10 side mdsp length 1024 299976.92307692306 ns
+round 10 side port length 4095 40304.05405405405 ns
+round 10 side hkdsp length 4096 39023.61111111111 ns
+round 10 side hx/radix4 length 4096 2550649.9999999995 ns
+round 10 side hx/bluestein length 4096 2684850 ns
+round 10 side lc/radix4 length 4096 2719450 ns
+round 10 side lc/bluestein length 4096 2747650 ns
+round 10 side moonnum length 4096 3693600 ns
+round 10 side mspec length 4096 4124400.0000000005 ns
+round 10 side mdsp length 4096 1450199.9999999998 ns
+round 10 side port length 1008 8356.707317073171 ns
+round 10 reference clock 60148.9 us | memory 0.5973815917968751 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -100.6940004825592 x -1951311047 acc 131072
+round 11 side hx/radix4 length 1024 516666.6666666667 ns
+round 11 side hx/bluestein length 1024 601557.1428571428 ns
+round 11 side lc/radix4 length 1024 571728.5714285715 ns
+round 11 side lc/bluestein length 1024 562950 ns
+round 11 side moonnum length 1024 811280 ns
+round 11 side mspec length 1024 961400 ns
+round 11 side mdsp length 1024 322953.8461538461 ns
+round 11 side port length 4095 42266.21621621622 ns
+round 11 side hkdsp length 4096 41590.27777777778 ns
+round 11 side hx/radix4 length 4096 2742850 ns
+round 11 side hx/bluestein length 4096 2826000 ns
+round 11 side lc/radix4 length 4096 2693350.0000000005 ns
+round 11 side lc/bluestein length 4096 2759000 ns
+round 11 side moonnum length 4096 3747799.9999999995 ns
+round 11 side mspec length 4096 4110500 ns
+round 11 side mdsp length 4096 1430366.6666666667 ns
+round 11 side port length 1008 7688.41463414634 ns
+round 11 side hkdsp length 1024 7789.38679245283 ns
+round 11 reference clock 58454.899999999994 us | memory 0.5943298339843749 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -109.84800052642822 x -1951311047 acc 131072
+round 12 side hx/bluestein length 1024 566071.4285714285 ns
+round 12 side lc/radix4 length 1024 553300 ns
+round 12 side lc/bluestein length 1024 551562.5 ns
+round 12 side moonnum length 1024 768860 ns
+round 12 side mspec length 1024 889340 ns
+round 12 side mdsp length 1024 302223.07692307694 ns
+round 12 side port length 4095 40677.02702702703 ns
+round 12 side hkdsp length 4096 38840.27777777778 ns
+round 12 side hx/radix4 length 4096 2369600 ns
+round 12 side hx/bluestein length 4096 2686900 ns
+round 12 side lc/radix4 length 4096 2646250 ns
+round 12 side lc/bluestein length 4096 2635000 ns
+round 12 side moonnum length 4096 3670600 ns
+round 12 side mspec length 4096 3979299.9999999995 ns
+round 12 side mdsp length 4096 1417866.6666666663 ns
+round 12 side port length 1008 7374.390243902439 ns
+round 12 side hkdsp length 1024 7586.556603773585 ns
+round 12 side hx/radix4 length 1024 495333.3333333333 ns
+round 12 reference clock 57306.200000000004 us | memory 0.598907470703125 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -119.00200057029724 x -1951311047 acc 131072
+round 13 side lc/radix4 length 1024 555685.7142857143 ns
+round 13 side lc/bluestein length 1024 547125 ns
+round 13 side moonnum length 1024 797179.9999999999 ns
+round 13 side mspec length 1024 980980.0000000002 ns
+round 13 side mdsp length 1024 300492.3076923077 ns
+round 13 side port length 4095 44900.00000000001 ns
+round 13 side hkdsp length 4096 40801.38888888889 ns
+round 13 side hx/radix4 length 4096 2452649.9999999995 ns
+round 13 side hx/bluestein length 4096 2701500 ns
+round 13 side lc/radix4 length 4096 2670350.0000000005 ns
+round 13 side lc/bluestein length 4096 2608950.0000000005 ns
+round 13 side moonnum length 4096 3732400 ns
+round 13 side mspec length 4096 4063299.9999999995 ns
+round 13 side mdsp length 4096 1463000 ns
+round 13 side port length 1008 7439.939024390243 ns
+round 13 side hkdsp length 1024 7613.67924528302 ns
+round 13 side hx/radix4 length 1024 484700.00000000006 ns
+round 13 side hx/bluestein length 1024 558471.4285714285 ns
+round 13 reference clock 58861.200000000004 us | memory 0.612640380859375 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -128.15600061416626 x -1951311047 acc 131072
+round 14 side lc/bluestein length 1024 589750 ns
+round 14 side moonnum length 1024 924580.0000000002 ns
+round 14 side mspec length 1024 937960 ns
+round 14 side mdsp length 1024 323438.46153846156 ns
+round 14 side port length 4095 42328.37837837838 ns
+round 14 side hkdsp length 4096 40806.94444444445 ns
+round 14 side hx/radix4 length 4096 2673399.9999999995 ns
+round 14 side hx/bluestein length 4096 2784399.9999999995 ns
+round 14 side lc/radix4 length 4096 2748100 ns
+round 14 side lc/bluestein length 4096 2836450 ns
+round 14 side moonnum length 4096 3897100 ns
+round 14 side mspec length 4096 4237200 ns
+round 14 side mdsp length 4096 1550033.333333333 ns
+round 14 side port length 1008 7989.939024390245 ns
+round 14 side hkdsp length 1024 7889.858490566036 ns
+round 14 side hx/radix4 length 1024 505816.6666666667 ns
+round 14 side hx/bluestein length 1024 623771.4285714288 ns
+round 14 side lc/radix4 length 1024 626500 ns
+round 14 reference clock 60517 us | memory 0.63323974609375 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -137.31000065803528 x -1951311047 acc 131072
+round 15 side moonnum length 1024 824319.9999999999 ns
+round 15 side mspec length 1024 983180 ns
+round 15 side mdsp length 1024 320192.3076923077 ns
+round 15 side port length 4095 42740.54054054053 ns
+round 15 side hkdsp length 4096 40736.11111111111 ns
+round 15 side hx/radix4 length 4096 2670900 ns
+round 15 side hx/bluestein length 4096 2867500 ns
+round 15 side lc/radix4 length 4096 2768250 ns
+round 15 side lc/bluestein length 4096 3023150 ns
+round 15 side moonnum length 4096 3916099.9999999995 ns
+round 15 side mspec length 4096 4163200 ns
+round 15 side mdsp length 4096 1608366.6666666663 ns
+round 15 side port length 1008 7920.731707317073 ns
+round 15 side hkdsp length 1024 7922.169811320755 ns
+round 15 side hx/radix4 length 1024 565983.3333333334 ns
+round 15 side hx/bluestein length 1024 587857.1428571428 ns
+round 15 side lc/radix4 length 1024 634328.5714285715 ns
+round 15 side lc/bluestein length 1024 581937.5 ns
+round 15 reference clock 60522.3 us | memory 0.75225830078125 ns/elem | radix0 -2047.9999999999993 mem0 -1598777867716529 sink -146.4640007019043 x -1951311047 acc 131072
+CHECKSUM -146.4640007019043
+the port accepts 4096: false

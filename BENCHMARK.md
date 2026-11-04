@@ -417,70 +417,133 @@ only **1.02x** faster, and the bounds check of an array access costs
 
 The tables above compare the port with the original Java implementation, which
 is what the port has to reproduce.  The question of a user who writes MoonBit
-today is a different one: of the packages of the ecosystem, which one is the
-one to use, and where does the port stand next to it?
+today is a different one: of the packages of the ecosystem, which one is the one
+to use, and where does the port stand next to it?
 
-Seven packages of the ecosystem were installed and run for this comparison.
-Six of them really transform a signal, and five of those six are not in the
-class of the port: they either take a power of two and nothing else, or they
-take any length through Bluestein and build the buffers of that convolution on
-every call.  The one that is different is **`HK-SHAO/dsp`**, measured at version
-0.1.4.  It keeps a
-**plan** - the bit reversal and the tables of the cosines and the sines of a
-window - and it transforms in place in the memory of a **slot** that it hands
-out once.  That is the structure the port has after its own rewrites, with the
-same cached tables, and it is the reason why this is the package the port has
-to be measured against.
+Seven packages of the ecosystem were installed and run for this comparison, and
+each one is driven through **its own fastest entry point** for the length at
+hand, which is the only fair way to compare implementations.  Two of them offer
+a radix path next to a Bluestein one, and **both paths are measured**, because
+which of the two is faster is a property of the package and not of the length:
 
-The two of them cannot be given the same length, and that is a result of the
-comparison itself:
+| side | the package | the entry that is measured |
+| --- | --- | --- |
+| port | this repository | `FftComplex::complex_to_complex`, with the plan of the length cached |
+| hkdsp | `HK-SHAO/dsp` 0.1.4 | `slot_open` then `forward`, plan and slot cached, in place |
+| hx/radix4 | `hwlxmm/dsp` 0.1.0 | `fft_radix4`, in place |
+| hx/bluestein | `hwlxmm/dsp` 0.1.0 | `fft_bluestein` |
+| lc/radix4 | `lcyllp/moonbit-nlse-ssfm` 0.1.0 | `fft_radix4` |
+| lc/bluestein | `lcyllp/moonbit-nlse-ssfm` 0.1.0 | `fft_bluestein`, which its own `fft` entry calls for every length |
+| moonnum | `amor2025/moonNum` 0.1.0 | `fft`, which dispatches to its radix-2 for a power of two |
+| mspec | `chgttyyr/MoonSpectrum` 0.2.2 | `fft`, powers of two only |
+| mdsp | `2227057182/moonbit-dsp` 0.1.0 | `fft`, **real** input, powers of two only |
+
+The port and the packages cannot be given the same length, and that is a result
+of the comparison itself:
 
 * the port takes the **lengths of the original**, the table of
   `edu.mines.jtk.dsp.Pfacc`.  It has 240 entries, most of them are not powers of
   two, and **the powers of two stop at 16**: 32, 64, 128, 256, 1024 and 4096 are
   not valid lengths of the port at all,
-* `HK-SHAO/dsp` takes the **powers of two from 256 to 4096**, and nothing else.
+* every package takes a **power of two** - the two windows of the table are
+  4 096 and 1 024 - so the port is given the entry of its own table that is the
+  closest to each of them, 4 095 and 1 008.
 
-Each row of the table is a window of the package together with the entry of the
-table of the port that is the closest to it, and the cost of an element, in
-nanoseconds per `n log2(n)`, is what makes the two lengths comparable at all:
+The cost of an element, in nanoseconds per `n log2(n)`, is what makes the two
+lengths comparable at all: 4 095 against 4 096 differs by 0.02 %, 1 008 against
+1 024 by 1.6 %.  The last column is the median of the per round ratios and not
+the quotient of the two medians:
 
-| window | n of the port | the port | `HK-SHAO/dsp` | the package / the port | per unit, the port | per unit, the package |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 4 096 | 4 095 | 41 953 ns | 41 815 ns | 0.997x | 0.854 | 0.851 |
-| 1 024 | 1 008 | 8 054 ns | 7 479 ns | 0.939x | 0.801 | 0.730 |
+| window | side | n | the median | per unit | over the port |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 4 096 | port | 4 095 | 42 488 ns | 0.865 | 1.000x |
+| 4 096 | hkdsp | 4 096 | 40 836 ns | 0.831 | 0.960x |
+| 4 096 | hx/radix4 | 4 096 | 2 520 375 ns | 51.277 | 61.174x |
+| 4 096 | hx/bluestein | 4 096 | 2 887 650 ns | 58.749 | 66.738x |
+| 4 096 | lc/radix4 | 4 096 | 2 836 775 ns | 57.714 | 66.055x |
+| 4 096 | lc/bluestein | 4 096 | 2 840 275 ns | 57.786 | 67.547x |
+| 4 096 | moonnum | 4 096 | 3 833 550 ns | 77.994 | 90.095x |
+| 4 096 | mspec | 4 096 | 4 220 300 ns | 85.862 | 100.067x |
+| 4 096 | mdsp | 4 096 | 1 558 483 ns | 31.707 | 37.125x |
+| 1 024 | port | 1 008 | 7 659 ns | 0.762 | 1.000x |
+| 1 024 | hkdsp | 1 024 | 7 897 ns | 0.771 | 1.038x |
+| 1 024 | hx/radix4 | 1 024 | 507 733 ns | 49.583 | 67.186x |
+| 1 024 | hx/bluestein | 1 024 | 586 714 ns | 57.296 | 76.805x |
+| 1 024 | lc/radix4 | 1 024 | 571 829 ns | 55.843 | 75.073x |
+| 1 024 | lc/bluestein | 1 024 | 572 375 ns | 55.896 | 74.349x |
+| 1 024 | moonnum | 1 024 | 827 880 ns | 80.848 | 107.349x |
+| 1 024 | mspec | 1 024 | 921 660 ns | 90.006 | 119.351x |
+| 1 024 | mdsp | 1 024 | 310 146 ns | 30.288 | 40.453x |
 
-The two sides run in **one process**, in an order that is rotated in every
-round, and the ratio is taken per round and then medianed, exactly like the
-comparison against the original.  The measurement has 16 rounds.  The state of
-the machine is measured once per round as well, because that is what makes the
-rounds comparable in the first place: the clock read 59 486 us (57 223 to
-62 407) and the pass over a megabyte of doubles read 0.612 ns per element
-(0.567 to 0.721).
+The sides run in **one process**, in an order that is rotated in every round,
+and the ratio is taken per round and then medianed, exactly like the comparison
+against the original.  The measurement has 16 rounds.  A segment of a side holds
+as many transforms as make it last about four milliseconds, and not ten, because
+the machine of this host loses about half of its speed after roughly three
+seconds of sustained work: eighteen segments of ten milliseconds plus the
+references of a round come to more than three seconds, and the last rounds would
+then be twice as slow as the first ones.  The state of the machine was measured
+once per round and it stayed put: the clock read 59 854 us (57 306 to 60 676)
+and the pass over a megabyte of doubles read 0.608 ns per element (0.587 to
+1.442).
 
-The honest reading of the table is that **the two are in the same class**.  The
-package is 0.3 % faster at the long transform and 6 % faster at the short one,
-and the repeat runs of the same harness that this session made move both
-numbers by a few percent, in both directions.  There is no factor to claim
-here, and the port has no advantage of speed to claim against this package.
-What the port has is the coverage of the **lengths of the original** and the
-image API on top of them, which is the reason the port exists at all; what it
-does not have is the powers of two above 16, which every package of the
-ecosystem has and which a user will expect.
+#### Every side was held to a reference
 
-The harness is `tools/ecomodule/bencheco` and the driver is
-`tools/bench_ecosystem.py`.  The comparison needs the ecosystem package as a
-dependency and the library itself must not have one, so the driver assembles
-the shadow module of `build/ecomodule` from the module of the working tree and
-adds the dependency to **that** copy only.  The rounds are tracked in
-`bench/bench_ecosystem.txt` and the medians in `bench/bench_ecosystem.json`:
+A timing table is only worth its rows if the faster side computes the same
+transform as the slower one, so every side was compared with a double precision
+reference at both lengths: `tools/check_ecospectra.py` dumps the spectrum of
+each of them and holds it to `numpy.fft`.
+
+Eight of the nine sides compute the transform, to between 1e-16 and 1e-14
+relative for the ones that work in double precision, and to 2.2e-8 for the port,
+which transforms single precision samples.  One does not: **the radix-4 path of
+`hwlxmm/dsp` does not compute the transform at any length that was tried** -
+4, 8, 16, 64, 256, 1024 and 4096 - with a relative deviation of about 1 in every
+case, which is what a spectrum that has nothing to do with the right one looks
+like.  Its own Bluestein path is correct to 1e-14, so the defect is in the radix
+path and not in the package as a whole.  Its row of the table is therefore the
+cost of a path a user cannot use, and the row that matters for that package is
+`hx/bluestein`.  The script pins the set of the sides that are correct: a side
+that stops being correct and a side that becomes correct both turn it red.
+
+#### What the table says
+
+`HK-SHAO/dsp` is the only package of the ecosystem that is in the class of the
+port: it is within 5 % of it at both lengths, and the sign of that difference
+moves from one session to the next, so the honest reading is that the two are
+**at parity**.  It is also the only one that keeps a plan and a slot, which is
+the structure the port has after its own rewrites.
+
+Every other side is between 37 and 120 times slower at the same length, and the
+reason is the same in all of them: **nothing is kept between two calls**.  Every
+transform allocates its workspace again, and the ones that go through Bluestein
+build the chirp and the convolution of that chirp again.  That is a property of
+their API and not a detail of an inner loop: a user pays it on every transform.
+
+`mdsp` transforms **real** samples, and a real transform of `n` samples does
+about half of the arithmetic of a complex one of the same length, so its row is
+generous to it: it is credited with half of the work.  Even so it is 36 times
+slower at the long window.
+
+What the port has over all of them is the **coverage of the lengths of the
+original** and the image API on top of them, which is the reason the port exists
+at all.  What it does not have is the powers of two above 16, which every
+package of the ecosystem has and which a user will expect.
+
+The harness is `tools/ecomodule/bencheco`, the probe that dumps the spectra is
+`tools/ecomodule/spec9`, and the driver is `tools/bench_ecosystem.py`.  The
+comparison needs the packages of the ecosystem as dependencies and the library
+must not have one, so the driver assembles the shadow module of
+`build/ecomodule` from the module of the working tree and adds the dependencies
+to **that** copy only:
 
 ```
 python tools/bench_ecosystem.py
+python tools/check_ecospectra.py
 ```
 
-Two traps of this measurement are worth writing down.  `HK-SHAO/dsp` transforms
-**in place**, so its samples are put back before every block of transforms:
+Two traps of this measurement are worth writing down.  The sides that transform
+**in place** have their samples put back before every block of transforms:
 without that the values are multiplied by the length at every transform and
 become infinite after a few dozen of them, and the rest of the round then
 measures something that is not the transform.  And a reference of the machine
@@ -1265,8 +1328,11 @@ python "$root\tools\bench_compare.py" --rounds 5 --profile release `
   --with-direct --sides moonbit,direct `
   --out "$root\bench\bench_direct.txt"
 
-# the port against the best package of the ecosystem, in one session
+# the port against the packages of the ecosystem, in one session
 python "$root\tools\bench_ecosystem.py"
+
+# every side of that comparison, held to a double precision reference
+python "$root\tools\check_ecospectra.py"
 
 # the table of the ecosystem, held against the measurement it was taken from
 python "$root\tools\negative_control_benchmark.py"

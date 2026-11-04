@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-"""Measures the port against the best implementation of the ecosystem.
+"""Measures the port against every package of the ecosystem that transforms.
 
 The port of the repository is a port of `net.imglib2.algorithm.fft2`, and its
 kernel is the prime factor algorithm of the original: it takes the **lengths of
 the original**, 240 of them, most of them not powers of two, and the powers of
-two stop at 16.  The packages of the ecosystem are the other way round: they
-mostly take a power of two, or any length through Bluestein.
+two stop at 16.  The packages of the ecosystem are the other way round: the
+complex ones take a power of two, or any length through Bluestein.
 
-One package of the ecosystem is in the same class as the port.  `HK-SHAO/dsp`
-keeps a plan - the bit reversal and the tables of the cosines and the sines of
-a window - and transforms in place in the memory of a slot that it hands out
-once.  That is the structure the port has after its own rewrites, and it is the
-one package that meets the port on equal terms.
-
-The harness is `tools/ecomodule/bencheco`, and it is assembled into a shadow
-module under `build/ecomodule`, because the comparison needs the ecosystem
-package as a dependency and the library itself must not have one.  The shadow
-module is the module of the working tree plus the dependency, which is the same
-way the other sides of `BENCHMARK.md` are built.
+Every package that really transforms a complex signal is measured, each one
+through **its own fastest entry point** for the length at hand.  The harness is
+`tools/ecomodule/bencheco`, and it is assembled into a shadow module under
+`build/ecomodule`, because the comparison needs the ecosystem packages as
+dependencies and the library itself must not have one.  The shadow module is the
+module of the working tree plus the dependencies, with the harness of the working
+tree next to it, which is how the other sides of `BENCHMARK.md` are built.
 
 Usage::
 
@@ -41,17 +37,36 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MODULE = ROOT / "moonbit_fft2"
 SHADOW = ROOT / "build" / "ecomodule"
-HARNESS = ROOT / "tools" / "ecomodule" / "bencheco"
+# The packages of the comparison: the harness that times the sides, and the probe
+# that dumps their spectra so that a reference can hold them to the right answer.
+HARNESS = ROOT / "tools" / "ecomodule"
+PACKAGES = ("bencheco", "spec9")
 TXT = ROOT / "bench" / "bench_ecosystem.txt"
 JSON = ROOT / "bench" / "bench_ecosystem.json"
 
-# The best implementation of the ecosystem, and the reason it is the best one:
-# it is the only package of the ecosystem that caches a plan and transforms in
-# place in a slot, which is what the port does after its own rewrites.
-PACKAGE = "HK-SHAO/dsp"
-VERSION = "0.1.4"
+# The packages of the ecosystem that transform a complex signal.  Two of them
+# offer both a radix path and a Bluestein one, and both paths are measured: which
+# of the two is faster is a property of the package and not of the length, so a
+# single row would have to choose, and the choice would be a claim.
+ECOSYSTEM = [
+    ("hkdsp", "HK-SHAO/dsp", "0.1.4", "slot_open then forward, plan and slot cached"),
+    ("hx/radix4", "hwlxmm/dsp", "0.1.0", "fft_radix4, in place"),
+    ("hx/bluestein", "hwlxmm/dsp", "0.1.0", "fft_bluestein"),
+    ("lc/radix4", "lcyllp/moonbit-nlse-ssfm", "0.1.0", "fft_radix4"),
+    ("lc/bluestein", "lcyllp/moonbit-nlse-ssfm", "0.1.0", "fft_bluestein, what its fft entry calls"),
+    ("moonnum", "amor2025/moonNum", "0.1.0", "fft, which dispatches to its radix-2"),
+    ("mspec", "chgttyyr/MoonSpectrum", "0.2.2", "fft"),
+    ("mdsp", "2227057182/moonbit-dsp", "0.1.0", "fft, real input"),
+]
 
-# The window of the package and the closest valid length of the port.  The two
+# A dependency of the harness itself, not a package of the comparison: the probe
+# that dumps the spectra writes them with the file system of `moonbitlang/x`.
+SUPPORT = [("moonbitlang/x", "0.4.46")]
+
+# The side of the port, always the base of the comparison.
+PORT = "port"
+
+# The window of the packages and the closest valid length of the port.  The two
 # of them meet nowhere exactly, which is a result of the comparison itself.
 WORKLOADS = [
     (4096, 4095),
@@ -62,8 +77,11 @@ WORKLOADS = [
 SKIP_DIRS = {"_build", ".mooncakes", "benchmark", "benchab", "benchmachine", "bencheco"}
 
 SIDE = re.compile(
-    r"^round\s+(?P<round>\d+)\s+side\s+(?P<side>\w+)\s+"
+    r"^round\s+(?P<round>\d+)\s+side\s+(?P<side>\S+)\s+"
     r"length\s+(?P<length>\d+)\s+(?P<ns>[\d.]+)\s+ns\s*$"
+)
+REPEATS = re.compile(
+    r"^side\s+(?P<side>\S+)\s+length\s+(?P<length>\d+)\s+repeats\s+(?P<n>\d+)\s*$"
 )
 REFERENCE = re.compile(
     r"^round\s+(?P<round>\d+)\s+reference\s+clock\s+(?P<clock>[\d.]+)\s+us\s*\|\s*"
@@ -93,34 +111,47 @@ def assemble() -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
         copied += 1
-    # The dependency goes into the module file of the shadow module only: the
+    # The dependencies go into the module file of the shadow module only: the
     # library itself must not depend on a package of the ecosystem.
     module_file = SHADOW / "moon.mod"
     text = module_file.read_text(encoding="utf-8")
-    if PACKAGE not in text:
+    missing = [
+        f'  "{package}@{version}",'
+        for _, package, version, _ in ECOSYSTEM
+        if f'"{package}@' not in text
+    ] + [
+        f'  "{package}@{version}",'
+        for package, version in SUPPORT
+        if f'"{package}@' not in text
+    ]
+    if missing:
         if not text.endswith("\n"):
             text += "\n"
-        text += "\nimport {\n  \"%s@%s\",\n}\n" % (PACKAGE, VERSION)
+        text += "\nimport {\n" + "\n".join(missing) + "\n}\n"
         module_file.write_text(text, encoding="utf-8")
-    harness = SHADOW / "bencheco"
-    harness.mkdir(parents=True, exist_ok=True)
-    for source in sorted(HARNESS.iterdir()):
-        if source.is_file():
-            shutil.copy2(source, harness / source.name)
-            copied += 1
+    for package in PACKAGES:
+        harness = SHADOW / package
+        harness.mkdir(parents=True, exist_ok=True)
+        for source in sorted((HARNESS / package).iterdir()):
+            if source.is_file():
+                shutil.copy2(source, harness / source.name)
+                copied += 1
     print("the shadow module is %s, %d files" % (SHADOW, copied))
 
 
-def resolved_version() -> str:
-    """The version of the ecosystem package that was really resolved."""
-    module_file = SHADOW / ".mooncakes" / PACKAGE / "moon.mod"
-    if not module_file.exists():
-        module_file = SHADOW / ".mooncakes" / PACKAGE / "moon.mod.json"
-    if not module_file.exists():
-        return VERSION
-    text = module_file.read_text(encoding="utf-8", errors="replace")
-    match = re.search(r'"version"\s*:\s*"([^"]+)"', text)
-    return match.group(1) if match else VERSION
+def resolved_version(package: str) -> str:
+    """The version of an ecosystem package that was really resolved."""
+    for name in ("moon.mod", "moon.mod.json"):
+        module_file = SHADOW / ".mooncakes" / package / name
+        if module_file.exists():
+            text = module_file.read_text(encoding="utf-8", errors="replace")
+            match = re.search(r'"version"\s*:\s*"([^"]+)"', text)
+            if match:
+                return match.group(1)
+    for _, name, version, _ in ECOSYSTEM:
+        if name == package:
+            return version
+    return ""
 
 
 def build_and_run(skip_build: bool) -> str:
@@ -147,10 +178,10 @@ def build_and_run(skip_build: bool) -> str:
 def unit_cost(ns: float, n: int) -> float:
     """The nanoseconds per element and per `log2` of the length.
 
-    The two sides are not measured at the same length - the port takes the
-    lengths of the original and the package takes the powers of two - so the
-    cost of an element of a transform is the number that can be put next to
-    each other.  A transform costs `n log2(n)` butterflies.
+    The sides are not measured at the same length - the port takes the lengths
+    of the original and the packages take the powers of two - so the cost of an
+    element of a transform is the number that can be put next to each other.  A
+    transform costs `n log2(n)` butterflies.
     """
     return ns / (n * math.log2(n))
 
@@ -185,47 +216,57 @@ def main() -> int:
     # round -> length -> side -> ns
     rounds: dict[int, dict[int, dict[str, float]]] = {}
     refs: dict[int, tuple[float, float]] = {}
-    reference_lines: list[str] = []
+    repeats: dict[str, dict[str, int]] = {}
     checksum = ""
     for line in out.splitlines():
         line = line.strip()
         if line.startswith("CHECKSUM "):
             checksum = line[len("CHECKSUM "):].strip()
             continue
+        match = REPEATS.match(line)
+        if match:
+            repeats.setdefault(match.group("side"), {})[
+                match.group("length")
+            ] = int(match.group("n"))
+            continue
         match = SIDE.match(line)
         if match:
-            index = int(match.group("round"))
-            length = int(match.group("length"))
-            rounds.setdefault(index, {}).setdefault(length, {})[
-                match.group("side")
-            ] = float(match.group("ns"))
+            rounds.setdefault(int(match.group("round")), {}).setdefault(
+                int(match.group("length")), {}
+            )[match.group("side")] = float(match.group("ns"))
             continue
         match = REFERENCE.match(line)
         if match:
-            index = int(match.group("round"))
-            refs[index] = (float(match.group("clock")), float(match.group("memory")))
-            reference_lines.append(line)
+            refs[int(match.group("round"))] = (
+                float(match.group("clock")), float(match.group("memory")))
     if not rounds:
         print(out[-4000:])
         print("the harness produced no measurement")
         return 1
 
     sides = sorted({side for r in rounds.values() for l in r.values() for side in l})
-    if sides != ["hkdsp", "port"]:
-        print("the measurement has the sides %s, it must have the port and the "
-              "package" % sides)
+    expected = sorted([PORT] + [name for name, _, _, _ in ECOSYSTEM])
+    if sides != expected:
+        print("the measurement has the sides %s, it must have %s"
+              % (sides, expected))
         return 1
 
-    median: dict[str, dict[str, float]] = {}
-    spread: dict[str, dict[str, float]] = {}
-    per_unit: dict[str, dict[str, float]] = {}
-    ratios: dict[str, dict[str, float]] = {}
-    # The harness decides how many rounds it runs, and every side has to have
-    # the same number of them: a side that is missing a round would be
-    # compared with the others on a different amount of noise.
+    # Every side has to have the same number of rounds at every window: a side
+    # that is missing a round would be compared with the others on a different
+    # amount of noise.  A side is looked up at **its own** length, because the
+    # port is measured at the closest length of its own table and not at the
+    # window itself.
+    def length_of(side: str, port_length: int, window: int) -> int:
+        return port_length if side == PORT else window
+
+    def of_round(record: dict[int, dict[str, float]], side: str,
+                 port_length: int, window: int) -> float | None:
+        return record.get(length_of(side, port_length, window), {}).get(side)
+
     measured = {
-        len([r for r in rounds.values() if window in r and side in r[window]])
-        for window, _ in WORKLOADS
+        len([r for r in rounds.values()
+             if of_round(r, side, port_length, window) is not None])
+        for window, port_length in WORKLOADS
         for side in sides
     }
     if len(measured) != 1:
@@ -236,28 +277,38 @@ def main() -> int:
     if round_count < 8:
         print("the measurement has %d rounds, too few for a median" % round_count)
         return 1
+
+    median: dict[str, dict[str, float]] = {}
+    spread: dict[str, dict[str, float]] = {}
+    per_unit: dict[str, dict[str, float]] = {}
+    ratios: dict[str, dict[str, float]] = {}
+    lengths: dict[str, dict[str, int]] = {}
     for window, port_length in WORKLOADS:
         key = str(window)
         median[key] = {}
         spread[key] = {}
         per_unit[key] = {}
         ratios[key] = {}
+        lengths[key] = {}
         for side in sides:
             values = [
-                r[window][side]
+                value
                 for r in rounds.values()
-                if window in r and side in r[window]
+                if (value := of_round(r, side, port_length, window)) is not None
             ]
+            length = length_of(side, port_length, window)
+            lengths[key][side] = length
             median[key][side] = statistics.median(values)
             spread[key][side] = (max(values) / min(values)) if len(values) > 1 else 1.0
-            length = port_length if side == "port" else window
             per_unit[key][side] = unit_cost(median[key][side], length)
-        paired = [
-            r[window]["hkdsp"] / r[window]["port"]
-            for r in rounds.values()
-            if window in r and {"hkdsp", "port"} <= set(r[window])
-        ]
-        ratios[key]["hkdsp/port"] = statistics.median(paired)
+        for side in sides:
+            paired = []
+            for record in rounds.values():
+                mine = of_round(record, side, port_length, window)
+                base = of_round(record, PORT, port_length, window)
+                if mine is not None and base:
+                    paired.append(mine / base)
+            ratios[key][f"{side}/{PORT}"] = statistics.median(paired)
 
     clocks = [v[0] for v in refs.values()]
     memories = [v[1] for v in refs.values()]
@@ -277,47 +328,50 @@ def main() -> int:
     reference = {
         "rounds": len(refs),
         "clock": {
-            "median": statistics.median(clocks) if clocks else 0.0,
-            "min": min(clocks) if clocks else 0.0,
-            "max": max(clocks) if clocks else 0.0,
+            "median": statistics.median(clocks),
+            "min": min(clocks),
+            "max": max(clocks),
         },
         "memory": {
-            "median": statistics.median(memories) if memories else 0.0,
-            "min": min(memories) if memories else 0.0,
-            "max": max(memories) if memories else 0.0,
+            "median": statistics.median(memories),
+            "min": min(memories),
+            "max": max(memories),
         },
     }
 
     # The text, in the style of the other tables of the repository.
     lines: list[str] = []
-    lines.append("the port of the repository against %s %s" % (
-        PACKAGE, resolved_version()))
-    lines.append("the median of the %d rounds, the ratios taken per round" % (
-        round_count))
+    lines.append("the port of the repository against the packages of the "
+                 "ecosystem")
+    lines.append("the median of the %d rounds, the ratios taken per round"
+                 % round_count)
     lines.append("")
-    header = "%-8s %9s %14s %14s %11s" % (
-        "window", "n port", "port ns", "hkdsp ns", "hkdsp/port")
-    lines.append(header)
-    lines.append("-" * len(header))
+    header = "%-9s %7s %13s %11s %11s" % (
+        "side", "n", "median ns", "per unit", "over the port")
     for window, port_length in WORKLOADS:
         key = str(window)
-        lines.append("%-8d %9d %14.0f %14.0f %10.3fx" % (
-            window, port_length, median[key]["port"], median[key]["hkdsp"],
-            ratios[key]["hkdsp/port"]))
-    lines.append("")
-    lines.append("the cost of an element, in ns per n log2(n):")
-    for window, port_length in WORKLOADS:
-        key = str(window)
-        lines.append("  %-6d port %.3f (%d)  hkdsp %.3f (%d)  hkdsp/port %.3f" % (
-            window, per_unit[key]["port"], port_length,
-            per_unit[key]["hkdsp"], window,
-            per_unit[key]["hkdsp"] / per_unit[key]["port"]))
-    lines.append("")
+        lines.append("window %d, the port at %d:" % (window, port_length))
+        lines.append(header)
+        lines.append("-" * len(header))
+        for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM]:
+            lines.append("%-9s %7d %13.0f %11.3f %10.3fx" % (
+                side, lengths[key][side], median[key][side],
+                per_unit[key][side], ratios[key][f"{side}/{PORT}"]))
+        lines.append("")
     lines.append("the spread of the rounds, the slowest over the fastest:")
     for window, _ in WORKLOADS:
         key = str(window)
-        lines.append("  %-6d port %.2fx  hkdsp %.2fx" % (
-            window, spread[key]["port"], spread[key]["hkdsp"]))
+        lines.append("  %d: %s" % (window, "  ".join(
+            "%s %.2fx" % (side, spread[key][side])
+            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM])))
+    lines.append("")
+    lines.append("the repeats of a segment, chosen so that it lasts about 4 ms:")
+    for window, _ in WORKLOADS:
+        key = str(window)
+        lines.append("  %d: %s" % (window, "  ".join(
+            "%s %d" % (side, repeats.get(side, {}).get(
+                str(lengths[key][side]), 0))
+            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM])))
     lines.append("")
     if reference["rounds"]:
         lines.append("the machine: clock median %.0f us (%.0f to %.0f), "
@@ -335,15 +389,21 @@ def main() -> int:
         "rounds": round_count,
         "statistic": "the median of the rounds; the ratios are taken per round "
         "and medianed",
-        "ecosystem": {"package": PACKAGE, "version": resolved_version()},
-        "lengths": {
-            str(window): {"port": port_length, "hkdsp": window}
-            for window, port_length in WORKLOADS
-        },
+        "ecosystem": [
+            {
+                "side": side,
+                "package": package,
+                "version": resolved_version(package),
+                "entry": entry,
+            }
+            for side, package, _, entry in ECOSYSTEM
+        ],
+        "lengths": lengths,
         "median": median,
         "spread": spread,
         "per_unit": per_unit,
         "ratios": ratios,
+        "repeats": repeats,
         "reference": reference,
         "checksum": checksum,
     }

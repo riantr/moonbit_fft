@@ -41,8 +41,10 @@ list of deviations from the Java original are in
 | `tools/ab_compare.py` | compares two builds of the port, with their rounds paired, and writes the result into `bench/` | yes |
 | `tools/bench_machine.py` | measures the transform next to the state of the machine, and writes the result into `bench/` | yes |
 | `tools/target_compare.py` | compares the wasm build of the port with the native build, and writes the result into `bench/` | yes |
-| `tools/bench_ecosystem.py` | measures the port against the best package of the ecosystem, and writes the result into `bench/` | yes |
-| `tools/ecomodule/` | the harness of that comparison, assembled into a shadow module that alone carries the dependency | yes |
+| `tools/bench_ecosystem.py` | measures the port against the packages of the ecosystem, and writes the result into `bench/` | yes |
+| `tools/check_ecospectra.py` | holds every side of that comparison to a double precision reference, and pins the set of the sides that compute the transform | yes |
+| `tools/render_ecosystem_table.py` | writes the rows of that table from the measurement, and `--check` proves that the document holds them | yes |
+| `tools/ecomodule/` | the harness and the probe of that comparison, assembled into a shadow module that alone carries the dependencies | yes |
 | `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/negative_control_benchmark.py` | breaks the numbers of the ecosystem table on purpose and checks that the gate turns red | yes |

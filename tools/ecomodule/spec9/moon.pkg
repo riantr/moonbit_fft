@@ -1,0 +1,16 @@
+import {
+  "riantr/moonbit_fft2",
+  "HK-SHAO/dsp" @hkdsp,
+  "hwlxmm/dsp/src/fft" @hwlxmm,
+  "hwlxmm/dsp/src/math" @hmath,
+  "lcyllp/moonbit-nlse-ssfm/src/fft" @lcyllp,
+  "lcyllp/moonbit-nlse-ssfm/src/types" @ltypes,
+  "amor2025/moonNum/src/fft" @mnum,
+  "amor2025/moonNum/src/core" @mcore,
+  "chgttyyr/MoonSpectrum" @mspec,
+  "2227057182/moonbit-dsp" @mdsp,
+  "moonbitlang/x/fs",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

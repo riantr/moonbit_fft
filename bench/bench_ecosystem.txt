@@ -1,18 +1,39 @@
-the port of the repository against HK-SHAO/dsp 0.1.4
+the port of the repository against the packages of the ecosystem
 the median of the 16 rounds, the ratios taken per round
 
-window      n port        port ns       hkdsp ns  hkdsp/port
-------------------------------------------------------------
-4096          4095          41953          41815      0.997x
-1024          1008           8054           7479      0.939x
+window 4096, the port at 4095:
+side            n     median ns    per unit over the port
+---------------------------------------------------------
+port         4095         42488       0.865      1.000x
+hkdsp        4096         40836       0.831      0.960x
+hx/radix4    4096       2520375      51.277     61.174x
+hx/bluestein    4096       2887650      58.749     66.738x
+lc/radix4    4096       2836775      57.714     66.055x
+lc/bluestein    4096       2840275      57.786     67.547x
+moonnum      4096       3833550      77.994     90.095x
+mspec        4096       4220300      85.862    100.067x
+mdsp         4096       1558483      31.707     37.125x
 
-the cost of an element, in ns per n log2(n):
-  4096   port 0.854 (4095)  hkdsp 0.851 (4096)  hkdsp/port 0.996
-  1024   port 0.801 (1008)  hkdsp 0.730 (1024)  hkdsp/port 0.912
+window 1024, the port at 1008:
+side            n     median ns    per unit over the port
+---------------------------------------------------------
+port         1008          7659       0.762      1.000x
+hkdsp        1024          7897       0.771      1.038x
+hx/radix4    1024        507733      49.583     67.186x
+hx/bluestein    1024        586714      57.296     76.805x
+lc/radix4    1024        571829      55.843     75.073x
+lc/bluestein    1024        572375      55.896     74.349x
+moonnum      1024        827880      80.848    107.349x
+mspec        1024        921660      90.006    119.351x
+mdsp         1024        310146      30.288     40.453x
 
 the spread of the rounds, the slowest over the fastest:
-  4096   port 1.19x  hkdsp 1.16x
-  1024   port 1.17x  hkdsp 1.14x
+  4096: port 1.11x  hkdsp 1.25x  hx/radix4 2.36x  hx/bluestein 1.27x  lc/radix4 1.34x  lc/bluestein 1.32x  moonnum 1.09x  mspec 1.21x  mdsp 1.69x
+  1024: port 1.16x  hkdsp 1.11x  hx/radix4 1.39x  hx/bluestein 1.13x  lc/radix4 1.15x  lc/bluestein 1.14x  moonnum 1.35x  mspec 1.20x  mdsp 1.10x
 
-the machine: clock median 59486 us (57223 to 62407), memory median 0.612 ns/elem (0.567 to 0.721)
-checksum -130.4640007019043
+the repeats of a segment, chosen so that it lasts about 4 ms:
+  4096: port 74  hkdsp 78  hx/radix4 2  hx/bluestein 2  lc/radix4 2  lc/bluestein 2  moonnum 1  mspec 1  mdsp 3
+  1024: port 328  hkdsp 426  hx/radix4 6  hx/bluestein 7  lc/radix4 7  lc/bluestein 8  moonnum 5  mspec 5  mdsp 13
+
+the machine: clock median 59854 us (57306 to 60676), memory median 0.608 ns/elem (0.587 to 1.442)
+checksum -146.4640007019043
