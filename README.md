@@ -159,7 +159,7 @@ what to run when the decompiled sources are missing.
 
 [`BENCHMARK.md`](BENCHMARK.md) compares the runtime of the port with the
 runtime of the original, using the same measurement protocol on both sides.
-The short version: the port used to be five orders of magnitude slower for
+The short version: the port used to be four orders of magnitude slower for
 every length that matters, because the original transforms `O(n log n)` with
 a mixed radix PFA kernel while the port transformed `O(n^2)` for every length
 that is not a power of two - and the length table of the original caps the

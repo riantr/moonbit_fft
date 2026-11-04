@@ -32,6 +32,7 @@ Usage::
 from __future__ import annotations
 
 import json
+import math
 import pathlib
 import re
 import sys
@@ -42,6 +43,10 @@ BUILD = ROOT / "build"
 # document can be checked on a fresh clone.
 BENCH = ROOT / "bench"
 DOC = ROOT / "BENCHMARK.md"
+# The two documents of the repository that repeat the numbers of the
+# benchmark.  They are checked too, because a number that is corrected in
+# one document and left in the other is a drift of its own.
+READMES = (ROOT / "README.md", ROOT / "moonbit_fft2" / "README.md")
 DATA = BENCH / "bench_compare.json"
 # The comparison of the kernels is a separate measurement.
 KERNEL_DATA = BENCH / "bench_kernels.json"
@@ -667,6 +672,58 @@ def main() -> int:
                             f"{row.group('ratio')}x of the native one, the "
                             f"measurement is {expected:.3f}x"
                         )
+
+    # The two documents of the repository repeat two numbers of the
+    # benchmark: how many orders of magnitude the old port was slower, and
+    # how many rounds the comparison of the workloads had.  A number that is
+    # corrected in `BENCHMARK.md` and left in a README is a drift of its
+    # own, and it is caught here.
+    rounds_measured = data.get("rounds")
+    orders = 0
+    for key, value in ratios.items():
+        speed = value.get("old/java")
+        if speed:
+            orders = max(orders, int(math.log10(speed)))
+    if orders:
+        words = {3: "three", 4: "four", 5: "five"}
+        expected = words.get(orders, "four")
+        # The phrase is written in bold in some places and in plain text in
+        # others, so both are looked for.
+        pattern = re.compile(
+            r"(?:\*\*)?\b(one|two|three|four|five|six) orders of magnitude\b"
+        )
+        for document in (DOC,) + READMES:
+            if not document.exists():
+                continue
+            text = document.read_text(encoding="utf-8")
+            for match in pattern.finditer(text):
+                word = match.group(1)
+                if word != expected:
+                    problems.append(
+                        f"{document.name}: the document says the port used to be "
+                        f"{word} orders of magnitude slower, the measurement is "
+                        f"{expected}"
+                    )
+    if rounds_measured:
+        for document in (DOC,) + READMES:
+            if not document.exists():
+                continue
+            text = document.read_text(encoding="utf-8")
+            for match in re.finditer(
+                r"median of (one|two|three|four|five|six|\d+) rounds", text
+            ):
+                given = match.group(1)
+                words = {
+                    "one": 1, "two": 2, "three": 3,
+                    "four": 4, "five": 5, "six": 6,
+                }
+                actual = int(given) if given.isdigit() else words.get(given)
+                if actual != rounds_measured:
+                    problems.append(
+                        f"{document.name}: the document says the median of "
+                        f"{given} rounds, the measurement has "
+                        f"{rounds_measured}"
+                    )
 
     if checked == 0:
         print("no rows of the document were found")

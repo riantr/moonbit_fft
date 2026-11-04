@@ -256,7 +256,7 @@ target, both the complex to complex transform of `n = 32 760`:
 
 | when | original | port | ratio |
 | --- | ---: | ---: | ---: |
-| in the session of `tools/bench_compare.py`, median of three rounds | 245 929 ns | 857 332 ns | 3.44x |
+| in the session of `tools/bench_compare.py`, median of five rounds | 245 929 ns | 857 332 ns | 3.44x |
 
 The port was measured alone in another session as well: 432 724 ns against
 290 623 ns of the original, a ratio of 1.49x.  That session was not uniformly
