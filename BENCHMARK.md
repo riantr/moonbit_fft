@@ -1265,6 +1265,12 @@ python "$root\tools\bench_compare.py" --rounds 5 --profile release `
   --with-direct --sides moonbit,direct `
   --out "$root\bench\bench_direct.txt"
 
+# the port against the best package of the ecosystem, in one session
+python "$root\tools\bench_ecosystem.py"
+
+# the table of the ecosystem, held against the measurement it was taken from
+python "$root\tools\negative_control_benchmark.py"
+
 # the tables of this document, checked against the measurements
 python "$root\tools\check_benchmark.py"
 
