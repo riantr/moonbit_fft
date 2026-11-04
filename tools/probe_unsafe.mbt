@@ -1,3 +1,13 @@
+// The monotonic clock of `moonbitlang/core/bench`, declared here because a
+// standalone file cannot import a package of `moonbitlang/core`.  The
+// elapsed time is in microseconds.
+#external
+type Timestamp
+
+extern "C" fn monotonic_clock_start() -> Timestamp = "moonbit_monotonic_clock_start"
+
+extern "C" fn monotonic_clock_end(ts : Timestamp) -> Double = "moonbit_monotonic_clock_stop"
+
 ///|
 /// How much does the bounds check of `Array` access cost?
 ///
@@ -48,7 +58,7 @@ fn fill(n : Int) -> Array[Double] {
 fn bench_seq(n : Int, reps : Int, unchecked : Bool) -> Double {
   let a = fill(n)
   let mut acc = 0.0
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   let mut r = 0
   while r < reps {
     let mut j = 0
@@ -62,7 +72,7 @@ fn bench_seq(n : Int, reps : Int, unchecked : Bool) -> Double {
     }
     r = r + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   if acc == 12345.678 {
     println("\{acc}")
   }
@@ -77,7 +87,7 @@ fn bench_strided(n : Int, reps : Int, unchecked : Bool) -> Double {
   let stride = 8
   let group = n / stride
   let mut acc = 0.0
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   let mut r = 0
   while r < reps {
     let mut g = 0
@@ -96,7 +106,7 @@ fn bench_strided(n : Int, reps : Int, unchecked : Bool) -> Double {
     }
     r = r + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   if acc == 12345.678 {
     println("\{acc}")
   }

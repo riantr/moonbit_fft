@@ -1,3 +1,13 @@
+// The monotonic clock of `moonbitlang/core/bench`, declared here because a
+// standalone file cannot import a package of `moonbitlang/core`.  The
+// elapsed time is in microseconds.
+#external
+type Timestamp
+
+extern "C" fn monotonic_clock_start() -> Timestamp = "moonbit_monotonic_clock_start"
+
+extern "C" fn monotonic_clock_end(ts : Timestamp) -> Double = "moonbit_monotonic_clock_stop"
+
 ///|
 /// The floor of the array access cost of MoonBit.
 ///
@@ -31,7 +41,7 @@ fn bench_doubles(n : Int, reps : Int) -> Double {
     i = i + 1
   }
   let mut acc = 0.0
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   let mut r = 0
   while r < reps {
     let mut j = 0
@@ -41,7 +51,7 @@ fn bench_doubles(n : Int, reps : Int) -> Double {
     }
     r = r + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   // keep the accumulator alive
   if acc == 12345.678 {
     println("\{acc}")
@@ -58,7 +68,7 @@ fn bench_floats(n : Int, reps : Int) -> Double {
     i = i + 1
   }
   let mut acc = 0.0
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   let mut r = 0
   while r < reps {
     let mut j = 0
@@ -68,7 +78,7 @@ fn bench_floats(n : Int, reps : Int) -> Double {
     }
     r = r + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   if acc == 12345.678 {
     println("\{acc}")
   }
@@ -84,7 +94,7 @@ fn bench_ints(n : Int, reps : Int) -> Double {
     i = i + 1
   }
   let mut acc = 0
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   let mut r = 0
   while r < reps {
     let mut j = 0
@@ -94,7 +104,7 @@ fn bench_ints(n : Int, reps : Int) -> Double {
     }
     r = r + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   if acc == 12345678 {
     println("\{acc}")
   }

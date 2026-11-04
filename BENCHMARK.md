@@ -70,6 +70,22 @@ about the same as on the JVM.
 The tables below are the **release** build, because that is the fair
 comparison.  The debug numbers are in the section *The debug build*.
 
+### The target is the second thing to get right
+
+`moon run` builds for **wasm** unless a target is named.  The release build of
+the port on the **native** target and the release build of the very same source
+on the **wasm** target differ by a factor of 2.6:
+
+| target | `c2c` of `n = 32 760` |
+| --- | ---: |
+| wasm, the default of `moon run` | 1 122 444 ns |
+| **native**, `--target native` | **432 724 ns** |
+
+So a benchmark that is started by hand, with `moon run --release benchmark`,
+measures the wasm build and reports a number that is more than two and a half
+times too large.  `tools/bench_compare.py` names the target explicitly, which
+is why the tables of this document are native numbers.
+
 ### What the symmetric small transform is worth
 
 The same mistake had an effect on the conclusion of the last round of work.
@@ -175,6 +191,19 @@ not.**
 The build profile can be chosen with `--profile release|debug`, and the
 debug numbers are in the section *The debug build*.
 
+The comparison of a **change** with the revision before it is made the same
+way, with the package `moonbit_fft2/benchab/`.  It measures the one case that
+the change touches in many rounds inside one process, the two builds are run
+alternately with the order rotated, and the rounds are **paired**: the ratio
+of the two sides in the same round cancels the part of the noise that both of
+them see, and the median of those ratios is the number that is reported.  The
+tool prints one line per round, so that the numbers can also be compared
+without the script:
+
+```
+moon -C moonbit_fft2 run --release --target native ./benchab
+```
+
 Five sides can be measured in the same session:
 
 | side | what it is |
@@ -195,6 +224,123 @@ is still far faster than the *fastest* round of the old kernel.  For the
 complex to complex transform of `n = 32 760` the old kernel needs about
 <!--v:OLD_C2C_S-->4.2<!--/v--> seconds for a single transform, the port needs
 tens of milliseconds.
+
+### The machine is not idle, and the port feels it more than the original
+
+The protocol of this document compares the two sides **in the same session**,
+because the noise of the machine is bimodal and only a ratio of two sides
+that saw the same load can be trusted.  That protects against the *jitter* of
+the load, but not against the load itself, because the load does not hit the
+two sides equally: the port holds its samples in double precision arrays and
+the original holds them in single precision ones, so the port moves twice the
+memory, and a machine that is busy with other work costs it more.
+
+The two measurements of this round, both the release build on the native
+target, both the complex to complex transform of `n = 32 760`:
+
+| when | original | port | ratio |
+| --- | ---: | ---: | ---: |
+| in the session of `tools/bench_compare.py`, median of three rounds | 290 623 ns | 936 994 ns | 3.24x |
+| the same port, measured alone while the machine was quieter | 290 623 ns | 432 724 ns | 1.49x |
+
+The port moved between 433 us and 937 us over the two, the original between
+246 us and 291 us.  The tables of this document were taken while the machine
+was busy, so the ratio they show is the pessimistic end of that range.  The
+honest summary is that the port is **about 1.5 times** slower than the
+original when the machine is quiet and up to **three times** slower when it is
+busy, and that the difference between those two numbers is a property of the
+memory traffic of the port, not of its arithmetic.
+
+### Where the time of a transform goes
+
+The transform of `n = 32 760` on the native target, the five stages of the
+prime factor kernel and the three passes around them, measured with the same
+data in the same session:
+
+| part | time | share |
+| --- | ---: | ---: |
+| the five stages of the kernel | 309 us | 81 % |
+| widening the samples to double precision | 26 us | 7 % |
+| narrowing them back to single precision | 24 us | 6 % |
+| the copy of the input into the output | 22 us | 6 % |
+
+The copy of the input looks like overhead that could be saved: the transform
+could read the input array and write the output array.  It must not, and the
+reason is worth a section of its own.
+
+### The transform has to work in place
+
+`FftComplex::complex_to_complex` copies the samples into the output array
+and transforms that copy in place.  A version that reads the input array and
+writes the output array was measured, and it is **not** a win:
+
+| what the transform does | first measurement | after a few thousand calls |
+| --- | ---: | ---: |
+| in place, the copy of the input first | 425 325 ns | 425 259 ns |
+| reads one array and writes another | 401 248 ns | 818 098 ns |
+
+The transform that reads one array and writes another is **7 % faster at
+first** and **2.2 times slower** once it has been called a few thousand
+times, and it stays slow.  The same happens with the copy of the input still
+in place, so it is not the copy that costs: it is the transform itself that
+reads one array and writes another.
+
+The five stages alone do not have this behaviour: they were run four
+thousand times in a row, and the time of a pipeline stayed between 295 us
+and 320 us from the first to the last.  So it is not the kernel, and it is
+not the plan cache either - the plans of the other lengths were built and
+cached before the measurement, with no effect.  It is not the rubbish of the
+heap either - a few megabytes of arrays that were allocated and dropped
+before the measurement had no effect, and the time went back down after
+them.  The clock of the machine does not move: three windows of pure
+integer arithmetic of the same size took 912 ms, 901 ms and 891 ms.
+
+What is left is that the compiler cannot hoist the length and the buffer of
+an array out of the loop that reads it when it cannot prove that the array
+does not change, and the generated code reloads both on every access.  The
+mechanism behind the *drift* is not understood, and the change was therefore
+not kept.  The port keeps the copy, and the copy is the price of the
+stability.
+
+### Native vectorisation: what it is worth
+
+Three ways of making the kernel vectorised were measured, and none of them is
+worth what it costs.
+
+**`moonbitlang/core/v128` does not vectorise anything on the native
+backend.**  Its operators are closures over scalar code - `f64x2_add` is
+`f64x2_zip(value, other, fn(x, y) { x + y })` - and declaring the intrinsic
+in the user code does not change that: the measured time of `f64x2_mul` and
+`f64x2_add` chained over four million iterations is **456 543 us**, against
+**6 102 us** for the same arithmetic done by hand, that is **75 times
+slower**.  The package has no vector load and store for floating point
+arrays either, its memory operators address bytes.
+
+**C through the foreign function interface works, and the result is bit for
+bit the same as the MoonBit kernel.**  With the two doubles of a `__m128d`
+holding two butterflies at once, the five stages of `n = 32 760` take
+**268 us** against **300 us** for the MoonBit kernel, that is **1.12x**.  But
+the compiler that MoonBit uses on this machine is the Microsoft one and it is
+called without `/arch:AVX2`, so only the SSE2 baseline is available, and
+`extern "C"` is **not supported by the wasm backend at all**: a package that
+uses it cannot be built for wasm, for wasm-gc or for js.  A tenth of the run
+time is not worth the loss of the three other targets.
+
+**Single precision does not pay either.**  The original evaluates its
+transform in single precision, `Pfacc.pfa13` adds and multiplies `float`
+values, so the port accumulates in double precision for nothing.  Measured on
+the same data in the same session, the five stages in single precision take
+**361 us** against **313 us** in double precision.  The kernel is limited by
+its arithmetic and not by its memory traffic, so halving the size of the
+samples buys nothing - and the single precision result moves about 5.6e-4
+away from the double precision one, which is the precision of the original
+anyway.
+
+Two more things that were measured and turned out to be no lever at all: the
+work buffers of the plan are `FixedArray[Double]` instead of `Array[Double]`
+only **1.02x** faster, and the bounds check of an array access costs
+**nothing** in the release build, the checked and the unchecked access of
+`tools/probe_unsafe.mbt` differ by less than the noise.
 
 ## The numbers
 

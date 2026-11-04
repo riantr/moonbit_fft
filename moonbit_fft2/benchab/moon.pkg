@@ -1,0 +1,7 @@
+import {
+  "riantr/moonbit_fft2",
+  "moonbitlang/core/bench",
+  "moonbitlang/core/math",
+}
+
+pkgtype(kind: "executable")

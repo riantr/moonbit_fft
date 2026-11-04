@@ -1,3 +1,17 @@
+// The monotonic clock of `moonbitlang/core/bench`, declared here because a
+// standalone file cannot import a package of `moonbitlang/core`.  The
+// elapsed time is in microseconds.
+#external
+type Timestamp
+
+extern "C" fn monotonic_clock_start() -> Timestamp = "moonbit_monotonic_clock_start"
+
+extern "C" fn monotonic_clock_end(ts : Timestamp) -> Double = "moonbit_monotonic_clock_stop"
+
+extern "C" fn cos(x : Double) -> Double = "cos"
+
+extern "C" fn sin(x : Double) -> Double = "sin"
+
 ///|
 /// The floor of a transform in MoonBit.
 ///
@@ -27,14 +41,14 @@ fn main {
     fft(a)
     i = i + 1
   }
-  let ts = @bench.monotonic_clock_start()
+  let ts = monotonic_clock_start()
   i = 0
   while i < reps {
     let a = make_input(n)
     fft(a)
     i = i + 1
   }
-  let us = @bench.monotonic_clock_end(ts)
+  let us = monotonic_clock_end(ts)
   let per = us * 1000.0 / reps.to_double()
   println("radix-2 n=\{n}: \{per} ns per transform, \{per / n.to_double()} ns per element")
 }
@@ -76,8 +90,8 @@ fn fft(a : Array[Double]) -> Unit {
   let mut t = 0
   while t < n {
     let ang = -6.283185307179586 * t.to_double() / n.to_double()
-    tw.push(@math.cos(ang))
-    tw.push(@math.sin(ang))
+    tw.push(cos(ang))
+    tw.push(sin(ang))
     t = t + 1
   }
   let mut len = 2

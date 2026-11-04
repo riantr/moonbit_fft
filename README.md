@@ -18,6 +18,7 @@ list of deviations from the Java original are in
 | `fft2/` | the **original** Java bytecode of `net.imglib2.algorithm.fft2` (`FFT`, `FFTMethods`), the oracle of this port | yes |
 | `moonbit_fft2/` | the MoonBit module `riantr/moonbit_fft2` | yes |
 | `moonbit_fft2/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
+| `moonbit_fft2/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
 | `tools/java/Oracle.java` | harness that drives the original bytecode and dumps its results as golden data | yes |
 | `tools/java/Bench.java` | benchmark of the original Java implementation | yes |
 | `tools/gen_cases.py` | generates the deterministic test inputs and the manifest | yes |
@@ -166,14 +167,18 @@ complex transform went from **<!--v:OLD_C2C_S-->4.2<!--/v--> s to <!--v:C2C_MS--
 (<!--v:C2C_SPEEDUP-->4890<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4<!--/v--> times slower than
 the JVM at the lengths where it is slower at all.
 
-Two details of the measurement matter as much as the numbers.  The benchmark
+Three details of the measurement matter as much as the numbers.  The benchmark
 runs the **release** build, because `moon run` produces the debug build by
 default and that one is about thirty times slower - the debug build would
-make the port look 169x slower than the original instead of 3.6x.  And the
-noise of a busy machine is bimodal, so a "keep the fastest run" statistic
-measures the luck of the schedule rather than the program; `BENCHMARK.md`
-describes the protocol that replaces it - the median of the rounds, the
-ratios taken per round, and the order of the sides rotated in every round.
+make the port look 169x slower than the original instead of 3.6x.  It also
+runs the **native** target, because `moon run` builds for wasm unless a
+target is named, and the wasm build of the port is 2.6 times slower than the
+native one (1 122 444 ns against 432 724 ns for the complex to complex
+transform of `n = 32 760`).  And the noise of a busy machine is bimodal, so a
+"keep the fastest run" statistic measures the luck of the schedule rather
+than the program; `BENCHMARK.md` describes the protocol that replaces it - the
+median of the rounds, the ratios taken per round, and the order of the sides
+rotated in every round.
 
 The small transforms of the odd radices use the symmetry of the roots of
 unity, which is a quarter of the multiplications and a quarter of the
