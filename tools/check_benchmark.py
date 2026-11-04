@@ -67,6 +67,9 @@ MACHINE_DATA = BENCH / "bench_machine.json"
 # The comparison of the wasm build of the port with the native build.
 TARGET_DATA = BENCH / "bench_target.json"
 
+# The comparison of the port with the best package of the ecosystem.
+ECO_DATA = BENCH / "bench_ecosystem.json"
+
 # A row of the tables of the workloads:
 #
 #   | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
@@ -172,6 +175,22 @@ ROW_TARGET = re.compile(
     r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
 )
 
+# A row of the table of the ecosystem:
+#
+#   | 4 096 | 4 095 | 41 953 ns | 41 815 ns | 0.997x | 0.854 | 0.851 |
+ROW_ECO = re.compile(
+    r"^\|\s*\**\s*(?P<window>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<port_n>[\d ]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<port>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<package>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|"
+    r"\s*\**\s*(?P<port_unit>[\d.]+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<package_unit>[\d.]+)\s*\**\s*\|$"
+)
+
+# The section that holds the table of the ecosystem.
+ECO_SECTION = "The best of the ecosystem"
+
 # The section that holds the table of the comparison of the two builds.
 COPY_SECTION = "The transform reads the input and writes the output"
 
@@ -263,6 +282,11 @@ def main() -> int:
     if TARGET_DATA.exists():
         target_data = json.loads(TARGET_DATA.read_text(encoding="utf-8"))
 
+    # The comparison of the port with the best package of the ecosystem.
+    eco_data: dict = {}
+    if ECO_DATA.exists():
+        eco_data = json.loads(ECO_DATA.read_text(encoding="utf-8"))
+
     problems: list[str] = []
     checked = 0
     workload = None
@@ -274,9 +298,12 @@ def main() -> int:
     in_machine = False
     in_idle = False
     in_target = False
+    in_eco = False
     copy_rows: list[re.Match[str]] = []
     idle_rows: list[re.Match[str]] = []
     target_rows: list[re.Match[str]] = []
+    eco_rows: list[re.Match[str]] = []
+    eco_lines: list[str] = []
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()
@@ -289,10 +316,13 @@ def main() -> int:
             in_machine = title == MACHINE_SECTION
             in_idle = title == IDLE_SECTION
             in_target = title == TARGET_SECTION
+            in_eco = title == ECO_SECTION
+        if in_eco:
+            eco_lines.append(line)
         if line.startswith("| n |") or line.startswith("| ---"):
             continue
 
-        if in_copy or in_machine or in_idle or in_target:
+        if in_copy or in_machine or in_idle or in_target or in_eco:
             # A row of these sections is either a header, which holds no
             # measurement at all, or a row that the measurement must check.  A
             # row that holds a measurement and that this script does not
@@ -306,6 +336,8 @@ def main() -> int:
                     m = ROW_MACHINE.match(line)
                 elif in_idle:
                     m = ROW_IDLE.match(line)
+                elif in_eco:
+                    m = ROW_ECO.match(line)
                 else:
                     m = ROW_TARGET.match(line)
                 if m:
@@ -316,6 +348,8 @@ def main() -> int:
                         idle_rows.append(m)
                     elif in_target:
                         target_rows.append(m)
+                    elif in_eco:
+                        eco_rows.append(m)
                     else:
                         index = int(m.group("round"))
                         measured = machine_rounds.get(index)
@@ -672,6 +706,94 @@ def main() -> int:
                             f"{row.group('ratio')}x of the native one, the "
                             f"measurement is {expected:.3f}x"
                         )
+
+    # The table of the ecosystem holds one row per window of the package, with
+    # the closest valid length of the port next to it.
+    if eco_rows:
+        if not eco_data:
+            problems.append(
+                "the comparison with the ecosystem is not measured, "
+                f"{ECO_DATA} does not exist"
+            )
+        else:
+            lengths = eco_data.get("lengths", {})
+            medians = eco_data.get("median", {})
+            eco_ratios = eco_data.get("ratios", {})
+            eco_unit = eco_data.get("per_unit", {})
+            seen: set[str] = set()
+            for row in eco_rows:
+                window = number(row.group("window"))
+                key = str(window)
+                if key not in lengths:
+                    problems.append(
+                        f"the document has a row for the window {window}, the "
+                        f"measurement has none"
+                    )
+                    continue
+                seen.add(key)
+                if number(row.group("port_n")) != lengths[key]["port"]:
+                    problems.append(
+                        f"{key}: the document says the port is measured at "
+                        f"{number(row.group('port_n'))}, the measurement is at "
+                        f"{lengths[key]['port']}"
+                    )
+                for given, measured, what in (
+                    (row.group("port"), medians.get(key, {}).get("port"),
+                     "the port"),
+                    (row.group("package"), medians.get(key, {}).get("hkdsp"),
+                     "the package"),
+                ):
+                    if measured is None:
+                        problems.append(f"{key}: the measurement has no {what}")
+                        continue
+                    if abs(number(given) - measured) > max(
+                        1.0, 0.005 * abs(measured)
+                    ):
+                        problems.append(
+                            f"{key}: the document says {what} takes "
+                            f"{number(given)} ns, the measurement is "
+                            f"{measured:.0f} ns"
+                        )
+                for given, measured, what in (
+                    (row.group("ratio"),
+                     eco_ratios.get(key, {}).get("hkdsp/port"), "the ratio"),
+                    (row.group("port_unit"),
+                     eco_unit.get(key, {}).get("port"),
+                     "the cost of an element of the port"),
+                    (row.group("package_unit"),
+                     eco_unit.get(key, {}).get("hkdsp"),
+                     "the cost of an element of the package"),
+                ):
+                    if measured is None:
+                        problems.append(f"{key}: the measurement has no {what}")
+                        continue
+                    if not close(float(given), measured, 0.02, 0.01):
+                        problems.append(
+                            f"{key}: the document says {what} is {given}, the "
+                            f"measurement is {measured:.3f}"
+                        )
+            missing = set(lengths) - seen
+            if missing:
+                problems.append(
+                    f"the table of the ecosystem has no row for the window "
+                    f"{sorted(missing)}"
+                )
+            # The section says how many rounds the measurement has and which
+            # version of the package it measured.  Both are numbers of the
+            # measurement, and a document that drifts from them is a drift.
+            eco_text = "\n".join(eco_lines)
+            eco_rounds = eco_data.get("rounds")
+            if eco_rounds and not re.search(r"\b%d rounds\b" % eco_rounds, eco_text):
+                problems.append(
+                    f"the section of the ecosystem does not say that the "
+                    f"measurement has {eco_rounds} rounds"
+                )
+            version = eco_data.get("ecosystem", {}).get("version")
+            if version and version not in eco_text:
+                problems.append(
+                    f"the section of the ecosystem does not name the version "
+                    f"{version} of the package that was measured"
+                )
 
     # The two documents of the repository repeat two numbers of the
     # benchmark: how many orders of magnitude the old port was slower, and

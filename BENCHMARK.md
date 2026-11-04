@@ -413,6 +413,82 @@ only **1.02x** faster, and the bounds check of an array access costs
 **nothing** in the release build, the checked and the unchecked access of
 `tools/probe_unsafe.mbt` differ by less than the noise.
 
+### The best of the ecosystem
+
+The tables above compare the port with the original Java implementation, which
+is what the port has to reproduce.  The question of a user who writes MoonBit
+today is a different one: of the packages of the ecosystem, which one is the
+one to use, and where does the port stand next to it?
+
+Seven packages of the ecosystem were installed and run for this comparison.
+Six of them really transform a signal, and five of those six are not in the
+class of the port: they either take a power of two and nothing else, or they
+take any length through Bluestein and build the buffers of that convolution on
+every call.  The one that is different is **`HK-SHAO/dsp`**, measured at version
+0.1.4.  It keeps a
+**plan** - the bit reversal and the tables of the cosines and the sines of a
+window - and it transforms in place in the memory of a **slot** that it hands
+out once.  That is the structure the port has after its own rewrites, with the
+same cached tables, and it is the reason why this is the package the port has
+to be measured against.
+
+The two of them cannot be given the same length, and that is a result of the
+comparison itself:
+
+* the port takes the **lengths of the original**, the table of
+  `edu.mines.jtk.dsp.Pfacc`.  It has 240 entries, most of them are not powers of
+  two, and **the powers of two stop at 16**: 32, 64, 128, 256, 1024 and 4096 are
+  not valid lengths of the port at all,
+* `HK-SHAO/dsp` takes the **powers of two from 256 to 4096**, and nothing else.
+
+Each row of the table is a window of the package together with the entry of the
+table of the port that is the closest to it, and the cost of an element, in
+nanoseconds per `n log2(n)`, is what makes the two lengths comparable at all:
+
+| window | n of the port | the port | `HK-SHAO/dsp` | the package / the port | per unit, the port | per unit, the package |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 096 | 4 095 | 41 953 ns | 41 815 ns | 0.997x | 0.854 | 0.851 |
+| 1 024 | 1 008 | 8 054 ns | 7 479 ns | 0.939x | 0.801 | 0.730 |
+
+The two sides run in **one process**, in an order that is rotated in every
+round, and the ratio is taken per round and then medianed, exactly like the
+comparison against the original.  The measurement has 16 rounds.  The state of
+the machine is measured once per round as well, because that is what makes the
+rounds comparable in the first place: the clock read 59 486 us (57 223 to
+62 407) and the pass over a megabyte of doubles read 0.612 ns per element
+(0.567 to 0.721).
+
+The honest reading of the table is that **the two are in the same class**.  The
+package is 0.3 % faster at the long transform and 6 % faster at the short one,
+and the repeat runs of the same harness that this session made move both
+numbers by a few percent, in both directions.  There is no factor to claim
+here, and the port has no advantage of speed to claim against this package.
+What the port has is the coverage of the **lengths of the original** and the
+image API on top of them, which is the reason the port exists at all; what it
+does not have is the powers of two above 16, which every package of the
+ecosystem has and which a user will expect.
+
+The harness is `tools/ecomodule/bencheco` and the driver is
+`tools/bench_ecosystem.py`.  The comparison needs the ecosystem package as a
+dependency and the library itself must not have one, so the driver assembles
+the shadow module of `build/ecomodule` from the module of the working tree and
+adds the dependency to **that** copy only.  The rounds are tracked in
+`bench/bench_ecosystem.txt` and the medians in `bench/bench_ecosystem.json`:
+
+```
+python tools/bench_ecosystem.py
+```
+
+Two traps of this measurement are worth writing down.  `HK-SHAO/dsp` transforms
+**in place**, so its samples are put back before every block of transforms:
+without that the values are multiplied by the length at every transform and
+become infinite after a few dozen of them, and the rest of the round then
+measures something that is not the transform.  And a reference of the machine
+that is measured and then dropped reads **zero**, because MoonBit removes the
+computation whose result is never read: the first version of this harness
+printed a clock of `0 us`, and the driver now refuses a measurement whose clock
+is not positive.
+
 ## The numbers
 
 `c2c` is `FftComplex.complexToComplex` against `FftComplex::complex_to_complex`,

@@ -1,0 +1,7 @@
+import {
+  "riantr/moonbit_fft2",
+  "HK-SHAO/dsp" @hkdsp,
+  "moonbitlang/core/bench",
+}
+
+pkgtype(kind: "executable")

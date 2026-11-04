@@ -1,0 +1,18 @@
+the port of the repository against HK-SHAO/dsp 0.1.4
+the median of the 16 rounds, the ratios taken per round
+
+window      n port        port ns       hkdsp ns  hkdsp/port
+------------------------------------------------------------
+4096          4095          41953          41815      0.997x
+1024          1008           8054           7479      0.939x
+
+the cost of an element, in ns per n log2(n):
+  4096   port 0.854 (4095)  hkdsp 0.851 (4096)  hkdsp/port 0.996
+  1024   port 0.801 (1008)  hkdsp 0.730 (1024)  hkdsp/port 0.912
+
+the spread of the rounds, the slowest over the fastest:
+  4096   port 1.19x  hkdsp 1.16x
+  1024   port 1.17x  hkdsp 1.14x
+
+the machine: clock median 59486 us (57223 to 62407), memory median 0.612 ns/elem (0.567 to 0.721)
+checksum -130.4640007019043

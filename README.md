@@ -41,6 +41,8 @@ list of deviations from the Java original are in
 | `tools/ab_compare.py` | compares two builds of the port, with their rounds paired, and writes the result into `bench/` | yes |
 | `tools/bench_machine.py` | measures the transform next to the state of the machine, and writes the result into `bench/` | yes |
 | `tools/target_compare.py` | compares the wasm build of the port with the native build, and writes the result into `bench/` | yes |
+| `tools/bench_ecosystem.py` | measures the port against the best package of the ecosystem, and writes the result into `bench/` | yes |
+| `tools/ecomodule/` | the harness of that comparison, assembled into a shadow module that alone carries the dependency | yes |
 | `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |

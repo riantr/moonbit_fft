@@ -1,0 +1,82 @@
+round 0 side port length 4096 39458.43749999999 ns
+round 0 side hkdsp length 4096 40988.4375 ns
+round 0 side port length 1024 7505.416666666667 ns
+round 0 side hkdsp length 1024 7142.666666666665 ns
+round 0 reference clock 58422.2 us | memory 0.681304931640625 ns/elem | mem0 -8.83423532389192e+71 sink -8.154000043869019 x -1951311047 acc 131072
+round 1 side hkdsp length 4096 41554.37500000001 ns
+round 1 side port length 1024 8033.75 ns
+round 1 side hkdsp length 1024 7485.75 ns
+round 1 side port length 4096 41683.125 ns
+round 1 reference clock 59875 us | memory 0.5973815917968751 ns/elem | mem0 -8.83423532389192e+71 sink -16.308000087738037 x -1951311047 acc 131072
+round 2 side port length 1024 8359.666666666666 ns
+round 2 side hkdsp length 1024 7579.166666666667 ns
+round 2 side port length 4096 46903.125 ns
+round 2 side hkdsp length 4096 43311.25 ns
+round 2 reference clock 59647.6 us | memory 0.566864013671875 ns/elem | mem0 -8.83423532389192e+71 sink -24.462000131607056 x -1951311047 acc 131072
+round 3 side hkdsp length 1024 7343.666666666667 ns
+round 3 side port length 4096 44899.0625 ns
+round 3 side hkdsp length 4096 41844.68749999999 ns
+round 3 side port length 1024 8004.083333333333 ns
+round 3 reference clock 58827.4 us | memory 0.6500244140625 ns/elem | mem0 -8.83423532389192e+71 sink -32.616000175476074 x -1951311047 acc 131072
+round 4 side port length 4096 44556.25 ns
+round 4 side hkdsp length 4096 42540.9375 ns
+round 4 side port length 1024 8778.250000000002 ns
+round 4 side hkdsp length 1024 7472.249999999998 ns
+round 4 reference clock 58278.200000000004 us | memory 0.612640380859375 ns/elem | mem0 -8.83423532389192e+71 sink -40.77000021934509 x -1951311047 acc 131072
+round 5 side hkdsp length 4096 42245.3125 ns
+round 5 side port length 1024 8599.5 ns
+round 5 side hkdsp length 1024 7683.333333333333 ns
+round 5 side port length 4096 40480.93750000001 ns
+round 5 reference clock 58673 us | memory 0.604248046875 ns/elem | mem0 -8.83423532389192e+71 sink -48.92400026321411 x -1951311047 acc 131072
+round 6 side port length 1024 7832.833333333333 ns
+round 6 side hkdsp length 1024 7403.583333333333 ns
+round 6 side port length 4096 44753.74999999999 ns
+round 6 side hkdsp length 4096 43920.62499999999 ns
+round 6 reference clock 60213.5 us | memory 0.653839111328125 ns/elem | mem0 -8.83423532389192e+71 sink -57.07800030708313 x -1951311047 acc 131072
+round 7 side hkdsp length 1024 7363.166666666667 ns
+round 7 side port length 4096 40614.6875 ns
+round 7 side hkdsp length 4096 41744.0625 ns
+round 7 side port length 1024 8073.833333333333 ns
+round 7 reference clock 59324.6 us | memory 0.609588623046875 ns/elem | mem0 -8.83423532389192e+71 sink -65.23200035095215 x -1951311047 acc 131072
+round 8 side port length 4096 41720.3125 ns
+round 8 side hkdsp length 4096 41367.1875 ns
+round 8 side port length 1024 8088.083333333332 ns
+round 8 side hkdsp length 1024 8158.833333333333 ns
+round 8 reference clock 62407 us | memory 0.61187744140625 ns/elem | mem0 -8.83423532389192e+71 sink -73.38600039482117 x -1951311047 acc 131072
+round 9 side hkdsp length 4096 43144.375 ns
+round 9 side port length 1024 8701.833333333334 ns
+round 9 side hkdsp length 1024 7968.166666666667 ns
+round 9 side port length 4096 42281.5625 ns
+round 9 reference clock 60854.2 us | memory 0.68359375 ns/elem | mem0 -8.83423532389192e+71 sink -81.54000043869019 x -1951311047 acc 131072
+round 10 side port length 1024 8532.25 ns
+round 10 side hkdsp length 1024 8138.75 ns
+round 10 side port length 4096 44420 ns
+round 10 side hkdsp length 4096 45764.0625 ns
+round 10 reference clock 61616.200000000004 us | memory 0.720977783203125 ns/elem | mem0 -8.83423532389192e+71 sink -89.6940004825592 x -1951311047 acc 131072
+round 11 side hkdsp length 1024 7939.916666666667 ns
+round 11 side port length 4096 44265.9375 ns
+round 11 side hkdsp length 4096 43392.8125 ns
+round 11 side port length 1024 8437.583333333334 ns
+round 11 reference clock 61534.1 us | memory 0.5813598632812499 ns/elem | mem0 -8.83423532389192e+71 sink -97.84800052642822 x -1951311047 acc 131072
+round 12 side port length 4096 42184.99999999999 ns
+round 12 side hkdsp length 4096 41785.3125 ns
+round 12 side port length 1024 8000.750000000002 ns
+round 12 side hkdsp length 1024 7565.916666666667 ns
+round 12 reference clock 58675 us | memory 0.606536865234375 ns/elem | mem0 -8.83423532389192e+71 sink -106.00200057029724 x -1951311047 acc 131072
+round 13 side hkdsp length 4096 40104.37500000001 ns
+round 13 side port length 1024 7638.833333333333 ns
+round 13 side hkdsp length 1024 7192.25 ns
+round 13 side port length 4096 40218.12500000001 ns
+round 13 reference clock 59826.4 us | memory 0.666046142578125 ns/elem | mem0 -8.83423532389192e+71 sink -114.15600061416626 x -1951311047 acc 131072
+round 14 side port length 1024 7856.916666666668 ns
+round 14 side hkdsp length 1024 7372.416666666667 ns
+round 14 side port length 4096 40378.125 ns
+round 14 side hkdsp length 4096 40355.3125 ns
+round 14 reference clock 57669 us | memory 0.61798095703125 ns/elem | mem0 -8.83423532389192e+71 sink -122.31000065803528 x -1951311047 acc 131072
+round 15 side hkdsp length 1024 7191.083333333333 ns
+round 15 side port length 4096 39545.93749999999 ns
+round 15 side hkdsp length 4096 39533.75000000001 ns
+round 15 side port length 1024 7652.166666666667 ns
+round 15 reference clock 57223.4 us | memory 0.5828857421875 ns/elem | mem0 -8.83423532389192e+71 sink -130.4640007019043 x -1951311047 acc 131072
+CHECKSUM -130.4640007019043
+the port: false accepts 4096
