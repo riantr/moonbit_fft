@@ -11,6 +11,10 @@ Usage::
 
     python tools/gen_parity.py --cases build/cases --out moonbit_fft2/parity_wbtest.mbt
     cd moonbit_fft2 && moon fmt      # the generated file is not formatted yet
+
+The generated file and the committed one are the same file, so a change of
+the generator shows up in a diff of the test and not only in a diff of the
+tool.
 """
 
 from __future__ import annotations
@@ -178,8 +182,11 @@ def main() -> None:
     body.append("  }")
     body.append("}")
     body.append("")
+    # The integers of the extents are `Int32` and not `Int`: `Int` is the
+    # default integer type of the target and its width is not the same on
+    # every target, so a test that compares integers has to name the width.
     body.append("/// Asserts that two extent arrays are identical.")
-    body.append("fn parity_assert_dims(actual : Array[Int], expected : Array[Int]) -> Unit raise {")
+    body.append("fn parity_assert_dims(actual : Array[Int32], expected : Array[Int32]) -> Unit raise {")
     body.append("  assert_true(")
     body.append("    actual.length() == expected.length(),")
     body.append("    msg=\"expected \\{expected.length()} dimensions, got \\{actual.length()}\",")
@@ -195,7 +202,7 @@ def main() -> None:
     body.append("}")
     body.append("")
     body.append("/// Asserts that two arrays of integers are identical.")
-    body.append("fn parity_assert_ints(actual : Array[Int], expected : Array[Int]) -> Unit raise {")
+    body.append("fn parity_assert_ints(actual : Array[Int32], expected : Array[Int32]) -> Unit raise {")
     body.append("  assert_true(")
     body.append("    actual.length() == expected.length(),")
     body.append("    msg=\"expected \\{expected.length()} values, got \\{actual.length()}\",")
@@ -235,7 +242,7 @@ def main() -> None:
             body.append("")
 
         def emit_int_array(fname: str, values) -> None:
-            body.append("fn " + fname + "() -> Array[Int] {")
+            body.append("fn " + fname + "() -> Array[Int32] {")
             body.append("  [" + ", ".join(str(v) for v in values) + "]")
             body.append("}")
             body.append("")
