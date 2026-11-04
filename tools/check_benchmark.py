@@ -18,7 +18,11 @@ Two kinds of tables are checked:
 * the table of the kernels, which compares the port of today with the port as
   it is committed and with the port of today with the direct small transform,
 * the tables of the rounds, the prime factor rewrite and the rewrite of the
-  butterflies, and the control of the factorisation.
+  butterflies, and the control of the factorisation,
+* the table of the comparison of the two builds of the transform, with and
+  without the copy of the input into the output,
+* the table of the measurement of the machine, which shows the transform of
+  the port next to the clock and the memory system of the machine.
 
 Usage::
 
@@ -47,6 +51,13 @@ KERNEL_DATA = BENCH / "bench_kernels.json"
 GT_DATA = BENCH / "bench_goodthomas.json"
 # The measurement of the control of the factorisation of the original.
 DIRECT_DATA = BENCH / "bench_direct.json"
+
+# The comparison of the two builds of the transform, with and without the copy
+# of the input into the output.
+COPY_DATA = BENCH / "bench_copy.json"
+
+# The measurement of the transform next to the state of the machine.
+MACHINE_DATA = BENCH / "bench_machine.json"
 
 # A row of the tables of the workloads:
 #
@@ -118,6 +129,30 @@ ROW_DIRECT = re.compile(
     r"\s*\**\s*(?P<over_direct>[\d.]+)x\s*\**\s*\|$"
 )
 
+# A row of the table of the comparison of the two builds:
+#
+#   | the copy of the input first | 422 122 ns | 1.085x |
+ROW_COPY = re.compile(
+    r"^\|\s*(?P<what>[^|]+?)\s*\|\s*\**\s*(?P<median>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
+)
+
+# A row of the table of the machine:
+#
+#   | 0 | 441 497 ns | 62 450 us | 0.594 ns/elem |
+ROW_MACHINE = re.compile(
+    r"^\|\s*\**\s*(?P<round>\d+)\s*\**\s*\|"
+    r"\s*\**\s*(?P<transform>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<clock>[\d ]+)\s*us\s*\**\s*\|"
+    r"\s*\**\s*(?P<memory>[\d.]+)\s*ns/elem\s*\**\s*\|$"
+)
+
+# The section that holds the table of the comparison of the two builds.
+COPY_SECTION = "The transform reads the input and writes the output"
+
+# The section that holds the table of the measurement of the machine.
+MACHINE_SECTION = "The machine loses its speed, and it hits everything"
+
 
 def number(text: str) -> int:
     return int(text.replace(" ", "").replace(" ", ""))
@@ -178,6 +213,20 @@ def main() -> int:
         direct_best = direct_data.get("median") or direct_data.get("best", {})
         direct_ratios = direct_data.get("ratios", {})
 
+    # The comparison of the two builds of the transform, with and without the
+    # copy of the input into the output.
+    copy_data: dict = {}
+    if COPY_DATA.exists():
+        copy_data = json.loads(COPY_DATA.read_text(encoding="utf-8"))
+
+    # The measurement of the transform next to the state of the machine.
+    machine_data: dict = {}
+    if MACHINE_DATA.exists():
+        machine_data = json.loads(MACHINE_DATA.read_text(encoding="utf-8"))
+    machine_rounds = {
+        int(r["round"]): r for r in machine_data.get("rounds", [])
+    }
+
     problems: list[str] = []
     checked = 0
     workload = None
@@ -185,6 +234,9 @@ def main() -> int:
     in_goodthomas = False
     in_original = False
     in_direct = False
+    in_copy = False
+    in_machine = False
+    copy_rows: list[re.Match[str]] = []
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()
@@ -193,8 +245,61 @@ def main() -> int:
             in_goodthomas = title == GOODTHOMAS_SECTION
             in_original = title == ORIGINAL_SECTION
             in_direct = title == DIRECT_SECTION
+            in_copy = title == COPY_SECTION
+            in_machine = title == MACHINE_SECTION
         if line.startswith("| n |") or line.startswith("| ---"):
             continue
+
+        if in_copy or in_machine:
+            # A row of these two sections is either a header, which holds no
+            # measurement at all, or a row that the measurement must check.  A
+            # row that holds a measurement and that this script does not
+            # understand must not pass silently.
+            if line.startswith("|"):
+                if not re.search(r"\d[\d ]*(ns|us|x)\b", line):
+                    continue
+                m = (ROW_COPY if in_copy else ROW_MACHINE).match(line)
+                if m:
+                    checked += 1
+                    if in_copy:
+                        copy_rows.append(m)
+                    else:
+                        index = int(m.group("round"))
+                        measured = machine_rounds.get(index)
+                        if measured is None:
+                            problems.append(
+                                f"the measurement has no round {index}"
+                            )
+                        else:
+                            for given, actual, what in (
+                                (m.group("transform"), measured["transform"],
+                                 "the transform"),
+                                (m.group("clock"), measured["clock"],
+                                 "the clock"),
+                            ):
+                                if abs(number(given) - actual) > max(
+                                    1.0, 0.005 * abs(actual)
+                                ):
+                                    problems.append(
+                                        f"round {index}: the document says "
+                                        f"{what} = {number(given)}, the "
+                                        f"measurement is {actual:.0f}"
+                                    )
+                            if not close(
+                                float(m.group("memory")),
+                                measured["memory"], 0.02, 0.01,
+                            ):
+                                problems.append(
+                                    f"round {index}: the document says the "
+                                    f"memory = {m.group('memory')} ns/elem, the "
+                                    f"measurement is {measured['memory']:.3f} "
+                                    f"ns/elem"
+                                )
+                else:
+                    problems.append(
+                        f"the row {line.strip()!r} is not understood"
+                    )
+                continue
 
         m = ROW_DIRECT.match(line)
         if m and in_direct:
@@ -377,6 +482,59 @@ def main() -> int:
                     f"{key}: the document says the spread is {given_spread}x, "
                     f"the measurement is {measured:.2f}x"
                 )
+
+    # The table of the comparison of the two builds has two rows: the build
+    # with the copy of the input into the output and the build without it.
+    if copy_rows:
+        if len(copy_rows) != 2:
+            problems.append(
+                f"the table of the two builds has {len(copy_rows)} rows, it "
+                f"must have two"
+            )
+        elif not copy_data:
+            problems.append(
+                "the comparison of the two builds is not measured, "
+                f"{COPY_DATA} does not exist"
+            )
+        else:
+            first, second = copy_rows
+            if "copy" not in first.group("what"):
+                problems.append(
+                    "the first row of the two builds is not the build with the "
+                    "copy of the input"
+                )
+            if "reads one array" not in second.group("what"):
+                problems.append(
+                    "the second row of the two builds is not the build that "
+                    "reads one array and writes another"
+                )
+            for row, side in ((first, "a"), (second, "b")):
+                measured = copy_data.get(side, {}).get("median")
+                if measured is None:
+                    problems.append(f"the measurement has no {side} side")
+                    continue
+                if abs(number(row.group("median")) - measured) > max(
+                    1.0, 0.005 * abs(measured)
+                ):
+                    problems.append(
+                        f"the document says the median of the {side} side is "
+                        f"{number(row.group('median'))} ns, the measurement is "
+                        f"{measured:.0f} ns"
+                    )
+            ratio = copy_data.get("ratio", {}).get("median")
+            if ratio is None:
+                problems.append("the measurement has no ratio")
+            else:
+                for row, expected, what in (
+                    (first, ratio, "the first"),
+                    (second, 1.0 / ratio, "the second"),
+                ):
+                    if not close(float(row.group("ratio")), expected, 0.01, 0.005):
+                        problems.append(
+                            f"the document says the ratio of {what} row is "
+                            f"{row.group('ratio')}x, the measurement is "
+                            f"{expected:.3f}x"
+                        )
 
     if checked == 0:
         print("no rows of the document were found")

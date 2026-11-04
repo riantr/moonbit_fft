@@ -27,14 +27,42 @@ fn check_sign(sign : Int32) -> Unit {
 /// length.  The plan of the length holds the work buffers, they are built
 /// once and then reused; the roots of unity of the stages are literals in the
 /// butterflies of `kernels.mbt`.
+fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
+  dft_from_to(sign, n, c, c)
+}
+
+///|
+/// The transform of the `n` complex points of `src` into the complex points
+/// of `dst`.
+///
+/// `src` and `dst` may be the same array: the input is read completely
+/// before the output is written, so the transform of an array in place is
+/// the transform of that array into itself.
+///
+/// The transform is the prime factor algorithm of `mixed_radix.mbt`, which
+/// is the algorithm of the Java original itself and `O(n log n)` for every
+/// valid length.  The plan of the length holds the work buffers, they are
+/// built once and then reused; the roots of unity of the stages are literals
+/// in the butterflies of `kernels.mbt`.
 ///
 /// The Java original evaluates the transform in single precision with the
 /// prime factor kernel of `Pfacc`.  The port accumulates in double precision
 /// and rounds the result back to single precision, so the difference to the
 /// original is dominated by the rounding error of the original instead of by
 /// the error of the port.
-fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
+fn dft_from_to(
+  sign : Int32,
+  n : Int32,
+  src : Array[Float],
+  dst : Array[Float],
+) -> Unit {
   if n <= 1 {
+    // The transform of a single point is the point itself.  The transform of
+    // nothing is nothing.
+    if n == 1 {
+      dst[0] = src[0]
+      dst[1] = src[1]
+    }
     return
   }
   let plan = plan_for(n)
@@ -48,8 +76,8 @@ fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
   // there is no permutation to apply.
   let mut j = 0
   while j < n {
-    let vr = c[2 * j].to_double()
-    let vi = c[2 * j + 1].to_double()
+    let vr = src[2 * j].to_double()
+    let vi = src[2 * j + 1].to_double()
     re[j] = vr
     im[j] = if inverse { -vi } else { vi }
     j = j + 1
@@ -60,8 +88,8 @@ fn dft_inplace(sign : Int32, n : Int32, c : Array[Float]) -> Unit {
   while j < n {
     let vr = re[j]
     let vi = im[j]
-    c[2 * j] = Float::from_double(vr)
-    c[2 * j + 1] = Float::from_double(if inverse { -vi } else { vi })
+    dst[2 * j] = Float::from_double(vr)
+    dst[2 * j + 1] = Float::from_double(if inverse { -vi } else { vi })
     j = j + 1
   }
 }
@@ -108,12 +136,9 @@ pub fn FftComplex::complex_to_complex(
   if cx.length() < 2 * n || cy.length() < 2 * n {
     abort("FftComplex: array too short")
   }
-  let mut i = 0
-  while i < 2 * n {
-    cy[i] = cx[i]
-    i = i + 1
-  }
-  dft_inplace(sign, n, cy)
+  // The transform reads the input of `cx` and writes the spectrum into `cy`,
+  // so the input does not have to be copied into the output first.
+  dft_from_to(sign, n, cx, cy)
 }
 
 ///|

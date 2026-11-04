@@ -7,9 +7,11 @@
 ///
 /// 1. *How does the time of a call change while the transform is called
 ///    again and again?*  The rounds are short and every one of them is
-///    reported, so that a drift is visible.  The answer matters, because a
-///    transform that reads one array and writes another gets slower and
-///    slower, while the transform in place does not.
+///    reported, so that a drift is visible.  The answer matters, because the
+///    machine this runs on loses about half of its speed under a sustained
+///    load, and it loses it on everything, so a drift in the rounds of a
+///    single build says nothing about the build - only rounds that were
+///    measured at the same time do.
 /// 2. *How does one build of the port compare with another one?*  The two
 ///    builds are run alternately and their rounds are paired, so that the
 ///    ratio of the two sides in the same round cancels the part of the noise

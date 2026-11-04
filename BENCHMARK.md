@@ -259,48 +259,93 @@ data in the same session:
 
 | part | time | share |
 | --- | ---: | ---: |
-| the five stages of the kernel | 309 us | 81 % |
+| the five stages of the kernel | 309 us | 86 % |
 | widening the samples to double precision | 26 us | 7 % |
-| narrowing them back to single precision | 24 us | 6 % |
-| the copy of the input into the output | 22 us | 6 % |
+| narrowing them back to single precision | 24 us | 7 % |
 
-The copy of the input looks like overhead that could be saved: the transform
-could read the input array and write the output array.  It must not, and the
-reason is worth a section of its own.
+The copy of the input into the output is not there any more: it was 22 us,
+6 % of the transform, and the transform reads the input array now.
 
-### The transform has to work in place
+### The transform reads the input and writes the output
 
-`FftComplex::complex_to_complex` copies the samples into the output array
-and transforms that copy in place.  A version that reads the input array and
-writes the output array was measured, and it is **not** a win:
+The copy of the input looked like overhead that could be saved: the transform
+could read the input array and write the output array.  It can, and it is
+worth **1.08x** on the transform.  The two builds were run alternately and
+their rounds paired, so that the noise that both of them see cancels out:
 
-| what the transform does | first measurement | after a few thousand calls |
+| the transform of n = 32 760 | the median of the rounds | the ratio to the other side |
 | --- | ---: | ---: |
-| in place, the copy of the input first | 425 325 ns | 425 259 ns |
-| reads one array and writes another | 401 248 ns | 818 098 ns |
+| the copy of the input first | 439 540 ns | 1.087x |
+| reads one array and writes another | 404 903 ns | 0.920x |
 
-The transform that reads one array and writes another is **7 % faster at
-first** and **2.2 times slower** once it has been called a few thousand
-times, and it stays slow.  The same happens with the copy of the input still
-in place, so it is not the copy that costs: it is the transform itself that
-reads one array and writes another.
+The ratio of the two sides taken per round, which cancels the noise that both
+of them see, has its median at **1.087** over 126 paired rounds.  The
+measurement is `tools/ab_compare.py`, the data of it is tracked in
+`bench/bench_copy.json`, and the build of the port that reads one array and
+writes the other one is the port of today.
 
-The five stages alone do not have this behaviour: they were run four
-thousand times in a row, and the time of a pipeline stayed between 295 us
-and 320 us from the first to the last.  So it is not the kernel, and it is
-not the plan cache either - the plans of the other lengths were built and
-cached before the measurement, with no effect.  It is not the rubbish of the
-heap either - a few megabytes of arrays that were allocated and dropped
-before the measurement had no effect, and the time went back down after
-them.  The clock of the machine does not move: three windows of pure
-integer arithmetic of the same size took 912 ms, 901 ms and 891 ms.
+### The machine loses its speed, and it hits everything
 
-What is left is that the compiler cannot hoist the length and the buffer of
-an array out of the loop that reads it when it cannot prove that the array
-does not change, and the generated code reloads both on every access.  The
-mechanism behind the *drift* is not understood, and the change was therefore
-not kept.  The port keeps the copy, and the copy is the price of the
-stability.
+The measurement of that change is the interesting part, because the first
+version of it said the opposite.  A transform that reads one array and writes
+another seemed to be **2.2 times slower** than a transform in place, and it
+seemed to stay slow: 401 248 ns for the first measurement and 818 098 ns for
+the third.  The copy of the input was therefore kept, on the ground that the
+transform has to work in place.
+
+That was wrong, and the machine says so.  The transform of the port is
+measured with two references next to it - a loop of integer arithmetic, which
+shows the clock of the machine, and a sequential pass over a megabyte of
+doubles, which shows the speed of the memory system.  The probe is
+`moonbit_fft2/benchmachine/`, its data is tracked in
+`bench/bench_machine.txt`, and the rounds of the transform of `n = 32 760`
+are these:
+
+| round | the transform | the clock | the memory |
+| ---: | ---: | ---: | ---: |
+| 0 | 410 995 ns | 62 582 us | 0.637 ns/elem |
+| 1 | 405 032 ns | 62 565 us | 0.595 ns/elem |
+| 2 | 522 614 ns | 82 924 us | 0.921 ns/elem |
+| 3 | 901 175 ns | 87 065 us | 1.105 ns/elem |
+| 4 | 886 217 ns | 87 053 us | 0.920 ns/elem |
+| 5 | 881 299 ns | 102 835 us | 2.275 ns/elem |
+| 6 | 882 666 ns | 78 656 us | 0.948 ns/elem |
+| 7 | 874 420 ns | 89 870 us | 1.044 ns/elem |
+| 8 | 860 154 ns | 82 737 us | 0.896 ns/elem |
+| 9 | 888 904 ns | 86 360 us | 1.084 ns/elem |
+| 10 | 895 893 ns | 99 410 us | 0.957 ns/elem |
+| 11 | 880 039 ns | 84 110 us | 0.918 ns/elem |
+| 12 | 867 102 ns | 84 330 us | 1.088 ns/elem |
+| 13 | 863 188 ns | 81 218 us | 0.914 ns/elem |
+| 14 | 882 226 ns | 84 540 us | 0.915 ns/elem |
+| 15 | 873 553 ns | 81 827 us | 0.924 ns/elem |
+| 16 | 863 557 ns | 80 915 us | 2.046 ns/elem |
+| 17 | 873 232 ns | 80 373 us | 0.942 ns/elem |
+| 18 | 859 881 ns | 91 398 us | 1.954 ns/elem |
+| 19 | 839 298 ns | 78 227 us | 2.220 ns/elem |
+
+The transition is sharp: the first two rounds are the fast ones, the third is
+the one in between, and from the fourth round on the transform takes twice as
+long.  The loop of integer arithmetic touches no memory at all, and it is
+**35 % slower** after the transition; the pass over a megabyte of doubles is
+**55 % slower** there.  The machine loses its speed under a sustained load -
+the clock and the memory system both - and it loses it on everything, on the
+transform of the port and on a loop of integer multiplications alike.
+
+The transition is reproducible: it happens after about three seconds of
+sustained work, round after round, in every run of the probe.  What is not
+reproducible is *when* it happens relative to two measurements that are not
+made at the same time, and that is what made the transform look as if it
+degraded by itself.  Measured in the same round, the transform that reads one
+array and writes another and the transform in place are the same speed: the
+mean of the per round ratios over twenty rounds is **1.004**.
+
+The lesson is the one the rest of this document already follows, and it is
+worth stating again in the place where it was learned the hard way: **two
+measurements that do not happen at the same time say nothing about each
+other.**  The tool of this document, `moonbit_fft2/benchab/`, reports the
+rounds of the transform one by one, so that a drift is visible, and it is
+what the comparison of two builds is built on.
 
 ### Native vectorisation: what it is worth
 

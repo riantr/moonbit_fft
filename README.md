@@ -19,6 +19,7 @@ list of deviations from the Java original are in
 | `moonbit_fft2/` | the MoonBit module `riantr/moonbit_fft2` | yes |
 | `moonbit_fft2/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
 | `moonbit_fft2/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
+| `moonbit_fft2/benchmachine/` | the transform of the port measured next to the clock and the memory system of the machine | yes |
 | `tools/java/Oracle.java` | harness that drives the original bytecode and dumps its results as golden data | yes |
 | `tools/java/Bench.java` | benchmark of the original Java implementation | yes |
 | `tools/gen_cases.py` | generates the deterministic test inputs and the manifest | yes |
@@ -36,6 +37,8 @@ list of deviations from the Java original are in
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
 | `tools/bench_baseline.py` | measures the port as it was before the kernel was rewritten, from a revision of the git history | yes |
 | `tools/check_benchmark.py` | checks that the tables of `BENCHMARK.md` agree with the benchmark results | yes |
+| `tools/ab_compare.py` | compares two builds of the port, with their rounds paired, and writes the result into `bench/` | yes |
+| `tools/bench_machine.py` | measures the transform next to the state of the machine, and writes the result into `bench/` | yes |
 | `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
@@ -178,7 +181,11 @@ transform of `n = 32 760`).  And the noise of a busy machine is bimodal, so a
 "keep the fastest run" statistic measures the luck of the schedule rather
 than the program; `BENCHMARK.md` describes the protocol that replaces it - the
 median of the rounds, the ratios taken per round, and the order of the sides
-rotated in every round.
+rotated in every round.  The machine also loses about half of its speed
+under a sustained load, and it loses it on everything - on a loop of integer
+arithmetic as much as on the transform - so two measurements that do not
+happen at the same time say nothing about each other, and the rounds of the
+two sides have to be paired.
 
 The small transforms of the odd radices use the symmetry of the roots of
 unity, which is a quarter of the multiplications and a quarter of the
