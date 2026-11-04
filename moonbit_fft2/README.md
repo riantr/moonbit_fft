@@ -280,7 +280,7 @@ in [`../BENCHMARK.md`](../BENCHMARK.md).
 
 ## Verification
 
-`moon test` runs three groups of tests, 663 in total:
+`moon test` runs three groups of tests, 685 in total:
 
 * `fft2_wbtest.mbt` - 28 hand written unit tests of the individual
   functions, including the two length tables and the refusal of the
@@ -294,7 +294,7 @@ in [`../BENCHMARK.md`](../BENCHMARK.md).
   coprime - which is the property that keeps the stages free of twiddle
   factors - and the composite butterflies of the radices `4, 8, 9, 16` have to
   reproduce the direct evaluation of the small transform.
-* `parity_wbtest.mbt` - 629 generated parity tests.  Every expectation in
+* `parity_wbtest.mbt` - 651 generated parity tests.  Every expectation in
   this file is the output of the **original Java bytecode**, captured by
   the oracle in `../tools/java/Oracle.java`; the port has to reproduce it
   within a relative tolerance of `1e-6`.
@@ -304,6 +304,11 @@ The parity cases cover
 * the per dimension transforms `FFTMethods.realToComplex`,
   `FFTMethods.complexToComplex` and `FFTMethods.complexToReal`, in one,
   two and three dimensions and along different axes,
+* the `edu.mines.jtk.dsp.FftComplex.complexToComplex`, the class that the
+  `FftComplex` of the port mirrors, for eleven lengths and both directions:
+  the original copies the input into the output before it transforms it and
+  the port reads the input and writes the output, so these cases are the
+  oracle of the entry point that the image API cases do not reach,
 * the whole image transforms `FFT.realToComplex`,
   `FFT.complexToComplexForward`, `FFT.complexToComplexInverse`,
   `FFT.complexToReal` (both the in place and the padded variant) and

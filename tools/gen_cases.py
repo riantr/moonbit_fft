@@ -158,6 +158,20 @@ CASES += [
     for n in SWEEP_COMPLEX
 ]
 
+# --- edu.mines.jtk.dsp.FftComplex.complexToComplex ------------------------
+# The class that the `FftComplex` of the port mirrors, and the one whose copy
+# of the input into the output the port no longer does.  These cases are the
+# oracle of that public entry point of the port, which the image API cases
+# above do not reach.  They are appended at the end of the catalogue, because
+# the samples of a case are seeded by its position: a case in the middle of
+# the catalogue would change the samples of every case behind it.
+CASES += [
+    dict(name="jc2c_1d_%d_%s" % (n, "fwd" if forward else "inv"),
+         kind="JC2C", dims=[n], forward=forward)
+    for n in (1, 2, 4, 8, 11, 12, 13, 16, 120, 720, 4095)
+    for forward in (True, False)
+]
+
 # Kinds whose input is complex valued (2 floats per element).
 COMPLEX_KINDS = {
     "C2C",
@@ -167,6 +181,7 @@ COMPLEX_KINDS = {
     "FFT_C2R",
     "FFT_C2R_UNPAD",
     "FFT_C2R_FACTORY",
+    "JC2C",
 }
 
 

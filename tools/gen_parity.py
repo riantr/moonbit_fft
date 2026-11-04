@@ -285,6 +285,33 @@ def main() -> None:
             )
             test_lines.append("  parity_assert_dims(data.dims, " + str(dims) + ")")
             test_lines.append("  parity_assert_floats(data.data, parity_out_" + key + "(), " + TOLERANCE_LITERAL + ")")
+        elif kind == "JC2C":
+            # The `FftComplex` of the port, the class that mirrors the
+            # `FftComplex` of the original.  The original copies the input
+            # into the output before it transforms it and the port does not,
+            # so this is the oracle of the entry point that the image API
+            # cases do not reach.
+            n = dims[0]
+            sign = -1 if case.get("forward", True) else 1
+            emit_float_array("parity_in_" + key, source)
+            emit_float_array("parity_out_" + key, golden["values"])
+            test_lines.append("  let fft = FftComplex::new(" + str(n) + ")")
+            test_lines.append("  let cx = parity_in_" + key + "()")
+            test_lines.append(
+                "  let cy = Array::make("
+                + str(2 * n)
+                + ", Float::from_double(0.0))"
+            )
+            test_lines.append(
+                "  fft.complex_to_complex(" + str(sign) + ", cx, cy)"
+            )
+            test_lines.append(
+                "  parity_assert_floats(cy, parity_out_"
+                + key
+                + "(), "
+                + TOLERANCE_LITERAL
+                + ")"
+            )
         elif kind == "C2R":
             dim = case["dim"]
             real_size = 2 * (dims[dim] - 1)

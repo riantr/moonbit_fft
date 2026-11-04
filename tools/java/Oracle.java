@@ -285,6 +285,25 @@ public class Oracle
 				values = drain( cplx, dimsOf( cplx ), true );
 				break;
 			}
+			case "JC2C":
+			{
+				// The `FftComplex` of the original, the class that the
+				// `FftComplex` of the port mirrors: it reads the samples from
+				// one array and writes the spectrum into another one.  The
+				// original copies the input into the output before it
+				// transforms it and the port does not, so these cases are
+				// the oracle of the public entry point of the port, which
+				// the image API cases do not reach.
+				final int n = c.dims[ 0 ];
+				final float[] cx = new float[ 2 * n ];
+				final float[] cy = new float[ 2 * n ];
+				System.arraycopy( in, 0, cx, 0, 2 * n );
+				final FftComplex fft = new FftComplex( n );
+				fft.complexToComplex( c.forward ? -1 : 1, cx, cy );
+				outDims = c.dims;
+				values = cy;
+				break;
+			}
 			case "C2R":
 			{
 				final ListImg< ComplexFloatType > cplx = makeComplex( c.dims, in );

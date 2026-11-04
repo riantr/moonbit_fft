@@ -59,6 +59,9 @@ COPY_DATA = BENCH / "bench_copy.json"
 # The measurement of the transform next to the state of the machine.
 MACHINE_DATA = BENCH / "bench_machine.json"
 
+# The comparison of the wasm build of the port with the native build.
+TARGET_DATA = BENCH / "bench_target.json"
+
 # A row of the tables of the workloads:
 #
 #   | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
@@ -147,11 +150,34 @@ ROW_MACHINE = re.compile(
     r"\s*\**\s*(?P<memory>[\d.]+)\s*ns/elem\s*\**\s*\|$"
 )
 
+# A row of the table of the two sessions of the machine:
+#
+#   | in the session of `tools/bench_compare.py` | 245 929 ns | 857 332 ns | 3.44x |
+ROW_IDLE = re.compile(
+    r"^\|\s*(?P<when>[^|]+?)\s*\|\s*\**\s*(?P<java>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<port>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
+)
+
+# A row of the table of the two targets:
+#
+#   | wasm, the default of `moon run` | 992 911 ns | 2.605x |
+ROW_TARGET = re.compile(
+    r"^\|\s*\**\s*(?P<what>[^|]+?)\s*\**\s*\|\s*\**\s*(?P<ns>[\d ]+)\s*ns\s*\**\s*\|"
+    r"\s*\**\s*(?P<ratio>[\d.]+)x\s*\**\s*\|$"
+)
+
 # The section that holds the table of the comparison of the two builds.
 COPY_SECTION = "The transform reads the input and writes the output"
 
 # The section that holds the table of the measurement of the machine.
 MACHINE_SECTION = "The machine loses its speed, and it hits everything"
+
+# The section that holds the table of the two sessions of the machine.
+IDLE_SECTION = "The machine is not idle, and the port feels it more than the original"
+
+# The section that holds the table of the two targets.
+TARGET_SECTION = "The target is the second thing to get right"
 
 
 def number(text: str) -> int:
@@ -227,6 +253,11 @@ def main() -> int:
         int(r["round"]): r for r in machine_data.get("rounds", [])
     }
 
+    # The comparison of the wasm build with the native build.
+    target_data: dict = {}
+    if TARGET_DATA.exists():
+        target_data = json.loads(TARGET_DATA.read_text(encoding="utf-8"))
+
     problems: list[str] = []
     checked = 0
     workload = None
@@ -236,7 +267,11 @@ def main() -> int:
     in_direct = False
     in_copy = False
     in_machine = False
+    in_idle = False
+    in_target = False
     copy_rows: list[re.Match[str]] = []
+    idle_rows: list[re.Match[str]] = []
+    target_rows: list[re.Match[str]] = []
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()
@@ -247,22 +282,35 @@ def main() -> int:
             in_direct = title == DIRECT_SECTION
             in_copy = title == COPY_SECTION
             in_machine = title == MACHINE_SECTION
+            in_idle = title == IDLE_SECTION
+            in_target = title == TARGET_SECTION
         if line.startswith("| n |") or line.startswith("| ---"):
             continue
 
-        if in_copy or in_machine:
-            # A row of these two sections is either a header, which holds no
+        if in_copy or in_machine or in_idle or in_target:
+            # A row of these sections is either a header, which holds no
             # measurement at all, or a row that the measurement must check.  A
             # row that holds a measurement and that this script does not
             # understand must not pass silently.
             if line.startswith("|"):
                 if not re.search(r"\d[\d ]*(ns|us|x)\b", line):
                     continue
-                m = (ROW_COPY if in_copy else ROW_MACHINE).match(line)
+                if in_copy:
+                    m = ROW_COPY.match(line)
+                elif in_machine:
+                    m = ROW_MACHINE.match(line)
+                elif in_idle:
+                    m = ROW_IDLE.match(line)
+                else:
+                    m = ROW_TARGET.match(line)
                 if m:
                     checked += 1
                     if in_copy:
                         copy_rows.append(m)
+                    elif in_idle:
+                        idle_rows.append(m)
+                    elif in_target:
+                        target_rows.append(m)
                     else:
                         index = int(m.group("round"))
                         measured = machine_rounds.get(index)
@@ -534,6 +582,90 @@ def main() -> int:
                             f"the document says the ratio of {what} row is "
                             f"{row.group('ratio')}x, the measurement is "
                             f"{expected:.3f}x"
+                        )
+
+    # The table of the two sessions of the machine holds the measurement of the
+    # session of the comparison, the one of the tracked data.
+    if idle_rows:
+        if len(idle_rows) != 1:
+            problems.append(
+                f"the table of the two sessions has {len(idle_rows)} rows, it "
+                f"must have one"
+            )
+        else:
+            row = idle_rows[0]
+            key = "c2c/32760"
+            java = best.get("java", {}).get(key)
+            port = best.get("moonbit", {}).get(key)
+            if java is None or port is None:
+                problems.append(
+                    f"the measurement has no {key} to compare the document with"
+                )
+            else:
+                for given, measured, what in (
+                    (number(row.group("java")), java, "the original"),
+                    (number(row.group("port")), port, "the port"),
+                ):
+                    if abs(given - measured) > max(1.0, 0.005 * abs(measured)):
+                        problems.append(
+                            f"the document says {what} = {given} ns, the "
+                            f"measurement is {measured:.0f} ns"
+                        )
+            ratio = ratios.get(key, {}).get("moonbit/java")
+            if ratio is not None and not close(
+                float(row.group("ratio")), ratio, 0.02, 0.01
+            ):
+                problems.append(
+                    f"the document says the ratio is {row.group('ratio')}x, the "
+                    f"measurement is {ratio:.2f}x"
+                )
+
+    # The table of the two targets holds the wasm build and the native build
+    # of the same source.
+    if target_rows:
+        if len(target_rows) != 2:
+            problems.append(
+                f"the table of the targets has {len(target_rows)} rows, it must "
+                f"have two"
+            )
+        elif not target_data:
+            problems.append(
+                "the two targets are not measured, "
+                f"{TARGET_DATA} does not exist"
+            )
+        else:
+            for row in target_rows:
+                what = row.group("what").lower()
+                if "wasm" in what:
+                    side = "wasm"
+                elif "native" in what:
+                    side = "native"
+                else:
+                    problems.append(
+                        f"the row {row.group('what').strip()!r} is neither the "
+                        f"wasm nor the native build"
+                    )
+                    continue
+                measured = target_data.get(side, {}).get("median")
+                if measured is None:
+                    problems.append(f"the measurement has no {side} side")
+                    continue
+                if abs(number(row.group("ns")) - measured) > max(
+                    1.0, 0.005 * abs(measured)
+                ):
+                    problems.append(
+                        f"the document says the {side} build takes "
+                        f"{number(row.group('ns'))} ns, the measurement is "
+                        f"{measured:.0f} ns"
+                    )
+                ratio = target_data.get("ratio", {}).get("median")
+                if ratio is not None:
+                    expected = ratio if side == "wasm" else 1.0
+                    if not close(float(row.group("ratio")), expected, 0.01, 0.005):
+                        problems.append(
+                            f"the document says the {side} build is "
+                            f"{row.group('ratio')}x of the native one, the "
+                            f"measurement is {expected:.3f}x"
                         )
 
     if checked == 0:

@@ -39,6 +39,7 @@ list of deviations from the Java original are in
 | `tools/check_benchmark.py` | checks that the tables of `BENCHMARK.md` agree with the benchmark results | yes |
 | `tools/ab_compare.py` | compares two builds of the port, with their rounds paired, and writes the result into `bench/` | yes |
 | `tools/bench_machine.py` | measures the transform next to the state of the machine, and writes the result into `bench/` | yes |
+| `tools/target_compare.py` | compares the wasm build of the port with the native build, and writes the result into `bench/` | yes |
 | `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
@@ -81,9 +82,9 @@ from the bytecode:
 The port was then validated against the original: the oracle runs the
 original classes over deterministic inputs and writes the raw `float32`
 results, and the generated test `moonbit_fft2/parity_wbtest.mbt` replays
-them against the MoonBit implementation.  The suite currently holds 629
+them against the MoonBit implementation.  The suite currently holds 651
 parity cases, 28 hand written unit tests and 6 tests of the transform
-kernel, 663 in total; all of them pass.
+kernel, 685 in total; all of them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
@@ -167,7 +168,7 @@ The port now uses the **prime factor algorithm of the original**: the length
 is split into pairwise coprime factors, every factor selects a small kernel,
 and the stages carry no twiddle factor at all.  The `n = 32 760` complex to
 complex transform went from **<!--v:OLD_C2C_S-->4.2<!--/v--> s to <!--v:C2C_MS-->0.9<!--/v--> ms**
-(<!--v:C2C_SPEEDUP-->4890<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4<!--/v--> times slower than
+(<!--v:C2C_SPEEDUP-->4890<!--/v-->x), and the port is now between <!--v:RANGE-->1.0 to 4.3<!--/v--> times slower than
 the JVM at the lengths where it is slower at all.
 
 Three details of the measurement matter as much as the numbers.  The benchmark
@@ -175,8 +176,8 @@ runs the **release** build, because `moon run` produces the debug build by
 default and that one is about thirty times slower - the debug build would
 make the port look 169x slower than the original instead of 3.6x.  It also
 runs the **native** target, because `moon run` builds for wasm unless a
-target is named, and the wasm build of the port is 2.6 times slower than the
-native one (1 122 444 ns against 432 724 ns for the complex to complex
+target is named, and the wasm build of the port is about 2.5 times slower than
+the native one (996 289 ns against 394 642 ns for the complex to complex
 transform of `n = 32 760`).  And the noise of a busy machine is bimodal, so a
 "keep the fastest run" statistic measures the luck of the schedule rather
 than the program; `BENCHMARK.md` describes the protocol that replaces it - the

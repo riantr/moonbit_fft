@@ -6,7 +6,7 @@ driven through the very same bytecode in [`fft2/`](fft2).
 
 ## Result in one line
 
-The port used to be **five orders of magnitude slower** than the original,
+The port used to be **four orders of magnitude slower** than the original,
 because it transformed `O(n^2)` for every length that is not a power of two
 while the original transforms `O(n log n)` for every valid length.  After the
 rewrite of the kernel (mixed radix Cooley-Tukey, cached twiddle factors,
@@ -14,7 +14,7 @@ reused work buffers), after the second rewrite, which replaced it by the
 **prime factor algorithm of the original itself**, and after the third one,
 which replaced the butterflies by the **hand written factorisations of the
 original**, the port is
-**<!--v:RANGE-->1.0 to 4<!--/v--> times slower than the original** for every length
+**<!--v:RANGE-->1.0 to 4.3<!--/v--> times slower than the original** for every length
 where it is slower at all, and it is *at parity* with the original for the
 long transforms that go through the image API.
 
@@ -74,17 +74,33 @@ comparison.  The debug numbers are in the section *The debug build*.
 
 `moon run` builds for **wasm** unless a target is named.  The release build of
 the port on the **native** target and the release build of the very same source
-on the **wasm** target differ by a factor of 2.6:
+on the **wasm** target differ by a factor of about 2.5:
 
-| target | `c2c` of `n = 32 760` |
-| --- | ---: |
-| wasm, the default of `moon run` | 1 122 444 ns |
-| **native**, `--target native` | **432 724 ns** |
+| target | `c2c` of `n = 32 760` | against the native build |
+| --- | ---: | ---: |
+| wasm, the default of `moon run` | 996 289 ns | 2.532x |
+| **native**, `--target native` | **394 642 ns** | 1.000x |
+
+The two builds were run alternately, the order was rotated in every round and
+their rounds were paired, so that the ratio cancels the noise that both of
+them see: the median of the ninety per round ratios is **2.532**.  The
+measurement is `tools/target_compare.py` and its data is tracked in
+`bench/bench_target.json`.
 
 So a benchmark that is started by hand, with `moon run --release benchmark`,
 measures the wasm build and reports a number that is more than two and a half
 times too large.  `tools/bench_compare.py` names the target explicitly, which
 is why the tables of this document are native numbers.
+
+The two builds have to be compared in the same state of the machine, and that
+is worth a warning: the benchmark protocol measures a whole second in a row,
+and by then the machine has been under a load for seconds and has lost about
+half of its speed.  The slower build reaches that point later in wall clock
+time and is therefore less degraded, so the two protocols disagree - the
+rounds of the probe give 2.53, the benchmark protocol gave 1.98 ms for the
+wasm build against 416 us for the native one in the same session, a ratio of
+4.8 that is an artefact of the order of the measurements and not of the
+targets.
 
 ### What the symmetric small transform is worth
 
@@ -240,16 +256,25 @@ target, both the complex to complex transform of `n = 32 760`:
 
 | when | original | port | ratio |
 | --- | ---: | ---: | ---: |
-| in the session of `tools/bench_compare.py`, median of three rounds | 290 623 ns | 936 994 ns | 3.24x |
-| the same port, measured alone while the machine was quieter | 290 623 ns | 432 724 ns | 1.49x |
+| in the session of `tools/bench_compare.py`, median of three rounds | 245 929 ns | 857 332 ns | 3.44x |
 
-The port moved between 433 us and 937 us over the two, the original between
-246 us and 291 us.  The tables of this document were taken while the machine
-was busy, so the ratio they show is the pessimistic end of that range.  The
-honest summary is that the port is **about 1.5 times** slower than the
-original when the machine is quiet and up to **three times** slower when it is
-busy, and that the difference between those two numbers is a property of the
-memory traffic of the port, not of its arithmetic.
+The port was measured alone in another session as well: 432 724 ns against
+290 623 ns of the original, a ratio of 1.49x.  That session was not uniformly
+quieter - the original was slower there too, 291 us against 246 us - so the
+ratio between the two sessions is an estimate and not a controlled comparison.
+What the two measurements show for certain is that the port loses much more
+speed than the original when the machine gets busy, which is what the memory
+traffic of the port predicts: the tracked measurement of the machine has the
+transform of the port at 405 032 ns before the machine slows down and at
+875 000 ns after it, a factor of 2.15.
+
+The tables of this document were taken while the machine was busy, so the
+ratio they show is the pessimistic end of that range.  The honest summary is
+that the port is **about 1.5 times** slower than the original when the
+machine is quiet and **3.4 times** slower for the long transforms when it is
+busy, and up to **4.3 times** for the shortest ones, and that the difference
+between those two numbers is a property of the memory traffic of the port,
+not of its arithmetic.
 
 ### Where the time of a transform goes
 
@@ -336,9 +361,10 @@ The transition is reproducible: it happens after about three seconds of
 sustained work, round after round, in every run of the probe.  What is not
 reproducible is *when* it happens relative to two measurements that are not
 made at the same time, and that is what made the transform look as if it
-degraded by itself.  Measured in the same round, the transform that reads one
-array and writes another and the transform in place are the same speed: the
-mean of the per round ratios over twenty rounds is **1.004**.
+degraded by itself.  A transform that reads one array and writes another is
+not slower than one that works in place: the comparison of the two builds in
+the section above has it **1.087x faster**, because it does not copy the
+input into the output first.
 
 The lesson is the one the rest of this document already follows, and it is
 worth stating again in the place where it was learned the hard way: **two
@@ -1001,9 +1027,12 @@ changed to the element budget.
 
 Every transform allocated the input, the output and the scratch arrays.
 
-**Fix (G2).**  The work buffers (`buf_re`, `buf_im`, `scratch_re`,
-`scratch_im`) live in the `FftPlan`, so a transform of a cached length does
-not allocate at all.
+**Fix (G2).**  The work buffers live in the `FftPlan`, so a transform of a
+cached length does not allocate at all.  The plan of the prime factor
+algorithm holds the real parts (`buf_re`) and the imaginary parts (`buf_im`)
+of the working buffer; the earlier version of the kernel also held a scratch
+buffer for the permutation, and the prime factor algorithm needs no
+permutation at all, so the scratch is gone with it.
 
 ### 4. The naive inner loop did an integer division per iteration
 
@@ -1040,7 +1069,7 @@ too - but a different one, and a cheaper one.
 
 ## Where the remaining time goes
 
-The port is now <!--v:RANGE-->1.0 to 4<!--/v--> times slower than the JVM at the lengths where it
+The port is now <!--v:RANGE-->1.0 to 4.3<!--/v--> times slower than the JVM at the lengths where it
 is slower at all, and that gap is **not** the cost of the array accesses any
 more.  Two measurements on this machine, taken under the same load as the
 benchmark and with the **release** build (`tools/probe_floor.mbt` and
