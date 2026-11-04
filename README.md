@@ -37,6 +37,7 @@ list of deviations from the Java original are in
 | `tools/merge_bench.py` | merges several runs of a benchmark, keeping the fastest result per case | yes |
 | `tools/bench_baseline.py` | measures the port as it was before the kernel was rewritten, from a revision of the git history | yes |
 | `tools/check_benchmark.py` | checks that the tables of `BENCHMARK.md` agree with the benchmark results | yes |
+| `tools/check_jc2c.py` | checks the golden data of the `JC2C` cases against a double precision reference | yes |
 | `tools/ab_compare.py` | compares two builds of the port, with their rounds paired, and writes the result into `bench/` | yes |
 | `tools/bench_machine.py` | measures the transform next to the state of the machine, and writes the result into `bench/` | yes |
 | `tools/target_compare.py` | compares the wasm build of the port with the native build, and writes the result into `bench/` | yes |

@@ -371,6 +371,19 @@ It instruments the generated parity test, runs it and reports the largest
 ratio between the observed deviation and the tolerance that the test
 allows; the ratio is currently about `0.14`.
 
+The golden data of the `JC2C` cases can be checked against a double
+precision reference, which is what tells the forward transform of a case
+from its inverse transform:
+
+```powershell
+python tools\check_jc2c.py
+```
+
+The largest deviation it reports is `2.3e-5` for the length 4095, whose
+result has a magnitude of 139, so it is the rounding error of the single
+precision accumulation of the original.  A case that held the wrong
+direction would deviate by more than the magnitude of its result.
+
 A green suite is only worth something if it can turn red.  The negative
 control `../tools/negative_control.py` breaks the kernel of the transform on
 purpose - for the constants of the stages, for the structure of the small
