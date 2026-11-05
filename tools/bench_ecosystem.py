@@ -59,12 +59,13 @@ ECOSYSTEM = [
     ("mdsp", "2227057182/moonbit-dsp", "0.1.0", "fft, real input"),
 ]
 
-# The inverse transform of every package that publishes one.  `HK-SHAO/dsp` and
-# `2227057182/moonbit-dsp` publish no inverse, so they have no row here, and the
-# strongest side of the forward comparison is absent from this one.
+# The inverse transform of every package that publishes one.  Only
+# `2227057182/moonbit-dsp` publishes none, so it is the only side of the forward
+# table that has no row here.
 INVERSE = [
     ("port/bfft", None, "the unnormalised inverse, `complex_to_complex(1, ...)`, the `bfft` of FFTW.jl"),
     ("port/ifft", None, "the normalised inverse, `FftComplex::ifft`, which divides by n"),
+    ("hkdsp/ifft", "HK-SHAO/dsp", "inverse, in place, on the slot of its forward transform"),
     ("hx/ifft-bluestein", "hwlxmm/dsp", "ifft_bluestein"),
     ("hx/ifft-radix2", "hwlxmm/dsp", "ifft_radix2, in place"),
     ("lc/ifft", "lcyllp/moonbit-nlse-ssfm", "ifft, what its entry point calls"),
@@ -82,6 +83,11 @@ SUPPORT = [("moonbitlang/x", "0.4.46")]
 
 # The side of the port, always the base of the comparison.
 PORT = "port"
+
+# The segment target of the harness, in milliseconds.  It is the constant of
+# `repeats_for` in `tools/ecomodule/bencheco/main.mbt`; the document renders it
+# from the measurement instead of carrying a second copy of it.
+SEGMENT_MS = 2.0
 
 # The sides that are measured at the lengths of the port instead of at the
 # window, because the port has no valid length there.
@@ -136,15 +142,16 @@ def assemble() -> None:
     # library itself must not depend on a package of the ecosystem.
     module_file = SHADOW / "moon.mod"
     text = module_file.read_text(encoding="utf-8")
-    missing = [
-        f'  "{package}@{version}",'
-        for _, package, version, _ in ECOSYSTEM
-        if f'"{package}@' not in text
-    ] + [
-        f'  "{package}@{version}",'
-        for package, version in SUPPORT
-        if f'"{package}@' not in text
-    ]
+    wanted: list[tuple[str, str]] = [
+        (package, version) for _, package, version, _ in ECOSYSTEM
+    ] + list(SUPPORT)
+    missing: list[str] = []
+    seen: set[str] = set()
+    for package, version in wanted:
+        if package in seen or f'"{package}@' in text:
+            continue
+        seen.add(package)
+        missing.append(f'  "{package}@{version}",')
     if missing:
         if not text.endswith("\n"):
             text += "\n"
@@ -378,7 +385,7 @@ def main() -> int:
     lines.append("the median of the %d rounds, the ratios taken per round"
                  % round_count)
     lines.append("")
-    header = "%-9s %7s %13s %11s %11s" % (
+    header = "%-14s %7s %13s %11s %11s" % (
         "side", "n", "median ns", "per unit", "over the port")
     for window, port_length in WORKLOADS:
         key = str(window)
@@ -386,7 +393,7 @@ def main() -> int:
         lines.append(header)
         lines.append("-" * len(header))
         for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM]:
-            lines.append("%-9s %7d %13.0f %11.3f %10.3fx" % (
+            lines.append("%-14s %7d %13.0f %11.3f %10.3fx" % (
                 side, lengths[key][side], median[key][side],
                 per_unit[key][side], ratios[key][f"{side}/{PORT}"]))
         lines.append("")
@@ -461,6 +468,8 @@ def main() -> int:
             for side, package, entry in INVERSE
         ],
         "inverse_ratios": inverse_ratios,
+        "segments": (len(ECOSYSTEM) + 1 + len(INVERSE)) * 2,
+        "segment_ms": SEGMENT_MS,
         "lengths": lengths,
         "median": median,
         "spread": spread,
@@ -476,7 +485,7 @@ def main() -> int:
     # The rounds themselves are kept next to the median, so that the spread of
     # a reading can be told from a change of the programs.
     rounds_path = args.out.with_name(args.out.stem + "_rounds.txt")
-    rounds_path.write_text(out, encoding="utf-8")
+    rounds_path.write_text(out, encoding="utf-8", newline="")
     print("written to %s and %s" % (args.out, json_path))
     return 0
 

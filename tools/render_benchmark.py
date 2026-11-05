@@ -372,9 +372,34 @@ def eco_values(eco: dict) -> dict[str, str]:
                 near.append(value)
             else:
                 far.append(value)
+    # The machine reference and the protocol of the run, so that the prose of
+    # the document cannot drift away from the measurement it describes.
+    reference = eco.get("reference", {})
+    clock = reference.get("clock", {})
+    memory = reference.get("memory", {})
+
+    def group(value: float) -> str:
+        return "{:,}".format(int(round(value))).replace(",", " ")
+
     return {
-        "ECO_NEAR": ("%.2fx to %.2fx" % (min(near), max(near)))
-        if near else "not measured",
+        "ECO_MS": ("%g" % eco["segment_ms"]) if "segment_ms" in eco else "?",
+        "ECO_SEGMENTS": str(eco.get("segments", 0)),
+        "ECO_CLOCK": group(clock["median"]) if clock else "not measured",
+        "ECO_CLOCK_RANGE": ("%s to %s" % (group(clock["min"]), group(clock["max"])))
+        if clock else "not measured",
+        "ECO_MEM": ("%.3f" % memory["median"]) if memory else "not measured",
+        "ECO_MEM_RANGE": ("%.3f to %.3f" % (memory["min"], memory["max"]))
+        if memory else "not measured",
+        # One number when the two ends round to the same one: "0.98x to 0.98x"
+        # reads as a mistake and not as a range.
+        "ECO_NEAR": (
+            lambda lo, hi: ("%.2fx" % lo) if ("%.2f" % lo) == ("%.2f" % hi)
+            else ("%.2fx to %.2fx" % (lo, hi))
+        )(min(near), max(near)) if near else "not measured",
+        "ECO_MDSP": (
+            "%d" % round(ratios["4096"]["mdsp"])
+            if "4096" in ratios and "mdsp" in ratios["4096"] else "?"
+        ),
         "ECO_FAR": ("%d to %d" % (round(min(far)), round(max(far))))
         if far else "not measured",
         "ECO_ROUNDS": str(eco.get("rounds", 0)),

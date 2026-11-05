@@ -293,8 +293,8 @@ The package is also compared with the packages of the MoonBit ecosystem, every
 one of them measured through **its own fastest entry point** at the two lengths
 that the port can share with it, over <!--v:ECO_ROUNDS-->16<!--/v--> rounds with
 the order of the sides rotated.  The port is at **parity with the strongest of
-them**, `HK-SHAO/dsp` (<!--v:ECO_NEAR-->0.95x to 0.97x<!--/v-->), and
-<!--v:ECO_FAR-->35 to 117<!--/v--> times faster than every other side at the
+them**, `HK-SHAO/dsp` (<!--v:ECO_NEAR-->0.96x to 0.99x<!--/v-->), and
+<!--v:ECO_FAR-->37 to 120<!--/v--> times faster than every other side of the forward table, at the
 same length.  That comparison also turned up a defect of the ecosystem worth
 knowing before a dependency is picked: the radix-4 path of `hwlxmm/dsp` does
 not compute the transform at any of the lengths 4, 16, 64, 256, 1024 and 4096 -

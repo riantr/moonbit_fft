@@ -52,6 +52,8 @@ fn main raise {
   // `2227057182/moonbit-dsp` publish no inverse, so they have no row here.
   dump_port_inverse(big_port, out_dir)
   dump_port_inverse(small_port, out_dir)
+  dump_hkdsp_inverse(big, out_dir)
+  dump_hkdsp_inverse(small, out_dir)
   dump_hx_inverse(big, out_dir)
   dump_hx_inverse(small, out_dir)
   dump_lc_inverse(big, out_dir)
@@ -129,6 +131,27 @@ fn dump_port_inverse(n : Int32, out_dir : String) -> Unit raise {
     i = i + 1
   }
   write(normalised, out_dir, "port_ifft", n)
+}
+
+///|
+/// The inverse of `HK-SHAO/dsp`, which transforms the slot in place.
+fn dump_hkdsp_inverse(n : Int32, out_dir : String) -> Unit raise {
+  let slot = @hkdsp.slot_open(n)
+  if slot < 0 {
+    println("hkdsp refuses \{n}")
+    return
+  }
+  let mem = @hkdsp.slot_mem_of(slot)
+  fill_hmem(mem, n)
+  @hkdsp.inverse(slot)
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(point(mem.unsafe_get(i), mem.unsafe_get(n + i)))
+    i = i + 1
+  }
+  write(lines, out_dir, "hkdsp_ifft", n)
+  @hkdsp.slot_close(slot)
 }
 
 ///|

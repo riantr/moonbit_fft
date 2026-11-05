@@ -456,66 +456,82 @@ the quotient of the two medians:
 
 | window | side | n | the median | per unit | over the port |
 | ---: | --- | ---: | ---: | ---: | ---: |
-| 4 096 | port | 4 095 | 42 312 ns | 0.861 | 1.000x |
-| 4 096 | hkdsp | 4 096 | 41 594 ns | 0.846 | 0.969x |
-| 4 096 | hx/radix4 | 4 096 | 2 512 350 ns | 51.114 | 59.383x |
-| 4 096 | hx/bluestein | 4 096 | 2 865 100 ns | 58.291 | 66.864x |
-| 4 096 | lc/radix4 | 4 096 | 2 756 650 ns | 56.084 | 63.812x |
-| 4 096 | lc/bluestein | 4 096 | 2 792 850 ns | 56.821 | 64.212x |
-| 4 096 | moonnum | 4 096 | 3 840 350 ns | 78.132 | 90.053x |
-| 4 096 | mspec | 4 096 | 4 194 100 ns | 85.329 | 99.573x |
-| 4 096 | mdsp | 4 096 | 1 506 350 ns | 30.647 | 35.003x |
-| 1 024 | port | 1 008 | 7 799 ns | 0.776 | 1.000x |
-| 1 024 | hkdsp | 1 024 | 7 454 ns | 0.728 | 0.947x |
-| 1 024 | hx/radix4 | 1 024 | 518 650 ns | 50.649 | 65.620x |
-| 1 024 | hx/bluestein | 1 024 | 577 062 ns | 56.354 | 73.777x |
-| 1 024 | lc/radix4 | 1 024 | 557 325 ns | 54.426 | 70.782x |
-| 1 024 | lc/bluestein | 1 024 | 560 962 ns | 54.781 | 71.764x |
-| 1 024 | moonnum | 1 024 | 820 850 ns | 80.161 | 103.146x |
-| 1 024 | mspec | 1 024 | 924 550 ns | 90.288 | 116.630x |
-| 1 024 | mdsp | 1 024 | 308 357 ns | 30.113 | 39.140x |
+| 4 096 | port | 4 095 | 42 379 ns | 0.862 | 1.000x |
+| 4 096 | hkdsp | 4 096 | 41 820 ns | 0.851 | 0.985x |
+| 4 096 | hx/radix4 | 4 096 | 2 569 500 ns | 52.277 | 59.417x |
+| 4 096 | hx/bluestein | 4 096 | 2 966 450 ns | 60.353 | 68.469x |
+| 4 096 | lc/radix4 | 4 096 | 2 904 800 ns | 59.098 | 67.245x |
+| 4 096 | lc/bluestein | 4 096 | 2 900 000 ns | 59.001 | 67.029x |
+| 4 096 | moonnum | 4 096 | 4 126 300 ns | 83.950 | 94.781x |
+| 4 096 | mspec | 4 096 | 4 411 250 ns | 89.747 | 103.061x |
+| 4 096 | mdsp | 4 096 | 1 587 550 ns | 32.299 | 36.539x |
+| 1 024 | port | 1 008 | 7 999 ns | 0.795 | 1.000x |
+| 1 024 | hkdsp | 1 024 | 7 704 ns | 0.752 | 0.962x |
+| 1 024 | hx/radix4 | 1 024 | 538 325 ns | 52.571 | 67.336x |
+| 1 024 | hx/bluestein | 1 024 | 604 200 ns | 59.004 | 75.653x |
+| 1 024 | lc/radix4 | 1 024 | 612 538 ns | 59.818 | 74.951x |
+| 1 024 | lc/bluestein | 1 024 | 597 262 ns | 58.326 | 75.265x |
+| 1 024 | moonnum | 1 024 | 860 500 ns | 84.033 | 106.914x |
+| 1 024 | mspec | 1 024 | 942 275 ns | 92.019 | 119.592x |
+| 1 024 | mdsp | 1 024 | 316 557 ns | 30.914 | 40.223x |
 
 
 #### The inverse transform
 
-Two of the nine sides publish no inverse at all - `HK-SHAO/dsp` and
-`2227057182/moonbit-dsp` - so the strongest side of the table above is absent
-from this one, and the port is its own base: every ratio is taken over
-`port/bfft`, the **unnormalised** inverse, which is the same amount of work as a
-forward transform of the same length.  The normalised inverse of the port adds
-one pass over the result that divides it by `n`; the difference between its row
-and the row of `port/bfft` is what that pass costs.  Every side of this table was
-held to `numpy.fft` as well, in the scaling it publishes.
+One of the nine sides publishes no inverse at all - `2227057182/moonbit-dsp`,
+whose `fft` is a forward transform of a real input and nothing else - so it is
+the only side of the table above that has no row here.  `HK-SHAO/dsp` does
+publish one, and its row is the one that matters, because that package is the
+one the port is at parity with in the forward direction.
+
+Every ratio of this table is taken over `port/bfft`, the **unnormalised** inverse
+of the port, which is the same amount of work as a forward transform of the same
+length.  The normalised inverse of the port adds one pass over the result that
+divides it by `n`; the difference between its row and the row of `port/bfft` is
+what that pass costs.  Every side of this table was held to `numpy.fft` as well,
+in the scaling it publishes, by `../tools/check_ecospectra.py`: a package that
+divides by `n` and one that does not are both right, but they are not the same
+transform.
 
 | window | side | n | the median | per unit | over bfft |
 | ---: | --- | ---: | ---: | ---: | ---: |
-| 4 096 | port/bfft | 4 095 | 43 307 ns | 0.881 | 1.000x |
-| 4 096 | port/ifft | 4 095 | 47 864 ns | 0.974 | 1.114x |
-| 4 096 | hx/ifft-bluestein | 4 096 | 3 287 650 ns | 66.887 | 73.123x |
-| 4 096 | hx/ifft-radix2 | 4 096 | 3 106 650 ns | 63.205 | 72.280x |
-| 4 096 | lc/ifft | 4 096 | 2 925 100 ns | 59.511 | 66.078x |
-| 4 096 | lc/ifft-radix4 | 4 096 | 2 885 750 ns | 58.711 | 65.623x |
-| 4 096 | moonnum/ifft | 4 096 | 3 917 050 ns | 79.693 | 91.711x |
-| 4 096 | mspec/ifft | 4 096 | 4 467 100 ns | 90.883 | 99.434x |
-| 1 024 | port/bfft | 1 008 | 7 928 ns | 0.788 | 1.000x |
-| 1 024 | port/ifft | 1 008 | 9 176 ns | 0.912 | 1.153x |
-| 1 024 | hx/ifft-bluestein | 1 024 | 647 950 ns | 63.276 | 82.430x |
-| 1 024 | hx/ifft-radix2 | 1 024 | 676 683 ns | 66.082 | 84.680x |
-| 1 024 | lc/ifft | 1 024 | 600 912 ns | 58.683 | 74.385x |
-| 1 024 | lc/ifft-radix4 | 1 024 | 585 600 ns | 57.188 | 73.661x |
-| 1 024 | moonnum/ifft | 1 024 | 843 367 ns | 82.360 | 105.707x |
-| 1 024 | mspec/ifft | 1 024 | 953 917 ns | 93.156 | 120.014x |
+| 4 096 | port/bfft | 4 095 | 44 231 ns | 0.900 | 1.000x |
+| 4 096 | port/ifft | 4 095 | 48 368 ns | 0.984 | 1.115x |
+| 4 096 | hkdsp/ifft | 4 096 | 55 761 ns | 1.134 | 1.274x |
+| 4 096 | hx/ifft-bluestein | 4 096 | 3 555 600 ns | 72.339 | 83.825x |
+| 4 096 | hx/ifft-radix2 | 4 096 | 3 242 050 ns | 65.960 | 74.902x |
+| 4 096 | lc/ifft | 4 096 | 3 030 300 ns | 61.652 | 68.515x |
+| 4 096 | lc/ifft-radix4 | 4 096 | 3 034 400 ns | 61.735 | 66.955x |
+| 4 096 | moonnum/ifft | 4 096 | 4 114 300 ns | 83.706 | 93.759x |
+| 4 096 | mspec/ifft | 4 096 | 4 702 700 ns | 95.677 | 108.824x |
+| 1 024 | port/bfft | 1 008 | 7 975 ns | 0.793 | 1.000x |
+| 1 024 | port/ifft | 1 008 | 9 229 ns | 0.918 | 1.146x |
+| 1 024 | hkdsp/ifft | 1 024 | 10 653 ns | 1.040 | 1.335x |
+| 1 024 | hx/ifft-bluestein | 1 024 | 665 167 ns | 64.958 | 83.266x |
+| 1 024 | hx/ifft-radix2 | 1 024 | 687 217 ns | 67.111 | 85.203x |
+| 1 024 | lc/ifft | 1 024 | 605 825 ns | 59.163 | 75.875x |
+| 1 024 | lc/ifft-radix4 | 1 024 | 653 675 ns | 63.835 | 80.087x |
+| 1 024 | moonnum/ifft | 1 024 | 909 700 ns | 88.838 | 116.616x |
+| 1 024 | mspec/ifft | 1 024 | 1 001 700 ns | 97.822 | 124.230x |
 The sides run in **one process**, in an order that is rotated in every round,
 and the ratio is taken per round and then medianed, exactly like the comparison
-against the original.  The measurement has 16 rounds.  A segment of a side holds
-as many transforms as make it last about four milliseconds, and not ten, because
-the machine of this host loses about half of its speed after roughly three
-seconds of sustained work: eighteen segments of ten milliseconds plus the
-references of a round come to more than three seconds, and the last rounds would
-then be twice as slow as the first ones.  The state of the machine was measured
-once per round and it stayed put: the clock read 59 854 us (57 306 to 60 676)
-and the pass over a megabyte of doubles read 0.608 ns per element (0.587 to
-1.442).
+against the original.  The measurement has 16 rounds.
+A round holds <!--v:ECO_SEGMENTS-->36<!--/v--> segments: the forward sides
+and the inverse sides of both windows.  A segment of a side holds as many
+transforms as make it last about <!--v:ECO_MS-->2<!--/v--> milliseconds, and not
+ten, because the machine of this host loses about half of its speed after roughly
+three seconds of sustained work: segments of ten milliseconds across that many
+sides plus the references of a round come to far more than three seconds, and the
+last rounds would then be twice as slow as the first ones.  A segment of two
+milliseconds is still two thousand times the resolution of the clock.  The state
+of the machine was measured once per round and it stayed put: the clock read
+<!--v:ECO_CLOCK-->61 910<!--/v--> us
+(<!--v:ECO_CLOCK_RANGE-->58 804 to 64 494<!--/v-->) and the pass over a megabyte
+of doubles read <!--v:ECO_MEM-->0.786<!--/v--> ns per element
+(<!--v:ECO_MEM_RANGE-->0.621 to 1.662<!--/v-->).  The spread of the rounds is in
+the same file as the medians, and it is the check of all of this: a round that
+crossed the turn of the machine raises the spread to three or more on every side
+at once.
 
 #### Every side was held to a reference
 
@@ -524,18 +540,23 @@ transform as the slower one, so every side was compared with a double precision
 reference at both lengths: `tools/check_ecospectra.py` dumps the spectrum of
 each of them and holds it to `numpy.fft`.
 
-Eight of the nine sides compute the transform, to between 1e-16 and 1e-14
-relative for the ones that work in double precision, and to 2.2e-8 for the port,
-which transforms single precision samples.  One does not: **the radix-4 path of
-`hwlxmm/dsp` does not compute the transform**, with a relative deviation of about
-1.4 at every length that was tried - 4, 16, 64, 256, 1024 and 4096 - and of 0.1
-at the length 4.  Its radix-2 path and its Bluestein path are both correct to
-2e-14, so the defect is in the radix-4 path alone and not in the package as a
-whole.  One length of the seven is an exception, 8, where radix-4 is correct to
-1.9e-17; it is the only one.  The row of the table is therefore the cost of a
-path a user cannot use, and the rows that matter for that package are
-`hx/bluestein`.  The script pins the set of the sides that are correct: a side
-that stops being correct and a side that becomes correct both turn it red.
+Eight of the nine forward sides compute the transform, to between 1e-16 and
+1e-14 relative for the ones that work in double precision, and to the rounding
+error of single precision for the port, which transforms single precision
+samples.  One does not: **the radix-4 path of `hwlxmm/dsp` does not compute the
+transform**, with a relative deviation of about 1.4 at 16, 64, 256, 1024 and
+4096, and of 0.1 at 4.  Its radix-2 path and its Bluestein path are both correct
+to 2e-14, so the defect is in the radix-4 path alone and not in the package as a
+whole.  One of the seven lengths that were tried is an exception, 8, where the
+radix-4 path is correct to 1.9e-17; it is the only one.  The row of the table is
+therefore the cost of a path a user cannot use, and the row that matters for
+that package is `hx/bluestein`.
+
+All nine inverse sides compute it too, in the scaling each of them publishes:
+every package divides its inverse by `n`, and the port is the only side of that
+table whose **unnormalised** inverse has a row of its own.  The script pins both
+sets, and the seven lengths of the two radix paths: a side or a length that
+stops being correct, and one that becomes correct, all turn it red.
 
 #### What the table says
 
@@ -545,16 +566,23 @@ moves from one session to the next, so the honest reading is that the two are
 **at parity**.  It is also the only one that keeps a plan and a slot, which is
 the structure the port has after its own rewrites.
 
-Every other side is between 37 and 120 times slower at the same length, and the
-reason is the same in all of them: **nothing is kept between two calls**.  Every
+Every other side is between <!--v:ECO_FAR-->37 to 120<!--/v--> times slower at
+the same length, and the reason is the same in all of them: **nothing is kept between two calls**.  Every
 transform allocates its workspace again, and the ones that go through Bluestein
 build the chirp and the convolution of that chirp again.  That is a property of
 their API and not a detail of an inner loop: a user pays it on every transform.
 
 `mdsp` transforms **real** samples, and a real transform of `n` samples does
 about half of the arithmetic of a complex one of the same length, so its row is
-generous to it: it is credited with half of the work.  Even so it is 36 times
-slower at the long window.
+generous to it: it is credited with half of the work.  Even so it is
+<!--v:ECO_MDSP-->?<!--/v--> times slower at the long window.
+
+In the inverse direction the port is **faster than the strongest package**: its
+normalised inverse is about a sixth quicker than the inverse of `HK-SHAO/dsp` at
+both windows, and its unnormalised inverse is the only one of the table that does
+not pay for a scaling pass.  The order of the other sides does not change, which
+says that the cost of an inverse transform is the cost of its forward transform
+in these packages: they allocate the same workspace and build the same chirp.
 
 What the port has over all of them is the **coverage of the lengths of the
 original** and the image API on top of them, which is the reason the port exists

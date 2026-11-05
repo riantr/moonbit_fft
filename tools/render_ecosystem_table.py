@@ -8,11 +8,11 @@ The rows are therefore written from the JSON, and `--check` proves that the
 document holds the rows of the measurement it claims.
 
 Two tables are written: the forward transform, taken over the forward port, and
-the inverse transform, taken over the **unnormalised** inverse of the port.  The
-second base is the same amount of work as a forward transform, so a normalised
-inverse of a package, which is that work plus one pass over the result, is
-compared with the normalised inverse of the port rather than with its own
-forward transform.
+the inverse transform, taken over the **unnormalised** inverse of the port.  That
+base is the same amount of work as a forward transform of the same length, so a
+normalised inverse of a package - which is that work plus one pass over the
+result - reads as that work plus that pass, and a package that scales its inverse
+and one that does not are still comparable.
 
 `tools/check_benchmark.py` does the same comparison with its own parser, and it
 is the one that runs before a commit.  This script is the other direction: it
@@ -38,8 +38,9 @@ DATA = ROOT / "bench" / "bench_ecosystem.json"
 # The order of the rows, which is the order of the tables of the document.
 ORDER = ["port", "hkdsp", "hx/radix4", "hx/bluestein", "lc/radix4",
          "lc/bluestein", "moonnum", "mspec", "mdsp"]
-INVERSE_ORDER = ["port/bfft", "port/ifft", "hx/ifft-bluestein", "hx/ifft-radix2",
-                 "lc/ifft", "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft"]
+INVERSE_ORDER = ["port/bfft", "port/ifft", "hkdsp/ifft", "hx/ifft-bluestein",
+                 "hx/ifft-radix2", "lc/ifft", "lc/ifft-radix4", "moonnum/ifft",
+                 "mspec/ifft"]
 WINDOWS = ["4096", "1024"]
 
 # The first and the last row of a table, so that the block that is replaced can
@@ -74,6 +75,12 @@ def rows(data: dict, order: list[str], ratios: str, base: str) -> str:
 
 
 def current(text: str, first: str, last: str) -> str:
+    """The block of the table, from its first row to its last one."""
+    for anchor in (first, last):
+        if text.count(anchor) != 1:
+            raise SystemExit(
+                "the anchor %r appears %d times in %s, it has to appear once"
+                % (anchor, text.count(anchor), DOC))
     start = text.index(first)
     end = text.index("\n", text.index(last)) + 1
     return text[start:end]

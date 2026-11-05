@@ -64,6 +64,12 @@
       "version": null
     },
     {
+      "entry": "inverse, in place, on the slot of its forward transform",
+      "package": "HK-SHAO/dsp",
+      "side": "hkdsp/ifft",
+      "version": "0.1.4"
+    },
+    {
       "entry": "ifft_bluestein",
       "package": "hwlxmm/dsp",
       "side": "hx/ifft-bluestein",
@@ -102,29 +108,32 @@
   ],
   "inverse_ratios": {
     "1024": {
-      "hx/ifft-bluestein/port/bfft": 82.43016365750972,
-      "hx/ifft-radix2/port/bfft": 84.68022141506135,
-      "lc/ifft-radix4/port/bfft": 73.66085287275271,
-      "lc/ifft/port/bfft": 74.3851288052476,
-      "moonnum/ifft/port/bfft": 105.70735121499916,
-      "mspec/ifft/port/bfft": 120.01395478193109,
+      "hkdsp/ifft/port/bfft": 1.3354772339489258,
+      "hx/ifft-bluestein/port/bfft": 83.26595469345472,
+      "hx/ifft-radix2/port/bfft": 85.20259362988756,
+      "lc/ifft-radix4/port/bfft": 80.08695207307449,
+      "lc/ifft/port/bfft": 75.87483666684452,
+      "moonnum/ifft/port/bfft": 116.6159938903769,
+      "mspec/ifft/port/bfft": 124.22988743657567,
       "port/bfft/port/bfft": 1.0,
-      "port/ifft/port/bfft": 1.153478598555147
+      "port/ifft/port/bfft": 1.1457982437326995
     },
     "4096": {
-      "hx/ifft-bluestein/port/bfft": 73.12266100013069,
-      "hx/ifft-radix2/port/bfft": 72.28016658179045,
-      "lc/ifft-radix4/port/bfft": 65.62348079498763,
-      "lc/ifft/port/bfft": 66.0778462203077,
-      "moonnum/ifft/port/bfft": 91.71057243434858,
-      "mspec/ifft/port/bfft": 99.43441552080084,
+      "hkdsp/ifft/port/bfft": 1.2737062516285491,
+      "hx/ifft-bluestein/port/bfft": 83.82466515690746,
+      "hx/ifft-radix2/port/bfft": 74.90205037187725,
+      "lc/ifft-radix4/port/bfft": 66.95534604388726,
+      "lc/ifft/port/bfft": 68.51529153143673,
+      "moonnum/ifft/port/bfft": 93.75874096173904,
+      "mspec/ifft/port/bfft": 108.82439798848915,
       "port/bfft/port/bfft": 1.0,
-      "port/ifft/port/bfft": 1.1144243551141892
+      "port/ifft/port/bfft": 1.1148352098178607
     }
   },
   "lengths": {
     "1024": {
       "hkdsp": 1024,
+      "hkdsp/ifft": 1024,
       "hx/bluestein": 1024,
       "hx/ifft-bluestein": 1024,
       "hx/ifft-radix2": 1024,
@@ -144,6 +153,7 @@
     },
     "4096": {
       "hkdsp": 4096,
+      "hkdsp/ifft": 4096,
       "hx/bluestein": 4096,
       "hx/ifft-bluestein": 4096,
       "hx/ifft-radix2": 4096,
@@ -164,125 +174,133 @@
   },
   "median": {
     "1024": {
-      "hkdsp": 7453.75,
-      "hx/bluestein": 577062.5,
-      "hx/ifft-bluestein": 647950.0,
-      "hx/ifft-radix2": 676683.3333333334,
-      "hx/radix4": 518650.0,
-      "lc/bluestein": 560962.5,
-      "lc/ifft": 600912.5,
-      "lc/ifft-radix4": 585600.0,
-      "lc/radix4": 557325.0,
-      "mdsp": 308357.1428571429,
-      "moonnum": 820850.0,
-      "moonnum/ifft": 843366.6666666667,
-      "mspec": 924550.0,
-      "mspec/ifft": 953916.6666666667,
-      "port": 7799.4011976047905,
-      "port/bfft": 7928.125000000001,
-      "port/ifft": 9175.602409638555
+      "hkdsp": 7704.0,
+      "hkdsp/ifft": 10652.573529411764,
+      "hx/bluestein": 604200.0,
+      "hx/ifft-bluestein": 665166.6666666666,
+      "hx/ifft-radix2": 687216.6666666666,
+      "hx/radix4": 538325.0,
+      "lc/bluestein": 597262.5,
+      "lc/ifft": 605825.0,
+      "lc/ifft-radix4": 653675.0,
+      "lc/radix4": 612537.5,
+      "mdsp": 316557.14285714284,
+      "moonnum": 860500.0,
+      "moonnum/ifft": 909700.0,
+      "mspec": 942275.0,
+      "mspec/ifft": 1001700.0,
+      "port": 7999.415204678362,
+      "port/bfft": 7975.301204819278,
+      "port/ifft": 9229.076086956522
     },
     "4096": {
-      "hkdsp": 41593.75,
-      "hx/bluestein": 2865100.0,
-      "hx/ifft-bluestein": 3287650.0,
-      "hx/ifft-radix2": 3106650.0,
-      "hx/radix4": 2512350.0,
-      "lc/bluestein": 2792850.0,
-      "lc/ifft": 2925100.0,
-      "lc/ifft-radix4": 2885750.0,
-      "lc/radix4": 2756650.0,
-      "mdsp": 1506350.0,
-      "moonnum": 3840350.0,
-      "moonnum/ifft": 3917050.0,
-      "mspec": 4194100.0,
-      "mspec/ifft": 4467100.0,
-      "port": 42311.53846153846,
-      "port/bfft": 43306.944444444445,
-      "port/ifft": 47864.47368421053
+      "hkdsp": 41820.3125,
+      "hkdsp/ifft": 55760.9375,
+      "hx/bluestein": 2966450.0,
+      "hx/ifft-bluestein": 3555600.0,
+      "hx/ifft-radix2": 3242050.0,
+      "hx/radix4": 2569500.0,
+      "lc/bluestein": 2900000.0,
+      "lc/ifft": 3030300.0,
+      "lc/ifft-radix4": 3034400.0,
+      "lc/radix4": 2904800.0,
+      "mdsp": 1587550.0,
+      "moonnum": 4126300.0,
+      "moonnum/ifft": 4114300.0,
+      "mspec": 4411250.0,
+      "mspec/ifft": 4702700.0,
+      "port": 42379.166666666664,
+      "port/bfft": 44230.882352941175,
+      "port/ifft": 48367.647058823524
     }
   },
   "per_unit": {
     "1024": {
-      "hkdsp": 0.7279052734375,
-      "hx/bluestein": 56.353759765625,
-      "hx/ifft-bluestein": 63.2763671875,
-      "hx/ifft-radix2": 66.08235677083334,
-      "hx/radix4": 50.6494140625,
-      "lc/bluestein": 54.781494140625,
-      "lc/ifft": 58.682861328125,
-      "lc/ifft-radix4": 57.1875,
-      "lc/radix4": 54.42626953125,
-      "mdsp": 30.11300223214286,
-      "moonnum": 80.1611328125,
-      "moonnum/ifft": 82.36002604166667,
-      "mspec": 90.2880859375,
-      "mspec/ifft": 93.15592447916667,
-      "port": 0.7755120882070796,
-      "port/bfft": 0.7883113868029926,
-      "port/ifft": 0.912350885019478
+      "hkdsp": 0.75234375,
+      "hkdsp/ifft": 1.0402903837316175,
+      "hx/bluestein": 59.00390625,
+      "hx/ifft-bluestein": 64.95768229166666,
+      "hx/ifft-radix2": 67.11100260416666,
+      "hx/radix4": 52.57080078125,
+      "lc/bluestein": 58.326416015625,
+      "lc/ifft": 59.16259765625,
+      "lc/ifft-radix4": 63.83544921875,
+      "lc/radix4": 59.818115234375,
+      "mdsp": 30.913783482142854,
+      "moonnum": 84.033203125,
+      "moonnum/ifft": 88.837890625,
+      "mspec": 92.01904296875,
+      "mspec/ifft": 97.822265625,
+      "port": 0.7953999329744351,
+      "port/bfft": 0.7930022234693148,
+      "port/ifft": 0.9176678936090225
     },
     "4096": {
-      "hkdsp": 0.8462270100911459,
-      "hx/bluestein": 58.290608723958336,
-      "hx/ifft-bluestein": 66.88741048177083,
-      "hx/ifft-radix2": 63.2049560546875,
-      "hx/radix4": 51.1138916015625,
-      "lc/bluestein": 56.8206787109375,
-      "lc/ifft": 59.511311848958336,
-      "lc/ifft-radix4": 58.710734049479164,
-      "lc/radix4": 56.084187825520836,
-      "mdsp": 30.646769205729168,
-      "moonnum": 78.13212076822917,
-      "moonnum/ifft": 79.69258626302083,
-      "mspec": 85.32918294270833,
-      "mspec/ifft": 90.88338216145833,
-      "port": 0.8610659455729172,
-      "port/bfft": 0.8813230722353996,
-      "port/ifft": 0.9740716076705422
+      "hkdsp": 0.850836435953776,
+      "hkdsp/ifft": 1.1344591776529949,
+      "hx/bluestein": 60.352579752604164,
+      "hx/ifft-bluestein": 72.3388671875,
+      "hx/ifft-radix2": 65.95967610677083,
+      "hx/radix4": 52.276611328125,
+      "lc/bluestein": 59.000651041666664,
+      "lc/ifft": 61.651611328125,
+      "lc/ifft-radix4": 61.735026041666664,
+      "lc/radix4": 59.098307291666664,
+      "mdsp": 32.298787434895836,
+      "moonnum": 83.94978841145833,
+      "moonnum/ifft": 83.70564778645833,
+      "mspec": 89.74711100260417,
+      "mspec/ifft": 95.67667643229167,
+      "port": 0.8624422213244843,
+      "port/bfft": 0.9001257794343728,
+      "port/ifft": 0.9843114966784093
     }
   },
   "ratios": {
     "1024": {
-      "hkdsp/port": 0.946893295933458,
-      "hx/bluestein/port": 73.77723209263172,
-      "hx/radix4/port": 65.62022253326633,
-      "lc/bluestein/port": 71.76364949221755,
-      "lc/radix4/port": 70.7819395134944,
-      "mdsp/port": 39.13969037966852,
-      "moonnum/port": 103.14643534064218,
-      "mspec/port": 116.63023028829707,
+      "hkdsp/port": 0.9621252648637397,
+      "hx/bluestein/port": 75.65259401573246,
+      "hx/radix4/port": 67.33633714160626,
+      "lc/bluestein/port": 75.26483182400457,
+      "lc/radix4/port": 74.95101387604589,
+      "mdsp/port": 40.223211511969765,
+      "moonnum/port": 106.91374750568994,
+      "mspec/port": 119.59210907163771,
       "port/port": 1.0
     },
     "4096": {
-      "hkdsp/port": 0.9690901704959088,
-      "hx/bluestein/port": 66.86432247962696,
-      "hx/radix4/port": 59.382508768588934,
-      "lc/bluestein/port": 64.21240270542698,
-      "lc/radix4/port": 63.81243290328867,
-      "mdsp/port": 35.00270275715265,
-      "moonnum/port": 90.05328795214301,
-      "mspec/port": 99.57261076729247,
+      "hkdsp/port": 0.9851258611429076,
+      "hx/bluestein/port": 68.46922810387856,
+      "hx/radix4/port": 59.41734004818868,
+      "lc/bluestein/port": 67.02854440440233,
+      "lc/radix4/port": 67.24509546804448,
+      "mdsp/port": 36.53931036573928,
+      "moonnum/port": 94.78122577433655,
+      "mspec/port": 103.06124476191746,
       "port/port": 1.0
     }
   },
   "reference": {
     "clock": {
-      "max": 61077.600000000006,
-      "median": 59947.5,
-      "min": 58179.3
+      "max": 64494.3,
+      "median": 61909.799999999996,
+      "min": 58804.1
     },
     "memory": {
-      "max": 0.786590576171875,
-      "median": 0.6237030029296875,
-      "min": 0.562286376953125
+      "max": 1.662445068359375,
+      "median": 0.78582763671875,
+      "min": 0.62103271484375
     },
     "rounds": 16
   },
   "repeats": {
     "hkdsp": {
-      "1024": 205,
-      "4096": 44
+      "1024": 203,
+      "4096": 38
+    },
+    "hkdsp/ifft": {
+      "1024": 136,
+      "4096": 33
     },
     "hx/bluestein": {
       "1024": 4,
@@ -329,65 +347,69 @@
       "4096": 1
     },
     "mspec": {
-      "1024": 3,
+      "1024": 2,
       "4096": 1
     },
     "mspec/ifft": {
-      "1024": 3,
+      "1024": 2,
       "4096": 1
     },
     "port": {
-      "1008": 167,
-      "4095": 39
-    },
-    "port/bfft": {
-      "1008": 144,
+      "1008": 171,
       "4095": 36
     },
-    "port/ifft": {
+    "port/bfft": {
       "1008": 166,
-      "4095": 38
+      "4095": 34
+    },
+    "port/ifft": {
+      "1008": 184,
+      "4095": 34
     }
   },
   "rounds": 16,
+  "segment_ms": 2.0,
+  "segments": 36,
   "spread": {
     "1024": {
-      "hkdsp": 1.13006366752956,
-      "hx/bluestein": 1.1386834657171552,
-      "hx/ifft-bluestein": 1.227127803296406,
-      "hx/ifft-radix2": 1.8589931176502468,
-      "hx/radix4": 1.4253872501405858,
-      "lc/bluestein": 1.1743635425945895,
-      "lc/ifft": 1.1874193117571117,
-      "lc/ifft-radix4": 1.1585257941775065,
-      "lc/radix4": 1.156774651217782,
-      "mdsp": 1.2097268876880385,
-      "moonnum": 1.2263274432336215,
-      "moonnum/ifft": 1.2885216247327744,
-      "mspec": 1.1475378715972513,
-      "mspec/ifft": 1.227909678356204,
-      "port": 1.1574872286079179,
-      "port/bfft": 1.2520591538749537,
-      "port/ifft": 1.295277777777778
+      "hkdsp": 1.1853577139678786,
+      "hkdsp/ifft": 1.7214192802428097,
+      "hx/bluestein": 1.3540594238237151,
+      "hx/ifft-bluestein": 1.4333226392899157,
+      "hx/ifft-radix2": 1.4758816593418371,
+      "hx/radix4": 2.2913290725177395,
+      "lc/bluestein": 1.326310968628349,
+      "lc/ifft": 1.3269519188354655,
+      "lc/ifft-radix4": 1.3628782784129119,
+      "lc/radix4": 1.33,
+      "mdsp": 1.4736790317819541,
+      "moonnum": 1.2404850117884807,
+      "moonnum/ifft": 1.3193308397385834,
+      "mspec": 1.4029747889507838,
+      "mspec/ifft": 1.2865748258341627,
+      "port": 1.240873634945398,
+      "port/bfft": 1.4130923694779118,
+      "port/ifft": 1.9900928016052168
     },
     "4096": {
-      "hkdsp": 1.2003549470748558,
-      "hx/bluestein": 1.2545695266816224,
-      "hx/ifft-bluestein": 1.1641358185610011,
-      "hx/ifft-radix2": 1.9191122154321403,
-      "hx/radix4": 1.759911141490089,
-      "lc/bluestein": 1.2644294288626323,
-      "lc/ifft": 1.1631739274048518,
-      "lc/ifft-radix4": 1.3543665758130154,
-      "lc/radix4": 1.1621652508475868,
-      "mdsp": 1.6440303657694966,
-      "moonnum": 1.1380087426352798,
-      "moonnum/ifft": 1.1803040495089465,
-      "mspec": 1.2057953270074482,
-      "mspec/ifft": 1.1701164451545742,
-      "port": 1.2451055174167303,
-      "port/bfft": 1.2576046924021278,
-      "port/ifft": 1.3404584527220633
+      "hkdsp": 1.5081739666872305,
+      "hkdsp/ifft": 1.2685622125321065,
+      "hx/bluestein": 1.3462066970420192,
+      "hx/ifft-bluestein": 1.312612323491656,
+      "hx/ifft-radix2": 1.3322913202527435,
+      "hx/radix4": 2.007441936539091,
+      "lc/bluestein": 1.3559235296267862,
+      "lc/ifft": 1.759032675975241,
+      "lc/ifft-radix4": 1.33362601982951,
+      "lc/radix4": 1.2436038413606039,
+      "mdsp": 2.1537625645205107,
+      "moonnum": 1.2455301455301455,
+      "moonnum/ifft": 1.262864908658495,
+      "mspec": 1.2531717343539583,
+      "mspec/ifft": 1.3245476003147125,
+      "port": 1.2628027798394168,
+      "port/bfft": 1.3560479476934255,
+      "port/ifft": 1.2166248471980956
     }
   },
   "statistic": "the median of the rounds; the ratios are taken per round and medianed"

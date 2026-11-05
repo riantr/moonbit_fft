@@ -93,22 +93,22 @@ fn main raise {
   let ref_mem = Array::make(131_072, 1.0)
 
   // The sides, one entry per window: 0 to 8 are the long window, 9 to 17 the
-  // short one, 18 to 25 the inverse of the long window and 26 to 33 the
+  // short one, 18 to 26 the inverse of the long window and 27 to 35 the
   // inverse of the short one.
   let names : Array[String] = [
     "port", "hkdsp", "hx/radix4", "hx/bluestein", "lc/radix4", "lc/bluestein", "moonnum",
     "mspec", "mdsp", "port", "hkdsp", "hx/radix4", "hx/bluestein", "lc/radix4", "lc/bluestein",
     "moonnum", "mspec", "mdsp",
-    "port/bfft", "port/ifft", "hx/ifft-bluestein", "hx/ifft-radix2", "lc/ifft",
-    "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
-    "port/bfft", "port/ifft", "hx/ifft-bluestein", "hx/ifft-radix2", "lc/ifft",
-    "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
+    "port/bfft", "port/ifft", "hkdsp/ifft", "hx/ifft-bluestein", "hx/ifft-radix2",
+    "lc/ifft", "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
+    "port/bfft", "port/ifft", "hkdsp/ifft", "hx/ifft-bluestein", "hx/ifft-radix2",
+    "lc/ifft", "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
   ]
   let lengths : Array[Int32] = [
     big_port, big, big, big, big, big, big, big, big, small_port, small, small, small,
     small, small, small, small, small,
-    big_port, big_port, big, big, big, big, big, big,
-    small_port, small_port, small, small, small, small, small, small,
+    big_port, big_port, big, big, big, big, big, big, big,
+    small_port, small_port, small, small, small, small, small, small, small,
   ]
   let sides = names.length()
 
@@ -228,8 +228,10 @@ fn warm_up(
   let _ = fft_small.complex_to_complex(-1, cx_small, cy_small)
   fill_hmem(mem_big, big)
   @hkdsp.forward(slot_big)
+  @hkdsp.inverse(slot_big)
   fill_hmem(mem_small, small)
   @hkdsp.forward(slot_small)
+  @hkdsp.inverse(slot_small)
   fill_hwlxmm(radix_big, big)
   @hwlxmm.fft_radix4(radix_big)
   fill_hwlxmm(radix_small, small)
@@ -318,30 +320,34 @@ fn measure(
   } else if which == 19 {
     time_port_ifft(fft_big, cx_big, cy_big, repeats)
   } else if which == 20 {
-    time_hx_ifft_bluestein(radix_big, repeats)
+    time_hkdsp_inverse(slot_big, mem_big, 4_096, repeats)
   } else if which == 21 {
-    time_hx_ifft_radix2(radix_big, 4_096, repeats)
+    time_hx_ifft_bluestein(radix_big, repeats)
   } else if which == 22 {
-    time_lc_ifft(lc_big, repeats)
+    time_hx_ifft_radix2(radix_big, 4_096, repeats)
   } else if which == 23 {
-    time_lc_ifft_radix4(lc_big, repeats)
+    time_lc_ifft(lc_big, repeats)
   } else if which == 24 {
-    time_moonnum_ifft(nd_big, repeats)
+    time_lc_ifft_radix4(lc_big, repeats)
   } else if which == 25 {
-    time_mspec_ifft(spec_big, repeats)
+    time_moonnum_ifft(nd_big, repeats)
   } else if which == 26 {
-    time_port_bfft(fft_small, cx_small, cy_small, repeats)
+    time_mspec_ifft(spec_big, repeats)
   } else if which == 27 {
-    time_port_ifft(fft_small, cx_small, cy_small, repeats)
+    time_port_bfft(fft_small, cx_small, cy_small, repeats)
   } else if which == 28 {
-    time_hx_ifft_bluestein(radix_small, repeats)
+    time_port_ifft(fft_small, cx_small, cy_small, repeats)
   } else if which == 29 {
-    time_hx_ifft_radix2(radix_small, 1_024, repeats)
+    time_hkdsp_inverse(slot_small, mem_small, 1_024, repeats)
   } else if which == 30 {
-    time_lc_ifft(lc_small, repeats)
+    time_hx_ifft_bluestein(radix_small, repeats)
   } else if which == 31 {
-    time_lc_ifft_radix4(lc_small, repeats)
+    time_hx_ifft_radix2(radix_small, 1_024, repeats)
   } else if which == 32 {
+    time_lc_ifft(lc_small, repeats)
+  } else if which == 33 {
+    time_lc_ifft_radix4(lc_small, repeats)
+  } else if which == 34 {
     time_moonnum_ifft(nd_small, repeats)
   } else {
     time_mspec_ifft(spec_small, repeats)
@@ -462,28 +468,72 @@ fn time_radix4(
 }
 
 ///|
+/// The inverse of `HK-SHAO/dsp`, which transforms the slot in place on the plan
+/// of the forward transform, in blocks, with the samples put back between them.
+fn time_hkdsp_inverse(
+  slot : Int32,
+  mem : FixedArray[Double],
+  n : Int32,
+  repeats : Int32,
+) -> Double {
+  let (blocks, per_block) = blocks_of(repeats)
+  let mut total = 0.0
+  let mut b = 0
+  while b < blocks {
+    fill_hmem(mem, n)
+    let t0 = @bench.monotonic_clock_start()
+    let mut i = 0
+    while i < per_block {
+      @hkdsp.inverse(slot)
+      i = i + 1
+    }
+    total = total + @bench.monotonic_clock_end(t0)
+    b = b + 1
+  }
+  total * 1000.0 / (blocks * per_block).to_double()
+}
+
+///|
 /// The Bluestein transform of `hwlxmm/dsp`, which builds its convolution out of
 /// a table and returns a new array.
 fn time_hx_bluestein(data : Array[@hmath.Complex], repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @hwlxmm.fft_bluestein(data)
+    let out = @hwlxmm.fft_bluestein(data)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
 /// The radix-4 transform of `lcyllp`, which returns a new array.
 fn time_lc_radix4(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @lcyllp.fft_radix4(data)
+    let out = @lcyllp.fft_radix4(data)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -491,12 +541,21 @@ fn time_lc_radix4(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
 /// calls for every length.
 fn time_lc_bluestein(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @lcyllp.fft_bluestein(data, false)
+    let out = @lcyllp.fft_bluestein(data, false)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -504,36 +563,63 @@ fn time_lc_bluestein(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
 /// power of two and returns a new array.
 fn time_moonnum(nd : @mcore.NdArray, repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @mnum.fft(nd)
+    let out = @mnum.fft(nd)
+    kept = out.get_c128(0).0
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
 /// The transform of `chgttyyr/MoonSpectrum`.
 fn time_mspec(signal : Array[@mspec.Complex], repeats : Int32) -> Double raise {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @mspec.fft(signal)
+    let out = @mspec.fft(signal)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
 /// The transform of `2227057182/moonbit-dsp`, whose input is real.
 fn time_mdsp(real : Array[Double], repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @mdsp.fft(real)
+    let out = @mdsp.fft(real)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -582,12 +668,21 @@ fn time_hx_ifft_bluestein(
   repeats : Int32,
 ) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @hwlxmm.ifft_bluestein(data)
+    let out = @hwlxmm.ifft_bluestein(data)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -620,12 +715,21 @@ fn time_hx_ifft_radix2(
 /// a caller of that package reaches for.
 fn time_lc_ifft(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @lcyllp.ifft(data)
+    let out = @lcyllp.ifft(data)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -635,24 +739,42 @@ fn time_lc_ifft_radix4(
   repeats : Int32,
 ) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @lcyllp.ifft_radix4(data)
+    let out = @lcyllp.ifft_radix4(data)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
 /// The inverse of `amor2025/moonNum`.
 fn time_moonnum_ifft(nd : @mcore.NdArray, repeats : Int32) -> Double {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @mnum.ifft(nd)
+    let out = @mnum.ifft(nd)
+    kept = out.get_c128(0).0
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|
@@ -663,12 +785,21 @@ fn time_mspec_ifft(
   repeats : Int32,
 ) -> Double raise {
   let t0 = @bench.monotonic_clock_start()
+  let mut kept = 0.0
   let mut i = 0
   while i < repeats {
-    let _ = @mspec.ifft(spec)
+    let out = @mspec.ifft(spec)
+    kept = out[0].re
     i = i + 1
   }
-  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  let ns = @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+  // The result of the last transform is read into `kept` and folded in as
+  // exactly zero, outside the clock: a computation whose value is never read
+  // may be removed, and the side would then read as infinitely fast.  A zero
+  // that is not a literal cannot be folded away, so the read survives, and a
+  // transform that produced a NaN turns the printed time into a NaN, which the
+  // driver refuses instead of recording it.
+  ns + kept * 0.0
 }
 
 ///|

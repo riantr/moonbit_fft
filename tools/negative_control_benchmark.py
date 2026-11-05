@@ -58,7 +58,7 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
     """The mutations, each one built out of the measurement itself."""
 
     def row(window: str, side: str, *, ns=None, unit=None, ratio=None,
-            n=None, unit_text="ns") -> str:
+            n=None, unit_text="ns", base="port") -> str:
         return "| %s | %s | %s | %s %s | %.3f | %.3fx |" % (
             thousands(int(window)), side,
             thousands(n if n is not None
@@ -69,7 +69,9 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
             unit if unit is not None
             else visit(data, "per_unit", window, side),
             ratio if ratio is not None
-            else visit(data, "ratios", window, side + "/port"),
+            else (visit(data, "inverse_ratios", window, side + "/port/bfft")
+                  if base == "port/bfft"
+                  else visit(data, "ratios", window, side + "/port")),
         )
 
     def up(value: float, factor: float = 1.05) -> float:
@@ -82,6 +84,11 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
     hkdsp_4096 = visit(data, "median", "4096", "hkdsp")
     ratio_4096 = visit(data, "ratios", "4096", "hx/radix4/port")
     unit_1024 = visit(data, "per_unit", "1024", "moonnum")
+    # The row of an inverse side, whose base is the unnormalised inverse of the
+    # port and not the forward port.
+    inverse_ns_4096 = visit(data, "median", "4096", "hkdsp/ifft")
+    inverse_ratio_4096 = visit(data, "inverse_ratios", "4096",
+                               "lc/ifft/port/bfft")
     rounds = data["rounds"]
     version = data["ecosystem"][0]["version"]
     bump = "%s" % version
@@ -143,6 +150,21 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
             row("1024", "mdsp") + "{EOL}",
             "",
             "has no row for",
+        ),
+        (
+            "the time of an inverse side",
+            row("4096", "hkdsp/ifft", base="port/bfft"),
+            row("4096", "hkdsp/ifft", base="port/bfft",
+                ns=up(inverse_ns_4096)),
+            "the document says %d ns" % round(up(inverse_ns_4096)),
+        ),
+        (
+            "the ratio of an inverse side",
+            row("4096", "lc/ifft", base="port/bfft"),
+            row("4096", "lc/ifft", base="port/bfft",
+                ratio=up(inverse_ratio_4096)),
+            "the ratio to the base of its table is %.3f"
+            % up(inverse_ratio_4096),
         ),
         (
             "a row written twice",
