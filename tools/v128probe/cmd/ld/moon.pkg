@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/v128",
+}
+
+options(
+  is_main: true,
+  link: { "native": { "cc-flags": "/D__SSE2__" } },
+)

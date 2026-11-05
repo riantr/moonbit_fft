@@ -129,6 +129,58 @@ against the 14 arithmetic instructions the two-lane form saves. Only one
 `unpcklpd` survives in the whole image, so the compiler does not fold the
 packs into paired loads.
 
+## The second measurement: packing removed, still 1.12x slower
+
+Packing is not inherent to the language: `simd_memory.mbt` offers
+`v128_load(bytes : FixedArray[Byte], offset : Int32)` and `v128_store`, and
+the SSE2 branch of `moonbit_simd.h` turns them into `_mm_loadu_si128` and
+`_mm_storeu_si128` — one instruction per access, no lane interface, no bounds
+check. A kernel can therefor keep the complex numbers next to each other, one
+complex number per vector, lane 0 the real part and lane 1 the imaginary
+part, and read a point with a single instruction.
+
+`cmd/ab2/main.mbt` is that kernel. Two details were needed:
+
+* the rotation by 90 degrees, the one operation a radix 4 butterfly cannot
+  avoid, is a lane swap, and the SSE2 branch implements `i8x16_shuffle` only
+  under `#ifdef __SSSE3__` — a macro MSVC never defines. The package defines
+  it itself (`/D__SSE2__ /D__SSSE3__`), the CPU has SSSE3, and the swap
+  becomes one `pshufb`;
+* the byte offsets are carried pre-multiplied by 16 so that an access is an
+  addition. It made no difference (`1.1200` before, `1.1299` after), the
+  compiler had already folded the scaling into the addressing mode.
+
+```
+PARITY : the two sides agree on all 32760 complex numbers
+MEDIAN : vector/scalar = 1.1200   (pre-scaled offsets: 1.1299)
+```
+
+So: 4 loads, 4 stores and 11 vector arithmetic per group of four points, all
+with single instructions and a hardware shuffle, against 8 loads, 8 stores and
+16 scalar arithmetic — and the vector side is still one eighth slower.
+
+## Why vectorising this kernel does not pay
+
+The three rewrites land at 1.25, 1.12 and 1.13 times the scalar time, which
+says the kernel is not limited by the number of instructions. The arithmetic
+agrees: the scalar pass takes 308 us for 8190 groups, that is 37.6 ns per
+group, or roughly 130 cycles at the clock of this machine, against about 34
+machine operations per group — an order of magnitude more cycles than the
+issue width needs. The loop is waiting on memory, not on execution units: a
+group touches four positions that the modular recurrence scatters over the
+524 KB of the two working buffers, twice the size of L1, and the transform
+walks them in that order thirteen times.
+
+Two consequences, both of which the measurements support:
+
+* **More lanes would not help either.** `f32x4` would double the lanes and
+  halve the arithmetic, but the arithmetic is not the cost, and it would
+  abandon the double precision accumulation that `kernel.mbt` documents.
+* **The lever is locality, not width.** Blocking a stage so that the groups
+  it touches stay inside L1 is the change that addresses the 130 cycles; no
+  amount of SIMD touches it.
+
+
 For comparison, the hand written **C** SSE2 kernel of this same port measured
 1.10–1.16x *faster* than its scalar reference when it was tried earlier. Same
 algorithm, same ISA, opposite verdict: the difference is the interface. In C
