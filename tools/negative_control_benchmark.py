@@ -54,6 +54,25 @@ def visit(node, *path):
     return node
 
 
+def avx2_mutation() -> tuple[str, str, str]:
+    """The row of the `/arch:AVX2` table, and the same row with a false ratio.
+
+    The numbers are not written here: they are read out of the measurement, so
+    that the mutation stays a mutation of this row and not of a number that
+    somebody typed.
+    """
+    data = json.loads(
+        (ROOT / "bench" / "bench_avx2.json").read_text(encoding="utf-8")
+    )
+    median = thousands(int(round(data["a"]["median"])))
+    ratio = data["ratio"]["median"]
+    return (
+        "| `the default flags` | %s ns | %.3fx |" % (median, ratio),
+        "| `the default flags` | %s ns | %.3fx |" % (median, ratio * 1.05),
+        "the document says the ratio of the row the default flags is",
+    )
+
+
 def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
     """The mutations, each one built out of the measurement itself."""
 
@@ -171,6 +190,10 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
             row("1024", "mdsp") + "{EOL}",
             row("1024", "mdsp") + "{EOL}" + row("1024", "mdsp") + "{EOL}",
             "is written twice",
+        ),
+        (
+            "the ratio of the /arch:AVX2 table",
+            *avx2_mutation(),
         ),
     ]
 

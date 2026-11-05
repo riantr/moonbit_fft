@@ -68,6 +68,10 @@ DIRECT_DATA = BENCH / "bench_direct.json"
 # of the input into the output.
 COPY_DATA = BENCH / "bench_copy.json"
 
+# The comparison of the build with `/arch:AVX2` against the default build.  It
+# is a round of its own, measured with `tools/ab_compare.py` like the one above.
+AVX2_DATA = BENCH / "bench_avx2.json"
+
 # The measurement of the transform next to the state of the machine.
 MACHINE_DATA = BENCH / "bench_machine.json"
 
@@ -310,6 +314,57 @@ def main() -> int:
     target_rows: list[re.Match[str]] = []
     eco_rows: list[re.Match[str]] = []
     eco_lines: list[str] = []
+    # The comparison of the build with `/arch:AVX2` against the default build.
+    # The two rows are recognised by their first cell, which no other table of
+    # the document uses.
+    if not AVX2_DATA.exists():
+        problems.append(
+            "the comparison of the build with /arch:AVX2 is not measured, "
+            f"{AVX2_DATA} does not exist"
+        )
+    else:
+        avx2 = json.loads(AVX2_DATA.read_text(encoding="utf-8"))
+        rows: dict[str, object] = {}
+        for line in DOC.read_text(encoding="utf-8").splitlines():
+            if line.startswith("| `the default flags`"):
+                rows["a"] = ROW_COPY.match(line)
+            elif line.startswith("| `/arch:AVX2`"):
+                rows["b"] = ROW_COPY.match(line)
+        if len(rows) != 2 or any(row is None for row in rows.values()):
+            problems.append(
+                "BENCHMARK.md needs one `the default flags` row and one "
+                "`/arch:AVX2` row, each of the shape `| what | ns | ratio |`"
+            )
+        else:
+            for side, row in rows.items():
+                checked += 1
+                measured = avx2.get(side, {}).get("median")
+                if measured is None:
+                    problems.append(f"bench_avx2.json has no {side} side")
+                elif abs(number(row.group("median")) - measured) > max(
+                    1.0, 0.005 * abs(measured)
+                ):
+                    problems.append(
+                        f"the document says the median of the {side} side is "
+                        f"{number(row.group('median'))} ns, the measurement is "
+                        f"{measured:.0f} ns"
+                    )
+            ratio = avx2.get("ratio", {}).get("median")
+            if ratio is None:
+                problems.append("bench_avx2.json has no ratio")
+            else:
+                checked += 1
+                for row, expected, what in (
+                    (rows["a"], ratio, "the default flags"),
+                    (rows["b"], 1.0 / ratio, "/arch:AVX2"),
+                ):
+                    if not close(float(row.group("ratio")), expected, 0.01, 0.005):
+                        problems.append(
+                            f"the document says the ratio of the row {what} is "
+                            f"{row.group('ratio')}x, the measurement is "
+                            f"{expected:.3f}x"
+                        )
+
     # The identity of the machine.  A number of this document is only
     # comparable inside the machine it came from, so the document has to name
     # that machine, the name has to be the one the measurement carries, and the

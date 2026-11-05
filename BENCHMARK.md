@@ -309,6 +309,33 @@ measurement is `tools/ab_compare.py`, the data of it is tracked in
 `bench/bench_copy.json`, and the build of the port that reads one array and
 writes the other one is the port of today.
 
+### The compiler flag is worth seven per cent
+
+There is a free gain in the build itself: MSVC takes `/arch:AVX2` for the
+translation unit of the program, and the three operand encoding of VEX saves
+the register copies of the two operand form.  The same source, built twice and
+run alternately with the rounds paired:
+
+| the build | the median of the rounds | the ratio to the other side |
+| --- | ---: | ---: |
+| `the default flags` | 378 033 ns | 1.075x |
+| `/arch:AVX2` | 353 734 ns | 0.930x |
+
+The ratio taken per round has its median at **1.075** over 336 paired rounds,
+and the checksum of the two builds is the same, `-7829.640045009777`, so the
+encoding moved the time and not a single result.  The data is tracked in
+`bench/bench_avx2.json`, the measurement is `tools/ab_compare.py`.
+
+Two things are worth knowing before copying it.  `link.native.cc-flags`
+**replaces** the flag set of the toolchain instead of adding to it, and the
+default set carries `/O2`: a package that sets a flag without writing `/O2`
+back is compiled unoptimised, which this kernel pays for with a factor of
+nine.  And the flag belongs on the **executable package**, not on the library:
+the kernels are compiled into the merged translation unit of the program, so
+the link section of a library package does not reach them, and it makes the
+toolchain try to link the library as a program as well, which fails.
+`tools/cpu_flags.py` prints the flags the CPU of the machine deserves.
+
 ### The machine loses its speed, and it hits everything
 
 Measured on: 12th Gen Intel(R) Core(TM) i7-12700 (Intel64 Family 6 Model 151 Stepping 2, GenuineIntel, 20 logical cores, SSE SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX2, fingerprint ebdad1757173d388)
