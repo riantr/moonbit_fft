@@ -311,6 +311,8 @@ writes the other one is the port of today.
 
 ### The machine loses its speed, and it hits everything
 
+Measured on: 12th Gen Intel(R) Core(TM) i7-12700 (Intel64 Family 6 Model 151 Stepping 2, GenuineIntel, 20 logical cores, SSE SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX2, fingerprint ebdad1757173d388)
+
 The measurement of that change is the interesting part, because the first
 version of it said the opposite.  A transform that reads one array and writes
 another seemed to be **2.2 times slower** than a transform in place, and it

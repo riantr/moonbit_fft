@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import pathlib
 import re
 import sys
@@ -43,6 +44,12 @@ BUILD = ROOT / "build"
 # document can be checked on a fresh clone.
 BENCH = ROOT / "bench"
 DOC = ROOT / "BENCHMARK.md"
+
+sys.path.insert(0, str(ROOT / "tools"))
+
+# The identity of the machine the numbers belong to, and the way to recognise
+# the machine this runs on.
+import cpu_flags  # noqa: E402
 # The two documents of the repository that repeat the numbers of the
 # benchmark.  They are checked too, because a number that is corrected in
 # one document and left in the other is a drift of its own.
@@ -303,6 +310,66 @@ def main() -> int:
     target_rows: list[re.Match[str]] = []
     eco_rows: list[re.Match[str]] = []
     eco_lines: list[str] = []
+    # The identity of the machine.  A number of this document is only
+    # comparable inside the machine it came from, so the document has to name
+    # that machine, the name has to be the one the measurement carries, and the
+    # gate has to notice when it is not running on that machine any more.
+    # `MOONBIT_FFT_OTHER_MACHINE=1` downgrades the last part to a warning, for
+    # a reader who only wants to check the arithmetic of the tables.
+    cpu = machine_data.get("cpu")
+    if not isinstance(cpu, dict):
+        problems.append(
+            "bench_machine.json carries no cpu field, run "
+            "tools/bench_machine.py --stamp-only"
+        )
+    else:
+        missing = [
+            key
+            for key in ("name", "identifier", "logical_cores", "isa", "fingerprint")
+            if key not in cpu
+        ]
+        if missing:
+            problems.append(
+                "the cpu field of bench_machine.json lacks %s" % ", ".join(missing)
+            )
+        if cpu.get("fingerprint") != cpu_flags.fingerprint(cpu):
+            problems.append(
+                "the fingerprint of the cpu field does not match the fields that "
+                "it summarises"
+            )
+        wanted = "Measured on: " + cpu_flags.summary(cpu)
+        stated = [
+            line.strip()
+            for line in DOC.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("Measured on: ")
+        ]
+        if len(stated) != 1:
+            problems.append(
+                "BENCHMARK.md needs exactly one `Measured on: <cpu>` line, it has %d"
+                % len(stated)
+            )
+        else:
+            checked += 1
+            if stated[0] != wanted:
+                problems.append(
+                    "the `Measured on` line of BENCHMARK.md is not the machine of "
+                    "bench_machine.json\n  document   : %s\n  measurement: %s"
+                    % (stated[0], wanted)
+                )
+        here = cpu_flags.detect()
+        checked += 1
+        if here["fingerprint"] != cpu.get("fingerprint"):
+            message = (
+                "the numbers were measured on the machine of fingerprint %s, this "
+                "one is %s; numbers of two machines are not comparable, re-run "
+                "tools/bench_machine.py and the comparisons"
+                % (cpu.get("fingerprint"), here["fingerprint"])
+            )
+            if os.environ.get("MOONBIT_FFT_OTHER_MACHINE"):
+                print("warning: " + message)
+            else:
+                problems.append(message)
+
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
             title = line[4:].strip()

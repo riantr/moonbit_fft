@@ -49,6 +49,8 @@ list of deviations from the Java original are in
 | `tools/publish_bench.py` | copies the measurements of the rounds into the tracked `bench` directory | yes |
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/negative_control_benchmark.py` | breaks the numbers of the ecosystem table on purpose and checks that the gate turns red | yes |
+| `tools/negative_control_cpu.py` | breaks the machine identity of the measurement on purpose and checks that the gate turns red | yes |
+| `tools/cpu_flags.py` | identifies the CPU a measurement was taken on, and prints the cc-flags that CPU deserves | no |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
 | `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation and against the packages of the MoonBit ecosystem | yes |
