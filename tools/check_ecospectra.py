@@ -39,8 +39,8 @@ WINDOWS = [(4096, 4095), (1024, 1008)]
 # `tools/bench_ecosystem.py`.  The rest of them are reported with their
 # deviation and are expected to be wrong.
 EXPECTED_CORRECT = {
-    "port", "hkdsp", "hx_bluestein", "lc_radix4", "lc_bluestein", "moonnum",
-    "mspec", "mdsp",
+    "port", "hkdsp", "hx_radix2", "hx_bluestein", "lc_radix4", "lc_bluestein",
+    "moonnum", "mspec", "mdsp",
 }
 
 # The port transforms single precision samples and rounds its result back to
@@ -151,8 +151,8 @@ def main() -> int:
         return 1
     print("%d spectra were read.  %d of the sides compute the transform: %s."
           % (rows, len(correct), sorted(correct)))
-    print("The radix path of `hwlxmm/dsp` does not, at either length, and the")
-    print("document of the benchmark says so.")
+    print("The radix **4** path of `hwlxmm/dsp` does not, at either length; its")
+    print("radix 2 and its Bluestein paths do, and the document says so.")
     return 0
 
 

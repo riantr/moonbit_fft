@@ -180,7 +180,7 @@ ROW_TARGET = re.compile(
 #   | 4 096 | port | 4 095 | 40 997 ns | 0.834 | 1.000x |
 ROW_ECO = re.compile(
     r"^\|\s*\**\s*(?P<window>[\d ]+)\s*\**\s*\|"
-    r"\s*(?P<side>[a-z0-9/]+)\s*\|"
+    r"\s*(?P<side>[a-z0-9/-]+)\s*\|"
     r"\s*\**\s*(?P<n>[\d ]+)\s*\**\s*\|"
     r"\s*\**\s*(?P<ns>[\d ]+)\s*ns\s*\**\s*\|"
     r"\s*\**\s*(?P<unit>[\d.]+)\s*\**\s*\|"
@@ -719,6 +719,7 @@ def main() -> int:
             eco_lengths = eco_data.get("lengths", {})
             eco_medians = eco_data.get("median", {})
             eco_ratios = eco_data.get("ratios", {})
+            eco_inverse_ratios = eco_data.get("inverse_ratios", {})
             eco_unit = eco_data.get("per_unit", {})
             seen: set[tuple[str, str]] = set()
             for row in eco_rows:
@@ -760,8 +761,12 @@ def main() -> int:
                 for given, actual, what in (
                     (row.group("unit"), eco_unit[window][side],
                      "the cost of an element"),
-                    (row.group("ratio"), eco_ratios[window][f"{side}/port"],
-                     "the ratio to the port"),
+                    (row.group("ratio"),
+                     (eco_inverse_ratios[window][f"{side}/port/bfft"]
+                      if f"{side}/port/bfft"
+                      in eco_inverse_ratios.get(window, {})
+                      else eco_ratios[window][f"{side}/port"]),
+                     "the ratio to the base of its table"),
                 ):
                     if not close(float(given), actual, 0.02, 0.01):
                         problems.append(

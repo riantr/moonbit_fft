@@ -92,16 +92,23 @@ fn main raise {
 
   let ref_mem = Array::make(131_072, 1.0)
 
-  // The sides, one entry per window: 0 to 6 are the long window, 7 to 13 the
-  // short one.
+  // The sides, one entry per window: 0 to 8 are the long window, 9 to 17 the
+  // short one, 18 to 25 the inverse of the long window and 26 to 33 the
+  // inverse of the short one.
   let names : Array[String] = [
     "port", "hkdsp", "hx/radix4", "hx/bluestein", "lc/radix4", "lc/bluestein", "moonnum",
     "mspec", "mdsp", "port", "hkdsp", "hx/radix4", "hx/bluestein", "lc/radix4", "lc/bluestein",
     "moonnum", "mspec", "mdsp",
+    "port/bfft", "port/ifft", "hx/ifft-bluestein", "hx/ifft-radix2", "lc/ifft",
+    "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
+    "port/bfft", "port/ifft", "hx/ifft-bluestein", "hx/ifft-radix2", "lc/ifft",
+    "lc/ifft-radix4", "moonnum/ifft", "mspec/ifft",
   ]
   let lengths : Array[Int32] = [
     big_port, big, big, big, big, big, big, big, big, small_port, small, small, small,
     small, small, small, small, small,
+    big_port, big_port, big, big, big, big, big, big,
+    small_port, small_port, small, small, small, small, small, small,
   ]
   let sides = names.length()
 
@@ -304,8 +311,40 @@ fn measure(
     time_moonnum(nd_small, repeats)
   } else if which == 16 {
     time_mspec(spec_small, repeats)
-  } else {
+  } else if which == 17 {
     time_mdsp(real_small, repeats)
+  } else if which == 18 {
+    time_port_bfft(fft_big, cx_big, cy_big, repeats)
+  } else if which == 19 {
+    time_port_ifft(fft_big, cx_big, cy_big, repeats)
+  } else if which == 20 {
+    time_hx_ifft_bluestein(radix_big, repeats)
+  } else if which == 21 {
+    time_hx_ifft_radix2(radix_big, 4_096, repeats)
+  } else if which == 22 {
+    time_lc_ifft(lc_big, repeats)
+  } else if which == 23 {
+    time_lc_ifft_radix4(lc_big, repeats)
+  } else if which == 24 {
+    time_moonnum_ifft(nd_big, repeats)
+  } else if which == 25 {
+    time_mspec_ifft(spec_big, repeats)
+  } else if which == 26 {
+    time_port_bfft(fft_small, cx_small, cy_small, repeats)
+  } else if which == 27 {
+    time_port_ifft(fft_small, cx_small, cy_small, repeats)
+  } else if which == 28 {
+    time_hx_ifft_bluestein(radix_small, repeats)
+  } else if which == 29 {
+    time_hx_ifft_radix2(radix_small, 1_024, repeats)
+  } else if which == 30 {
+    time_lc_ifft(lc_small, repeats)
+  } else if which == 31 {
+    time_lc_ifft_radix4(lc_small, repeats)
+  } else if which == 32 {
+    time_moonnum_ifft(nd_small, repeats)
+  } else {
+    time_mspec_ifft(spec_small, repeats)
   }
 }
 
@@ -322,25 +361,26 @@ fn blocks_of(repeats : Int32) -> (Int32, Int32) {
 }
 
 ///|
-/// The number of transforms of a segment, so that the segment lasts about four
-/// milliseconds: with a clock that resolves a microsecond, a segment of four
-/// milliseconds is three orders of magnitude above the resolution.
+/// The number of transforms of a segment, so that the segment lasts about two
+/// milliseconds: with a clock that resolves a microsecond, two milliseconds is
+/// three orders of magnitude above the resolution.
 ///
-/// Four and not ten, because the machine of this host loses about half of its
+/// Two and not ten, because the machine of this host loses about half of its
 /// speed after roughly three seconds of sustained work, and the whole
-/// measurement has to stay inside the phase it starts in.  Eighteen segments of
-/// ten milliseconds and a round of references come to more than three seconds
-/// in sixteen rounds, and the last rounds are then twice as slow as the first
-/// ones.
+/// measurement has to stay inside the phase it starts in.  A round holds the
+/// forward **and** the inverse sides, thirty four of them: at ten milliseconds
+/// a round is far past the turn of the machine, and so it is at four.  The
+/// spread of the rounds is the check of that - a round that crosses the turn
+/// raises the spread to three or more on every side at once.
 fn repeats_for(ns : Double) -> Int32 {
-  let target = 4_000_000.0
+  let target = 2_000_000.0
   if ns <= 0.0 {
     return 1
   }
   let want = target / ns
   let mut r = want.to_int()
-  // Round up, so that every segment is at least four milliseconds long even
-  // when a single transform is already most of one.
+  // Round up, so that every segment is at least the target long even when a
+  // single transform is already most of one.
   if r.to_double() < want {
     r = r + 1
   }
@@ -491,6 +531,141 @@ fn time_mdsp(real : Array[Double], repeats : Int32) -> Double {
   let mut i = 0
   while i < repeats {
     let _ = @mdsp.fft(real)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The unnormalised inverse of the port: the transform of the other direction,
+/// with no scaling at all.  It is the `bfft` of FFTW.jl and the only inverse of
+/// the Java original, so it is the row that tells the price of the kernel
+/// alone.
+fn time_port_bfft(
+  fft : @moonbit_fft.FftComplex,
+  cx : Array[Float],
+  cy : Array[Float],
+  repeats : Int32,
+) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = fft.complex_to_complex(1, cx, cy)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The normalised inverse of the port, which is the same transform followed by
+/// one pass over the result that divides it by `n`.  The difference to the row
+/// of `port/bfft` is what that pass costs.
+fn time_port_ifft(
+  fft : @moonbit_fft.FftComplex,
+  cx : Array[Float],
+  cy : Array[Float],
+  repeats : Int32,
+) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    fft.ifft(cx, cy)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The Bluestein inverse of `hwlxmm/dsp`, which returns a new array.
+fn time_hx_ifft_bluestein(
+  data : Array[@hmath.Complex],
+  repeats : Int32,
+) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = @hwlxmm.ifft_bluestein(data)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The in place radix 2 inverse of `hwlxmm/dsp`, in blocks, with the samples
+/// put back between the blocks.
+fn time_hx_ifft_radix2(
+  data : Array[@hmath.Complex],
+  n : Int32,
+  repeats : Int32,
+) -> Double {
+  let (blocks, per_block) = blocks_of(repeats)
+  let mut total = 0.0
+  let mut b = 0
+  while b < blocks {
+    fill_hwlxmm(data, n)
+    let t0 = @bench.monotonic_clock_start()
+    let mut i = 0
+    while i < per_block {
+      @hwlxmm.ifft_radix2(data)
+      i = i + 1
+    }
+    total = total + @bench.monotonic_clock_end(t0)
+    b = b + 1
+  }
+  total * 1000.0 / (blocks * per_block).to_double()
+}
+
+///|
+/// The entry point of the inverse of `lcyllp/moonbit-nlse-ssfm`, which is what
+/// a caller of that package reaches for.
+fn time_lc_ifft(data : Array[@ltypes.Complex], repeats : Int32) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = @lcyllp.ifft(data)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The radix 4 inverse of `lcyllp/moonbit-nlse-ssfm`.
+fn time_lc_ifft_radix4(
+  data : Array[@ltypes.Complex],
+  repeats : Int32,
+) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = @lcyllp.ifft_radix4(data)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The inverse of `amor2025/moonNum`.
+fn time_moonnum_ifft(nd : @mcore.NdArray, repeats : Int32) -> Double {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = @mnum.ifft(nd)
+    i = i + 1
+  }
+  @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()
+}
+
+///|
+/// The inverse of `chgttyyr/MoonSpectrum`, which reports its failures as a
+/// result instead of a panic.
+fn time_mspec_ifft(
+  spec : Array[@mspec.Complex],
+  repeats : Int32,
+) -> Double raise {
+  let t0 = @bench.monotonic_clock_start()
+  let mut i = 0
+  while i < repeats {
+    let _ = @mspec.ifft(spec)
     i = i + 1
   }
   @bench.monotonic_clock_end(t0) * 1000.0 / repeats.to_double()

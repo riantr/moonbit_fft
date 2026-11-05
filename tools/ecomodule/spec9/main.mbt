@@ -33,6 +33,8 @@ fn main raise {
   dump_hkdsp(small, out_dir)
   dump_hx_radix4(big, out_dir)
   dump_hx_radix4(small, out_dir)
+  dump_hx_radix2(big, out_dir)
+  dump_hx_radix2(small, out_dir)
   dump_hx_bluestein(big, out_dir)
   dump_hx_bluestein(small, out_dir)
   dump_lc_radix4(big, out_dir)
@@ -45,6 +47,160 @@ fn main raise {
   dump_mspec(small, out_dir)
   dump_mdsp(big, out_dir)
   dump_mdsp(small, out_dir)
+
+  // The inverse transform of every side that has one.  `HK-SHAO/dsp` and
+  // `2227057182/moonbit-dsp` publish no inverse, so they have no row here.
+  dump_port_inverse(big_port, out_dir)
+  dump_port_inverse(small_port, out_dir)
+  dump_hx_inverse(big, out_dir)
+  dump_hx_inverse(small, out_dir)
+  dump_lc_inverse(big, out_dir)
+  dump_lc_inverse(small, out_dir)
+  dump_moonnum_inverse(big, out_dir)
+  dump_moonnum_inverse(small, out_dir)
+  dump_mspec_inverse(big, out_dir)
+  dump_mspec_inverse(small, out_dir)
+
+  // The small lengths, so that the range over which the radix paths of
+  // `hwlxmm/dsp` hold is known instead of guessed.
+  for n in [4, 8, 16, 64, 256] {
+    dump_hx_small(n, out_dir)
+  }
+}
+
+///|
+/// The two radix paths of `hwlxmm/dsp` at a small length.
+fn dump_hx_small(n : Int32, out_dir : String) -> Unit raise {
+  let four = make_hwlxmm(n)
+  @hwlxmm.fft_radix4(four)
+  let four_lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    four_lines.push(point(four[i].re, four[i].im))
+    i = i + 1
+  }
+  write(four_lines, out_dir, "hx_radix4", n)
+  let two = make_hwlxmm(n)
+  @hwlxmm.fft_radix2(two)
+  let two_lines : Array[String] = []
+  i = 0
+  while i < n {
+    two_lines.push(point(two[i].re, two[i].im))
+    i = i + 1
+  }
+  write(two_lines, out_dir, "hx_radix2", n)
+}
+
+///|
+/// The line of one complex point of a dump.
+fn point(re : Double, im : Double) -> String {
+  re.to_string() + " " + im.to_string()
+}
+
+///|
+/// The unnormalised and the normalised inverse of the port.
+///
+/// The two differ by one pass over the result that divides it by `n`, so the
+/// pair tells what that pass costs.
+fn dump_port_inverse(n : Int32, out_dir : String) -> Unit raise {
+  if !@moonbit_fft.nfft_valid(n) {
+    println("the port refuses \{n}")
+    return
+  }
+  let fft = @moonbit_fft.FftComplex::new(n)
+  let cx = make_floats(2 * n)
+  let cy = make_floats(2 * n)
+  // `complex_to_complex(1, ...)` is the unnormalised inverse, the `bfft` of
+  // FFTW.jl and the only inverse of the Java original.
+  fft.complex_to_complex(1, cx, cy)
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(point(cy[2 * i].to_double(), cy[2 * i + 1].to_double()))
+    i = i + 1
+  }
+  write(lines, out_dir, "port_bfft", n)
+  // The normalised one, which divides by `n`.
+  fft.ifft(cx, cy)
+  let normalised : Array[String] = []
+  i = 0
+  while i < n {
+    normalised.push(point(cy[2 * i].to_double(), cy[2 * i + 1].to_double()))
+    i = i + 1
+  }
+  write(normalised, out_dir, "port_ifft", n)
+}
+
+///|
+/// The two inverse entry points of `hwlxmm/dsp`.
+fn dump_hx_inverse(n : Int32, out_dir : String) -> Unit raise {
+  let spec = @hwlxmm.ifft_bluestein(make_hwlxmm(n))
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(point(spec[i].re, spec[i].im))
+    i = i + 1
+  }
+  write(lines, out_dir, "hx_ifft_bluestein", n)
+  // The radix 2 inverse transforms in place.
+  let data = make_hwlxmm(n)
+  @hwlxmm.ifft_radix2(data)
+  let inplace : Array[String] = []
+  i = 0
+  while i < n {
+    inplace.push(point(data[i].re, data[i].im))
+    i = i + 1
+  }
+  write(inplace, out_dir, "hx_ifft_radix2", n)
+}
+
+///|
+/// The entry point of `lcyllp/moonbit-nlse-ssfm` that a caller of its inverse
+/// uses, and the radix 4 one next to it.
+fn dump_lc_inverse(n : Int32, out_dir : String) -> Unit raise {
+  let spec = @lcyllp.ifft(make_lcyllp(n))
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(point(spec[i].re, spec[i].im))
+    i = i + 1
+  }
+  write(lines, out_dir, "lc_ifft", n)
+  let radix = @lcyllp.ifft_radix4(make_lcyllp(n))
+  let radix_lines : Array[String] = []
+  i = 0
+  while i < n {
+    radix_lines.push(point(radix[i].re, radix[i].im))
+    i = i + 1
+  }
+  write(radix_lines, out_dir, "lc_ifft_radix4", n)
+}
+
+///|
+/// The inverse of `amor2025/moonNum`.
+fn dump_moonnum_inverse(n : Int32, out_dir : String) -> Unit raise {
+  let spec = @mnum.ifft(make_ndarray(n))
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    let v = spec.get_c128(i)
+    lines.push(point(v.0, v.1))
+    i = i + 1
+  }
+  write(lines, out_dir, "moonnum_ifft", n)
+}
+
+///|
+/// The inverse of `chgttyyr/MoonSpectrum`.
+fn dump_mspec_inverse(n : Int32, out_dir : String) -> Unit raise {
+  let spec = @mspec.ifft(make_mspec(n))
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(point(spec[i].re, spec[i].im))
+    i = i + 1
+  }
+  write(lines, out_dir, "mspec_ifft", n)
 }
 
 ///|
@@ -122,8 +278,23 @@ fn dump_hx_radix4(n : Int32, out_dir : String) -> Unit raise {
 }
 
 ///|
-fn dump_hx_bluestein(n : Int32, out_dir : String) -> Unit raise {
+/// The radix 2 forward transform, in place.  It is dumped because the inverse
+/// of that path is built on it, and its own result has to be held to the
+/// reference before the inverse of it is believed.
+fn dump_hx_radix2(n : Int32, out_dir : String) -> Unit raise {
   let data = make_hwlxmm(n)
+  @hwlxmm.fft_radix2(data)
+  let lines : Array[String] = []
+  let mut i = 0
+  while i < n {
+    lines.push(data[i].re.to_string() + " " + data[i].im.to_string())
+    i = i + 1
+  }
+  write(lines, out_dir, "hx_radix2", n)
+}
+
+///|
+fn dump_hx_bluestein(n : Int32, out_dir : String) -> Unit raise {  let data = make_hwlxmm(n)
   let spec = @hwlxmm.fft_bluestein(data)
   let lines : Array[String] = []
   let mut i = 0

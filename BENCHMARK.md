@@ -456,25 +456,55 @@ the quotient of the two medians:
 
 | window | side | n | the median | per unit | over the port |
 | ---: | --- | ---: | ---: | ---: | ---: |
-| 4 096 | port | 4 095 | 42 488 ns | 0.865 | 1.000x |
-| 4 096 | hkdsp | 4 096 | 40 836 ns | 0.831 | 0.960x |
-| 4 096 | hx/radix4 | 4 096 | 2 520 375 ns | 51.277 | 61.174x |
-| 4 096 | hx/bluestein | 4 096 | 2 887 650 ns | 58.749 | 66.738x |
-| 4 096 | lc/radix4 | 4 096 | 2 836 775 ns | 57.714 | 66.055x |
-| 4 096 | lc/bluestein | 4 096 | 2 840 275 ns | 57.786 | 67.547x |
-| 4 096 | moonnum | 4 096 | 3 833 550 ns | 77.994 | 90.095x |
-| 4 096 | mspec | 4 096 | 4 220 300 ns | 85.862 | 100.067x |
-| 4 096 | mdsp | 4 096 | 1 558 483 ns | 31.707 | 37.125x |
-| 1 024 | port | 1 008 | 7 659 ns | 0.762 | 1.000x |
-| 1 024 | hkdsp | 1 024 | 7 897 ns | 0.771 | 1.038x |
-| 1 024 | hx/radix4 | 1 024 | 507 733 ns | 49.583 | 67.186x |
-| 1 024 | hx/bluestein | 1 024 | 586 714 ns | 57.296 | 76.805x |
-| 1 024 | lc/radix4 | 1 024 | 571 829 ns | 55.843 | 75.073x |
-| 1 024 | lc/bluestein | 1 024 | 572 375 ns | 55.896 | 74.349x |
-| 1 024 | moonnum | 1 024 | 827 880 ns | 80.848 | 107.349x |
-| 1 024 | mspec | 1 024 | 921 660 ns | 90.006 | 119.351x |
-| 1 024 | mdsp | 1 024 | 310 146 ns | 30.288 | 40.453x |
+| 4 096 | port | 4 095 | 42 312 ns | 0.861 | 1.000x |
+| 4 096 | hkdsp | 4 096 | 41 594 ns | 0.846 | 0.969x |
+| 4 096 | hx/radix4 | 4 096 | 2 512 350 ns | 51.114 | 59.383x |
+| 4 096 | hx/bluestein | 4 096 | 2 865 100 ns | 58.291 | 66.864x |
+| 4 096 | lc/radix4 | 4 096 | 2 756 650 ns | 56.084 | 63.812x |
+| 4 096 | lc/bluestein | 4 096 | 2 792 850 ns | 56.821 | 64.212x |
+| 4 096 | moonnum | 4 096 | 3 840 350 ns | 78.132 | 90.053x |
+| 4 096 | mspec | 4 096 | 4 194 100 ns | 85.329 | 99.573x |
+| 4 096 | mdsp | 4 096 | 1 506 350 ns | 30.647 | 35.003x |
+| 1 024 | port | 1 008 | 7 799 ns | 0.776 | 1.000x |
+| 1 024 | hkdsp | 1 024 | 7 454 ns | 0.728 | 0.947x |
+| 1 024 | hx/radix4 | 1 024 | 518 650 ns | 50.649 | 65.620x |
+| 1 024 | hx/bluestein | 1 024 | 577 062 ns | 56.354 | 73.777x |
+| 1 024 | lc/radix4 | 1 024 | 557 325 ns | 54.426 | 70.782x |
+| 1 024 | lc/bluestein | 1 024 | 560 962 ns | 54.781 | 71.764x |
+| 1 024 | moonnum | 1 024 | 820 850 ns | 80.161 | 103.146x |
+| 1 024 | mspec | 1 024 | 924 550 ns | 90.288 | 116.630x |
+| 1 024 | mdsp | 1 024 | 308 357 ns | 30.113 | 39.140x |
 
+
+#### The inverse transform
+
+Two of the nine sides publish no inverse at all - `HK-SHAO/dsp` and
+`2227057182/moonbit-dsp` - so the strongest side of the table above is absent
+from this one, and the port is its own base: every ratio is taken over
+`port/bfft`, the **unnormalised** inverse, which is the same amount of work as a
+forward transform of the same length.  The normalised inverse of the port adds
+one pass over the result that divides it by `n`; the difference between its row
+and the row of `port/bfft` is what that pass costs.  Every side of this table was
+held to `numpy.fft` as well, in the scaling it publishes.
+
+| window | side | n | the median | per unit | over bfft |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 4 096 | port/bfft | 4 095 | 43 307 ns | 0.881 | 1.000x |
+| 4 096 | port/ifft | 4 095 | 47 864 ns | 0.974 | 1.114x |
+| 4 096 | hx/ifft-bluestein | 4 096 | 3 287 650 ns | 66.887 | 73.123x |
+| 4 096 | hx/ifft-radix2 | 4 096 | 3 106 650 ns | 63.205 | 72.280x |
+| 4 096 | lc/ifft | 4 096 | 2 925 100 ns | 59.511 | 66.078x |
+| 4 096 | lc/ifft-radix4 | 4 096 | 2 885 750 ns | 58.711 | 65.623x |
+| 4 096 | moonnum/ifft | 4 096 | 3 917 050 ns | 79.693 | 91.711x |
+| 4 096 | mspec/ifft | 4 096 | 4 467 100 ns | 90.883 | 99.434x |
+| 1 024 | port/bfft | 1 008 | 7 928 ns | 0.788 | 1.000x |
+| 1 024 | port/ifft | 1 008 | 9 176 ns | 0.912 | 1.153x |
+| 1 024 | hx/ifft-bluestein | 1 024 | 647 950 ns | 63.276 | 82.430x |
+| 1 024 | hx/ifft-radix2 | 1 024 | 676 683 ns | 66.082 | 84.680x |
+| 1 024 | lc/ifft | 1 024 | 600 912 ns | 58.683 | 74.385x |
+| 1 024 | lc/ifft-radix4 | 1 024 | 585 600 ns | 57.188 | 73.661x |
+| 1 024 | moonnum/ifft | 1 024 | 843 367 ns | 82.360 | 105.707x |
+| 1 024 | mspec/ifft | 1 024 | 953 917 ns | 93.156 | 120.014x |
 The sides run in **one process**, in an order that is rotated in every round,
 and the ratio is taken per round and then medianed, exactly like the comparison
 against the original.  The measurement has 16 rounds.  A segment of a side holds
@@ -497,12 +527,13 @@ each of them and holds it to `numpy.fft`.
 Eight of the nine sides compute the transform, to between 1e-16 and 1e-14
 relative for the ones that work in double precision, and to 2.2e-8 for the port,
 which transforms single precision samples.  One does not: **the radix-4 path of
-`hwlxmm/dsp` does not compute the transform at any length that was tried** -
-4, 8, 16, 64, 256, 1024 and 4096 - with a relative deviation of about 1 in every
-case, which is what a spectrum that has nothing to do with the right one looks
-like.  Its own Bluestein path is correct to 1e-14, so the defect is in the radix
-path and not in the package as a whole.  Its row of the table is therefore the
-cost of a path a user cannot use, and the row that matters for that package is
+`hwlxmm/dsp` does not compute the transform**, with a relative deviation of about
+1.4 at every length that was tried - 4, 16, 64, 256, 1024 and 4096 - and of 0.1
+at the length 4.  Its radix-2 path and its Bluestein path are both correct to
+2e-14, so the defect is in the radix-4 path alone and not in the package as a
+whole.  One length of the seven is an exception, 8, where radix-4 is correct to
+1.9e-17; it is the only one.  The row of the table is therefore the cost of a
+path a user cannot use, and the rows that matter for that package are
 `hx/bluestein`.  The script pins the set of the sides that are correct: a side
 that stops being correct and a side that becomes correct both turn it red.
 

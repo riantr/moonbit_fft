@@ -106,7 +106,7 @@ def build_mutations(data: dict) -> list[tuple[str, str, str, str]]:
             "the ratio of a side to the port",
             row("4096", "hx/radix4"),
             row("4096", "hx/radix4", ratio=up(ratio_4096)),
-            "the ratio to the port is %.3f" % up(ratio_4096),
+            "the ratio to the base of its table is %.3f" % up(ratio_4096),
         ),
         (
             "the cost of an element",

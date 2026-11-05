@@ -214,11 +214,11 @@ as well, every one of them measured through **its own fastest entry point** at
 the two lengths that the port can share with it, over
 <!--v:ECO_ROUNDS-->16<!--/v--> rounds with the order of the sides rotated.  The
 port is at **parity with the strongest of them**, `HK-SHAO/dsp`
-(<!--v:ECO_NEAR-->0.96x to 1.04x<!--/v-->), and <!--v:ECO_FAR-->37 to 119<!--/v-->
+(<!--v:ECO_NEAR-->0.95x to 0.97x<!--/v-->), and <!--v:ECO_FAR-->35 to 117<!--/v-->
 times faster than every other side at the same length.  That comparison also
-turned up a defect of the ecosystem: the radix paths of `hwlxmm/dsp` do not
-compute the transform at any length, and its Bluestein path is the one that is
-correct.  See *The best of the ecosystem* in
+turned up a defect of the ecosystem: the radix-4 path of `hwlxmm/dsp` does not
+compute the transform at any length but 8, and its radix-2 and Bluestein paths
+are both correct.  See *The best of the ecosystem* in
 [`BENCHMARK.md`](BENCHMARK.md).
 
 ## License

@@ -59,12 +59,33 @@ ECOSYSTEM = [
     ("mdsp", "2227057182/moonbit-dsp", "0.1.0", "fft, real input"),
 ]
 
+# The inverse transform of every package that publishes one.  `HK-SHAO/dsp` and
+# `2227057182/moonbit-dsp` publish no inverse, so they have no row here, and the
+# strongest side of the forward comparison is absent from this one.
+INVERSE = [
+    ("port/bfft", None, "the unnormalised inverse, `complex_to_complex(1, ...)`, the `bfft` of FFTW.jl"),
+    ("port/ifft", None, "the normalised inverse, `FftComplex::ifft`, which divides by n"),
+    ("hx/ifft-bluestein", "hwlxmm/dsp", "ifft_bluestein"),
+    ("hx/ifft-radix2", "hwlxmm/dsp", "ifft_radix2, in place"),
+    ("lc/ifft", "lcyllp/moonbit-nlse-ssfm", "ifft, what its entry point calls"),
+    ("lc/ifft-radix4", "lcyllp/moonbit-nlse-ssfm", "ifft_radix4"),
+    ("moonnum/ifft", "amor2025/moonNum", "ifft"),
+    ("mspec/ifft", "chgttyyr/MoonSpectrum", "ifft"),
+]
+
+# The names of the inverse sides, in the order of their table.
+INVERSE_SIDES = [name for name, _, _ in INVERSE]
+
 # A dependency of the harness itself, not a package of the comparison: the probe
 # that dumps the spectra writes them with the file system of `moonbitlang/x`.
 SUPPORT = [("moonbitlang/x", "0.4.46")]
 
 # The side of the port, always the base of the comparison.
 PORT = "port"
+
+# The sides that are measured at the lengths of the port instead of at the
+# window, because the port has no valid length there.
+PORT_SIDES = {PORT} | {name for name in INVERSE_SIDES if name.startswith("port/")}
 
 # The window of the packages and the closest valid length of the port.  The two
 # of them meet nowhere exactly, which is a result of the comparison itself.
@@ -245,7 +266,9 @@ def main() -> int:
         return 1
 
     sides = sorted({side for r in rounds.values() for l in r.values() for side in l})
-    expected = sorted([PORT] + [name for name, _, _, _ in ECOSYSTEM])
+    expected = sorted([PORT]
+                      + [name for name, _, _, _ in ECOSYSTEM]
+                      + [name for name, _, _ in INVERSE])
     if sides != expected:
         print("the measurement has the sides %s, it must have %s"
               % (sides, expected))
@@ -257,7 +280,7 @@ def main() -> int:
     # port is measured at the closest length of its own table and not at the
     # window itself.
     def length_of(side: str, port_length: int, window: int) -> int:
-        return port_length if side == PORT else window
+        return port_length if side in PORT_SIDES else window
 
     def of_round(record: dict[int, dict[str, float]], side: str,
                  port_length: int, window: int) -> float | None:
@@ -282,6 +305,7 @@ def main() -> int:
     spread: dict[str, dict[str, float]] = {}
     per_unit: dict[str, dict[str, float]] = {}
     ratios: dict[str, dict[str, float]] = {}
+    inverse_ratios: dict[str, dict[str, float]] = {}
     lengths: dict[str, dict[str, int]] = {}
     for window, port_length in WORKLOADS:
         key = str(window)
@@ -289,6 +313,7 @@ def main() -> int:
         spread[key] = {}
         per_unit[key] = {}
         ratios[key] = {}
+        inverse_ratios[key] = {}
         lengths[key] = {}
         for side in sides:
             values = [
@@ -302,13 +327,20 @@ def main() -> int:
             spread[key][side] = (max(values) / min(values)) if len(values) > 1 else 1.0
             per_unit[key][side] = unit_cost(median[key][side], length)
         for side in sides:
+            # The base of a row is the side of its own transform: a forward
+            # transform is compared with the forward port and an inverse with
+            # the unnormalised inverse of the port, because the two are the
+            # same amount of work and the normalised inverse is that work plus
+            # one pass over the result.
+            base_side = "port/bfft" if side in INVERSE_SIDES else PORT
             paired = []
             for record in rounds.values():
                 mine = of_round(record, side, port_length, window)
-                base = of_round(record, PORT, port_length, window)
+                base = of_round(record, base_side, port_length, window)
                 if mine is not None and base:
                     paired.append(mine / base)
-            ratios[key][f"{side}/{PORT}"] = statistics.median(paired)
+            target = inverse_ratios[key] if side in INVERSE_SIDES else ratios[key]
+            target[f"{side}/{base_side}"] = statistics.median(paired)
 
     clocks = [v[0] for v in refs.values()]
     memories = [v[1] for v in refs.values()]
@@ -358,20 +390,41 @@ def main() -> int:
                 side, lengths[key][side], median[key][side],
                 per_unit[key][side], ratios[key][f"{side}/{PORT}"]))
         lines.append("")
+    # The table of the inverse.  Its column is taken over `port/bfft`, the
+    # unnormalised inverse of the port, which is the same amount of work as a
+    # forward transform of the same length; a normalised inverse of a package
+    # is therefore compared with the normalised inverse of the port.
+    lines.append("")
+    lines.append("the inverse transform, over the unnormalised inverse of the port:")
+    inverse_header = "%-18s %7s %13s %11s %11s" % (
+        "side", "n", "median ns", "per unit", "over bfft")
+    for window, port_length in WORKLOADS:
+        key = str(window)
+        lines.append("window %d, the port at %d:" % (window, port_length))
+        lines.append(inverse_header)
+        lines.append("-" * len(inverse_header))
+        for side in INVERSE_SIDES:
+            lines.append("%-18s %7d %13.0f %11.3f %10.3fx" % (
+                side, lengths[key][side], median[key][side],
+                per_unit[key][side],
+                inverse_ratios[key][f"{side}/port/bfft"]))
+        lines.append("")
     lines.append("the spread of the rounds, the slowest over the fastest:")
     for window, _ in WORKLOADS:
         key = str(window)
         lines.append("  %d: %s" % (window, "  ".join(
             "%s %.2fx" % (side, spread[key][side])
-            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM])))
+            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM]
+            + INVERSE_SIDES)))
     lines.append("")
-    lines.append("the repeats of a segment, chosen so that it lasts about 4 ms:")
+    lines.append("the repeats of a segment, chosen so that it lasts about 2 ms:")
     for window, _ in WORKLOADS:
         key = str(window)
         lines.append("  %d: %s" % (window, "  ".join(
             "%s %d" % (side, repeats.get(side, {}).get(
                 str(lengths[key][side]), 0))
-            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM])))
+            for side in [PORT] + [name for name, _, _, _ in ECOSYSTEM]
+            + INVERSE_SIDES)))
     lines.append("")
     if reference["rounds"]:
         lines.append("the machine: clock median %.0f us (%.0f to %.0f), "
@@ -398,6 +451,16 @@ def main() -> int:
             }
             for side, package, _, entry in ECOSYSTEM
         ],
+        "inverse": [
+            {
+                "side": side,
+                "package": package,
+                "version": resolved_version(package) if package else None,
+                "entry": entry,
+            }
+            for side, package, entry in INVERSE
+        ],
+        "inverse_ratios": inverse_ratios,
         "lengths": lengths,
         "median": median,
         "spread": spread,

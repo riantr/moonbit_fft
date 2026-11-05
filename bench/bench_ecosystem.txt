@@ -4,36 +4,62 @@ the median of the 16 rounds, the ratios taken per round
 window 4096, the port at 4095:
 side            n     median ns    per unit over the port
 ---------------------------------------------------------
-port         4095         42488       0.865      1.000x
-hkdsp        4096         40836       0.831      0.960x
-hx/radix4    4096       2520375      51.277     61.174x
-hx/bluestein    4096       2887650      58.749     66.738x
-lc/radix4    4096       2836775      57.714     66.055x
-lc/bluestein    4096       2840275      57.786     67.547x
-moonnum      4096       3833550      77.994     90.095x
-mspec        4096       4220300      85.862    100.067x
-mdsp         4096       1558483      31.707     37.125x
+port         4095         42312       0.861      1.000x
+hkdsp        4096         41594       0.846      0.969x
+hx/radix4    4096       2512350      51.114     59.383x
+hx/bluestein    4096       2865100      58.291     66.864x
+lc/radix4    4096       2756650      56.084     63.812x
+lc/bluestein    4096       2792850      56.821     64.212x
+moonnum      4096       3840350      78.132     90.053x
+mspec        4096       4194100      85.329     99.573x
+mdsp         4096       1506350      30.647     35.003x
 
 window 1024, the port at 1008:
 side            n     median ns    per unit over the port
 ---------------------------------------------------------
-port         1008          7659       0.762      1.000x
-hkdsp        1024          7897       0.771      1.038x
-hx/radix4    1024        507733      49.583     67.186x
-hx/bluestein    1024        586714      57.296     76.805x
-lc/radix4    1024        571829      55.843     75.073x
-lc/bluestein    1024        572375      55.896     74.349x
-moonnum      1024        827880      80.848    107.349x
-mspec        1024        921660      90.006    119.351x
-mdsp         1024        310146      30.288     40.453x
+port         1008          7799       0.776      1.000x
+hkdsp        1024          7454       0.728      0.947x
+hx/radix4    1024        518650      50.649     65.620x
+hx/bluestein    1024        577062      56.354     73.777x
+lc/radix4    1024        557325      54.426     70.782x
+lc/bluestein    1024        560962      54.781     71.764x
+moonnum      1024        820850      80.161    103.146x
+mspec        1024        924550      90.288    116.630x
+mdsp         1024        308357      30.113     39.140x
+
+
+the inverse transform, over the unnormalised inverse of the port:
+window 4096, the port at 4095:
+side                     n     median ns    per unit   over bfft
+----------------------------------------------------------------
+port/bfft             4095         43307       0.881      1.000x
+port/ifft             4095         47864       0.974      1.114x
+hx/ifft-bluestein     4096       3287650      66.887     73.123x
+hx/ifft-radix2        4096       3106650      63.205     72.280x
+lc/ifft               4096       2925100      59.511     66.078x
+lc/ifft-radix4        4096       2885750      58.711     65.623x
+moonnum/ifft          4096       3917050      79.693     91.711x
+mspec/ifft            4096       4467100      90.883     99.434x
+
+window 1024, the port at 1008:
+side                     n     median ns    per unit   over bfft
+----------------------------------------------------------------
+port/bfft             1008          7928       0.788      1.000x
+port/ifft             1008          9176       0.912      1.153x
+hx/ifft-bluestein     1024        647950      63.276     82.430x
+hx/ifft-radix2        1024        676683      66.082     84.680x
+lc/ifft               1024        600912      58.683     74.385x
+lc/ifft-radix4        1024        585600      57.188     73.661x
+moonnum/ifft          1024        843367      82.360    105.707x
+mspec/ifft            1024        953917      93.156    120.014x
 
 the spread of the rounds, the slowest over the fastest:
-  4096: port 1.11x  hkdsp 1.25x  hx/radix4 2.36x  hx/bluestein 1.27x  lc/radix4 1.34x  lc/bluestein 1.32x  moonnum 1.09x  mspec 1.21x  mdsp 1.69x
-  1024: port 1.16x  hkdsp 1.11x  hx/radix4 1.39x  hx/bluestein 1.13x  lc/radix4 1.15x  lc/bluestein 1.14x  moonnum 1.35x  mspec 1.20x  mdsp 1.10x
+  4096: port 1.25x  hkdsp 1.20x  hx/radix4 1.76x  hx/bluestein 1.25x  lc/radix4 1.16x  lc/bluestein 1.26x  moonnum 1.14x  mspec 1.21x  mdsp 1.64x  port/bfft 1.26x  port/ifft 1.34x  hx/ifft-bluestein 1.16x  hx/ifft-radix2 1.92x  lc/ifft 1.16x  lc/ifft-radix4 1.35x  moonnum/ifft 1.18x  mspec/ifft 1.17x
+  1024: port 1.16x  hkdsp 1.13x  hx/radix4 1.43x  hx/bluestein 1.14x  lc/radix4 1.16x  lc/bluestein 1.17x  moonnum 1.23x  mspec 1.15x  mdsp 1.21x  port/bfft 1.25x  port/ifft 1.30x  hx/ifft-bluestein 1.23x  hx/ifft-radix2 1.86x  lc/ifft 1.19x  lc/ifft-radix4 1.16x  moonnum/ifft 1.29x  mspec/ifft 1.23x
 
-the repeats of a segment, chosen so that it lasts about 4 ms:
-  4096: port 74  hkdsp 78  hx/radix4 2  hx/bluestein 2  lc/radix4 2  lc/bluestein 2  moonnum 1  mspec 1  mdsp 3
-  1024: port 328  hkdsp 426  hx/radix4 6  hx/bluestein 7  lc/radix4 7  lc/bluestein 8  moonnum 5  mspec 5  mdsp 13
+the repeats of a segment, chosen so that it lasts about 2 ms:
+  4096: port 39  hkdsp 44  hx/radix4 1  hx/bluestein 1  lc/radix4 1  lc/bluestein 1  moonnum 1  mspec 1  mdsp 2  port/bfft 36  port/ifft 38  hx/ifft-bluestein 1  hx/ifft-radix2 1  lc/ifft 1  lc/ifft-radix4 1  moonnum/ifft 1  mspec/ifft 1
+  1024: port 167  hkdsp 205  hx/radix4 4  hx/bluestein 4  lc/radix4 4  lc/bluestein 4  moonnum 3  mspec 3  mdsp 7  port/bfft 144  port/ifft 166  hx/ifft-bluestein 3  hx/ifft-radix2 3  lc/ifft 4  lc/ifft-radix4 4  moonnum/ifft 3  mspec/ifft 3
 
-the machine: clock median 59854 us (57306 to 60676), memory median 0.608 ns/elem (0.587 to 1.442)
-checksum -146.4640007019043
+the machine: clock median 59948 us (58179 to 61078), memory median 0.624 ns/elem (0.562 to 0.787)
+checksum -116.87905992171727
