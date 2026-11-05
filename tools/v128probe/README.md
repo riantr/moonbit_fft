@@ -4,9 +4,11 @@ A probe of one question: **can MoonBit source reach the SIMD units of the
 x86-64 machine the port runs on, and how wide does it get?** The answer, as
 measured with `moon 0.1.20261102 (ea07287 2026-11-02)` on an
 `i7-12700` (Alder Lake, AVX2 + FMA3, AVX-512 fused off), is *yes, but only
-128 bit wide, and only behind an undocumented build knob.* This directory
-keeps the probe and the evidence in the repository so that the finding can be
-reproduced instead of retold.
+128 bit wide, and only behind an undocumented build knob* — and, on the
+butterfly of this port, *slower than the scalar code* (1.2516x the time of the
+scalar side, bit for bit identical results). This directory keeps the probe,
+the paired measurement and the evidence in the repository so that the finding
+can be reproduced instead of retold.
 
 ## What the probe measures
 
@@ -92,13 +94,68 @@ those counts are zero and the program runs the scalar fallback.
    `uint64_t`) explicitly — but it does mean the fast paths are a property of
    the package translation unit alone.
 
+## The measurement: the vector butterfly is 1.25x slower
+
+`cmd/ab/main.mbt` runs `stage_r4_mu3` of `kernels.mbt` — a radix 4 stage, twist
+3, the shape of `16` floating point operations against `16` memory operations
+per group of four points — in two forms: the scalar original, and a two-lane
+rewrite whose lanes hold two consecutive groups, so that every operation of
+the group is elementwise and the constants are the shared ones. The indices
+of the second group are the same recurrence applied once more, so the index
+arithmetic is identical in both.
+
+Both sides run in one process, on the same data, alternating the order of the
+two in every round, and each round is kept separately, with segments sized to
+about 2 ms, because this machine drops by about a factor two after some
+seconds of load and numbers taken at different times are not comparable:
+
+```
+PARITY : the two sides agree on all 32760 doubles
+PASS   : scalar 308 us, 6 passes per segment
+MEDIAN : vector/scalar = 1.2516 (below 1.0 is the vector side faster)
+```
+
+All 16 round ratios: `1.344 1.286 1.298 1.095 1.212 1.137 1.309 1.476 1.169
+1.223 1.352 0.967 1.262 1.152 1.241 1.268`. One round of sixteen is below
+1.0; the median says the vector side needs a quarter more time than the
+scalar side for the same, bit for bit identical, result.
+
+The disassembly holds the vector arithmetic — `addpd` 8, `subpd` 8, `mulpd`
+2 — so the fast path is the one that ran: the loss is not a fallback to
+scalar. What the lane interface costs is the traffic around it: eight
+`pair()` packs (`_mm_set1_pd` plus an insert) and sixteen
+`f64x2_extract_lane` unpacks per two groups, that is 24 operations of packing
+against the 14 arithmetic instructions the two-lane form saves. Only one
+`unpcklpd` survives in the whole image, so the compiler does not fold the
+packs into paired loads.
+
+For comparison, the hand written **C** SSE2 kernel of this same port measured
+1.10–1.16x *faster* than its scalar reference when it was tried earlier. Same
+algorithm, same ISA, opposite verdict: the difference is the interface. In C
+the loads fold into `movsd` + `unpcklpd`, in MoonBit every lane goes through
+the splat/insert/extract of the `v128` API.
+
 ## Why this probe does not change the port
 
 The stage kernels of `kernels.mbt` are not arithmetic bound: `stage_r4_mu3`
 does 16 floating point operations against 16 memory operations per group of
 four points, and its indices are computed by a modular recurrence that has no
 gather instruction to serve. A two-lane rewrite therefore has to add the
-packing of two scalar loads into one vector, which is where the 1.10–1.16x
-measured earlier for a hand written C SSE2 kernel of this port comes from.
-The probe exists so that the next attempt starts from the mechanism instead of
-from the folklore.
+packing of two scalar loads into one vector, and the measurement above shows
+that this packing costs more than the arithmetic it saves. The probe exists so
+that the next attempt starts from the mechanism instead of from the folklore.
+
+The escape hatches that remain, and why they are not free:
+
+* **Wider against the same interface** buys nothing: `moonbit_simd.h` has no
+  256 bit path, so `/arch:AVX2` would only re-encode the same 128 bit
+  operations.
+* **A C stub with AVX2 intrinsics** would fold the loads properly and could
+  reach the 1.1x of the earlier experiment or a little more, but `extern "C"`
+  is unsupported in the wasm backend, so the wasm, wasm-gc and js targets of
+  this port would break — for a stage kernel that is a quarter of the
+  transform's time.
+* **`f32x4`** would double the lane count, but the port deliberately
+  accumulates in double precision (`kernel.mbt` documents it), so it would
+  trade the accuracy that the parity tests were built around for the lanes.
+
