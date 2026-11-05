@@ -352,7 +352,7 @@ caveats are in *The best of the ecosystem* in
 
 ## Verification
 
-`moon test` runs four groups of tests, 691 in total:
+`moon test` runs five groups of tests, 706 in total:
 
 * `fft2_wbtest.mbt` - 28 hand written unit tests of the individual
   functions, including the two length tables and the refusal of the
@@ -371,6 +371,13 @@ caveats are in *The best of the ecosystem* in
   coprime - which is the property that keeps the stages free of twiddle
   factors - and the composite butterflies of the radices `4, 8, 9, 16` have to
   reproduce the direct evaluation of the small transform.
+* `window/window_wbtest.mbt` - 12 generated tests of the coefficients of the
+  window subpackage, which are those of `numpy` and `scipy` at five lengths,
+  symmetric and periodic, and `window/window_apply_wbtest.mbt` - 3 tests of the
+  helpers that apply a window and of the separable window of an image.  The
+  windows are the one part of the module that the original has no counterpart
+  for, so their reference is `numpy` and not the Java oracle, see
+  [`window/README.md`](window/README.md).
 * `parity_wbtest.mbt` - 651 generated parity tests.  Every expectation in
   this file is the output of the **original Java bytecode**, captured by
   the oracle in `../tools/java/Oracle.java`; the port has to reproduce it

@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "riantr/moonbit_fft/window"
+
+// Values
+pub fn apply_window(Array[Double], Array[Double]) -> Unit
+
+pub fn apply_window_floats(Array[Float], Array[Double]) -> Unit
+
+pub fn bartlett(Int32, periodic? : Bool) -> Array[Double]
+
+pub fn bessel_i0(Double) -> Double
+
+pub fn blackman(Int32, periodic? : Bool) -> Array[Double]
+
+pub fn flattop(Int32, periodic? : Bool) -> Array[Double]
+
+pub fn hamming(Int32, periodic? : Bool) -> Array[Double]
+
+pub fn hanning(Int32, periodic? : Bool) -> Array[Double]
+
+pub fn kaiser(Int32, Double, periodic? : Bool) -> Array[Double]
+
+pub fn to_floats(Array[Double]) -> Array[Float]
+
+pub fn window_2d(Int32, Int32, Array[Double], Array[Double]) -> Array[Double]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

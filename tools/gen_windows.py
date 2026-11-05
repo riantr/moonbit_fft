@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""Generates the golden coefficients of the window package.
+
+The windows of `moonbit_fft/window` are not part of the port, so the Java oracle
+of the repository cannot hold them: their reference is `numpy`, which is the
+reference of the spectra of the ecosystem comparison as well, and `scipy` for
+the flat top window, which `numpy` does not have.  The coefficients of both are
+written into `moonbit_fft/window/window_wbtest.mbt`, so that the tests of the
+module pin them on every target.
+
+The conventions are those of the reference:
+
+* the symmetric window of `n` points divides the argument by `n - 1`, which is
+  what `numpy.hanning` and friends do;
+* the periodic one divides by `n`, which is the window that belongs to a
+  transform, and it is the symmetric window of `n + 1` points truncated;
+* a window of one point is `[1]` in both conventions, and not the zero that the
+  truncation of the periodic one would give, because a window that zeroes the
+  only sample it has is not a window.
+
+The file that is generated is not formatted: like the generated parity test of
+the original, the chain is `python tools/gen_windows.py` and then `moon fmt`, and
+the two together reproduce the committed file byte for byte.  There is no
+`--check` mode for that reason: the bytes are the output of a formatter as much
+as of this script.
+
+Usage::
+
+    python tools/gen_windows.py
+    cd moonbit_fft ; moon fmt
+"""
+
+from __future__ import annotations
+
+import argparse
+import pathlib
+import sys
+
+import numpy as np
+from scipy.signal import windows as scipy_windows
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / "moonbit_fft" / "window" / "window_wbtest.mbt"
+
+# The lengths of every case.  One point and two points are the ends that a
+# formula divides by zero on, five points show the shape, sixteen is long enough
+# to be a window that is actually used.
+LENGTHS = [1, 2, 3, 5, 16]
+
+# The Kaiser window is the only one whose value does not come from a fixed
+# number of cosines: its reference goes through `numpy.i0`, whose summation
+# order is not ours, so it is held to a looser bound.
+TOLERANCES = {"kaiser": 1.0e-13}
+DEFAULT_TOLERANCE = 1.0e-15
+
+# The shape of the Kaiser window of the test.
+BETA = 8.6
+
+# The five closed forms, in the order of their tests, and the name of each.
+FAMILIES = ["hanning", "hamming", "blackman", "bartlett", "flattop"]
+
+
+def reference(kind: str, n: int, periodic: bool, beta: float = BETA) -> np.ndarray:
+    """The coefficients of a window, from `numpy` or `scipy`."""
+    if n == 1:
+        return np.array([1.0], dtype=np.float64)
+
+    def base(length: int) -> np.ndarray:
+        if kind == "flattop":
+            return scipy_windows.flattop(length)
+        if kind == "kaiser":
+            return np.kaiser(length, beta)
+        return getattr(np, kind)(length)
+
+    # The periodic window of `n` points is the symmetric one of `n + 1` points
+    # with the last one dropped, which is the definition of DFT-even.
+    return base(n) if not periodic else base(n + 1)[:n]
+
+
+def literal(value: float) -> str:
+    """A MoonBit literal of a double, which has to carry a decimal point."""
+    text = "%.17g" % value
+    if "e" in text:
+        mantissa, _, exponent = text.partition("e")
+        if "." not in mantissa:
+            mantissa += ".0"
+        return mantissa + "e" + exponent
+    if "." not in text:
+        text += ".0"
+    return text
+
+
+def array_of(values: np.ndarray) -> str:
+    return "[" + ", ".join(literal(float(v)) for v in values) + "]"
+
+
+def tests() -> str:
+    out: list[str] = []
+    cases = [(family, None) for family in FAMILIES] + [("kaiser", BETA)]
+    for kind, beta in cases:
+        for periodic in (False, True):
+            convention = "periodic" if periodic else "symmetric"
+            name = kind if beta is None else "%s(%.1f)" % (kind, beta)
+            out.append("///|")
+            out.append('test "%s, %s" {' % (name, convention))
+            for n in LENGTHS:
+                if beta is None:
+                    source = (
+                        "%s(%d, periodic=true)" % (kind, n)
+                        if periodic
+                        else "%s(%d)" % (kind, n)
+                    )
+                else:
+                    source = (
+                        "%s(%d, %s, periodic=true)" % (kind, n, literal(beta))
+                        if periodic
+                        else "%s(%d, %s)" % (kind, n, literal(beta))
+                    )
+                values = reference(kind, n, periodic, beta if beta is not None else BETA)
+                tolerance = TOLERANCES.get(kind, DEFAULT_TOLERANCE)
+                out.append(
+                    '  close_enough(%s, %s, %s, "%s")' % (
+                        source, array_of(values), literal(tolerance),
+                        "%s at %d" % (name, n))
+                )
+            out.append("}")
+            out.append("")
+    return "\n".join(out)
+
+
+HEADER = """// Generated by `tools/gen_windows.py`, do not edit.
+//
+// The coefficients below are the coefficients of `numpy`, and of `scipy` for the
+// flat top window.  They are the reference of these functions, because the
+// original Java bytecode that the rest of the module is verified against has no
+// window at all: `python tools/gen_windows.py --check` regenerates this file and
+// proves that it still holds them.
+
+///|
+/// Asserts that the coefficients of a window are those of the reference, to
+/// within `tolerance`.
+fn close_enough(
+  actual : Array[Double],
+  expected : Array[Double],
+  tolerance : Double,
+  what : String,
+) -> Unit raise {
+  if actual.length() != expected.length() {
+    abort(
+      "\\{what}: \\{actual.length()} coefficients, the reference has \\{expected.length()}",
+    )
+  }
+  let mut worst = 0.0
+  let mut i = 0
+  while i < actual.length() {
+    let difference = (actual[i] - expected[i]).abs()
+    if difference > worst {
+      worst = difference
+    }
+    i = i + 1
+  }
+  assert_true(
+    worst <= tolerance,
+    msg="\\{what}: the worst coefficient differs by \\{worst}",
+  )
+}
+
+"""
+
+
+def document() -> str:
+    return HEADER + tests()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.parse_args()
+
+    want = document()
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(want, encoding="utf-8", newline="")
+    print("wrote %s, %d tests" % (OUT.name, len(FAMILIES) * 2 + 2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

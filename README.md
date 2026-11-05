@@ -17,6 +17,7 @@ list of deviations from the Java original are in
 | --- | --- | --- |
 | `fft2/` | the **original** Java bytecode of `net.imglib2.algorithm.fft2` (`FFT`, `FFTMethods`), the oracle of this port | yes |
 | `moonbit_fft/` | the MoonBit module `riantr/moonbit_fft` | yes |
+| `moonbit_fft/window/` | the subpackage `riantr/moonbit_fft/window`: the window functions, held to `numpy` and `scipy` | yes |
 | `moonbit_fft/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
 | `moonbit_fft/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
 | `moonbit_fft/benchmachine/` | the transform of the port measured next to the clock and the memory system of the machine | yes |
@@ -89,8 +90,9 @@ The port was then validated against the original: the oracle runs the
 original classes over deterministic inputs and writes the raw `float32`
 results, and the generated test `moonbit_fft/parity_wbtest.mbt` replays
 them against the MoonBit implementation.  The suite currently holds 651
-parity cases, 28 hand written unit tests, 6 tests of the transform
-kernel and 6 tests of the array transforms, 691 in total; all of them pass.
+parity cases, 28 hand written unit tests, 6 tests of the transform kernel, 6
+tests of the array transforms and 15 tests of the windows, 706 in total; all of
+them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
