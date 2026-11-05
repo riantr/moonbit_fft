@@ -62,6 +62,34 @@ first and the last one are real.  `complex_to_real` expects such a half
 spectrum and returns `nfft` real samples, scaled by `nfft` (again because
 the inverse transform is unnormalised).
 
+### Kept plans
+
+```moonbit
+let plan = FftPlan::create(8)         // a plan of its own, not in the cache
+plan.complex_to_complex(-1, cx, cy)   // cx/cy: 16 floats, the same convention
+plan.complex_to_complex_buffers(-1, re, im) // in place, double precision
+```
+
+`FftComplex` looks the plan of its length up in a cache that the module owns,
+and transforms in the workspace of that plan.  `FftPlan::create` builds a plan
+of its own that the cache never sees, so the caller decides what the plans
+cost and how long they live - which is what a program that transforms a few
+lengths many times wants, and what a program that transforms every length once
+does not.
+
+A plan is **immutable once it is built**, and that is the part that matters
+for concurrency: the transform reads the tables of the plan and writes nothing
+but the buffers it is given.  `complex_to_complex_buffers` carries its own
+workspace, so any number of calls can share one plan at the same time as long
+as no two of them share a buffer: the unit of concurrency is the **buffer**,
+not the plan.  The two entries that transform in the workspace of the plan,
+`complex_to_complex` and `ifft`, must not be used by two calls that overlap on
+the same plan.
+
+The runtime of MoonBit has no OS threads (`core/async` has coroutines, which
+are cooperative and single threaded), so this is the shape a worker would
+need, not a measurement under two threads.
+
 ### Plain arrays
 
 ```moonbit
@@ -315,12 +343,16 @@ caveats are in *The best of the ecosystem* in
    the same ones, so the two accumulate in the same order, and their results
    differ by the rounding error of the original.
 2. **Threading** - the Java original spreads the lines of an image over a
-   thread pool, the port is single threaded.  The `ExecutorService` and
-   `numThreads` overloads of the original have no counterpart in the port,
-   they only choose the thread pool.  The transform plans are kept in a
-   global cache, so the module is **not** safe to use from several threads at
-   the same time: a transform of a length that is already cached would share
-   the work buffers of its plan with the other thread.
+   thread pool, the port is single threaded and has no counterpart of the
+   `ExecutorService` and `numThreads` overloads.  `FftComplex` transforms in
+   the workspace of a plan that a global cache owns, so it is **not** safe to
+   call from several threads at the same time: a transform of a length that
+   is already cached would share the workspace of its plan with the other
+   thread.  `FftPlan` is the entry for a caller that has workers: the plan is
+   immutable, and `FftPlan::complex_to_complex_buffers` takes the workspace
+   from the caller, so one plan can serve many workers that bring their own
+   buffers, see *Kept plans*.  The runtime has no OS threads yet, so nothing
+   in the module is measured under two of them.
 3. **Image factories** - the original overloads that take an `ImgFactory`
    create the result image themselves.  The port returns the result
    directly, so those overloads have no counterpart.  The same holds for
@@ -352,7 +384,7 @@ caveats are in *The best of the ecosystem* in
 
 ## Verification
 
-`moon test` runs five groups of tests, 706 in total:
+`moon test` runs six groups of tests, 714 in total:
 
 * `fft2_wbtest.mbt` - 28 hand written unit tests of the individual
   functions, including the two length tables and the refusal of the
@@ -371,6 +403,12 @@ caveats are in *The best of the ecosystem* in
   coprime - which is the property that keeps the stages free of twiddle
   factors - and the composite butterflies of the radices `4, 8, 9, 16` have to
   reproduce the direct evaluation of the small transform.
+* `plan_wbtest.mbt` - 8 tests of the plan handle of *Kept plans*: a plan has
+  to compute the transform that `FftComplex` of the same length computes, in
+  both directions and through both entries, the normalised inverse has to be
+  the one of `FftComplex`, a plan of its own may not charge the cache of the
+  module, two plans of the same length have to be two workspaces, and a plan
+  may carry nothing from one transform into the next.
 * `window/window_wbtest.mbt` - 12 generated tests of the coefficients of the
   window subpackage, which are those of `numpy` and `scipy` at five lengths,
   symmetric and periodic, and `window/window_apply_wbtest.mbt` - 3 tests of the

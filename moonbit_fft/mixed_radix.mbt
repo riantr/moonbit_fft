@@ -47,20 +47,36 @@ let plan_cache_budget : Int32 = 2000000
 /// work buffers of the transform.  The roots of unity of the stages are
 /// literals in the butterflies of `kernels.mbt`, so the plan does not hold
 /// them.
-priv struct FftPlan {
+///
+/// A plan is **immutable once it is built**: the transform reads `radix`, `m`
+/// and `kfac`, and it writes nothing but the buffers it is given.  That is
+/// what makes a plan the unit of concurrency the module can offer, and it is
+/// the reason a plan can be kept by a caller without the cache of the module
+/// (see `plan.mbt`): one plan can serve any number of callers that bring
+/// their own buffers.  The buffers of the plan itself are the workspace of
+/// the convenience entry `FftPlan::complex_to_complex`, so two calls that
+/// overlap on the same plan must not both take that path.
+///
+/// The runtime of MoonBit has no OS threads yet (`core/async` has coroutines,
+/// which are cooperative and single threaded), so this contract is
+/// structural: it says what the module does not share, not what has been
+/// measured under two threads.
+pub struct FftPlan {
+  /// The length of the transform.
+  priv n : Int32
   /// The radix of every stage, the stages are applied from the largest radix
   /// to the smallest one.
-  radix : Array[Int32]
+  priv radix : Array[Int32]
   /// The number of butterflies of every stage, it is the length of the
   /// transform divided by the radix of the stage.
-  m : Array[Int32]
+  priv m : Array[Int32]
   /// The inverse of the number of butterflies modulo the radix, of every
   /// stage.  It is the twist of the roots of unity of the stage.
-  kfac : Array[Int32]
+  priv kfac : Array[Int32]
   /// The real parts of the working buffer of the transform.
-  buf_re : Array[Double]
+  priv buf_re : Array[Double]
   /// The imaginary parts of the working buffer of the transform.
-  buf_im : Array[Double]
+  priv buf_im : Array[Double]
 }
 
 ///|
@@ -131,7 +147,7 @@ fn build_plan(n : Int32) -> FftPlan {
   // transform does not allocate.
   let buf_re = zerosd(n)
   let buf_im = zerosd(n)
-  { radix, m, kfac, buf_re, buf_im, }
+  { n, radix, m, kfac, buf_re, buf_im, }
 }
 
 ///|

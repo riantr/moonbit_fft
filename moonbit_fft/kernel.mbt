@@ -65,7 +65,22 @@ fn dft_from_to(
     }
     return
   }
-  let plan = plan_for(n)
+  dft_from_to_plan(sign, plan_for(n), src, dst)
+}
+
+///|
+/// The transform of the `n` complex points of `src` into `dst` with a plan
+/// that owns the workspace.
+///
+/// The length of the plan has to be at least `2`: the transform of one point
+/// and the transform of nothing are handled by the caller.
+fn dft_from_to_plan(
+  sign : Int32,
+  plan : FftPlan,
+  src : Array[Float],
+  dst : Array[Float],
+) -> Unit {
+  let n = plan.n
   // The working buffer belongs to the plan, a transform does not allocate.
   let re = plan.buf_re
   let im = plan.buf_im

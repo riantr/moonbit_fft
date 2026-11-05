@@ -1356,8 +1356,21 @@ So the remaining gap splits into
 What is left would have to be won by moving the kernel into C (through the
 FFI), or by parallelising it - MoonBit core has no OS threads, only async
 coroutines, so parallelism would need the FFI as well.  Both of them would
-have to deal with the shared work buffers and with the lock free plan cache,
-which are the reason why the module is single threaded today.
+have to deal with the shared work buffers and with the cache of plans, which
+are the reason why the module is single threaded today.
+
+The half of that which needs no runtime is now in place: `FftPlan` is
+immutable once it is built, and `FftPlan::complex_to_complex_buffers` reads
+nothing but the plan and the arrays it is given, so one plan can serve any
+number of workers that each bring their own buffer - the unit of concurrency
+is the **buffer**, not the plan.  What is still missing is one level up: the
+per dimension and the whole image transforms walk the lines with a callback
+that captures shared scratch buffers, so a line runner can not be dropped in
+without giving every task its own scratch.  That is the order in which the
+work would have to be done, and it is written down rather than built: an
+`Executor` shaped interface with a serial implementation behind it would put a
+layer of indirection on the hot path of the two dimensional transforms and buy
+nothing today, which is a trade this document has learned to refuse.
 
 ## The debug build
 

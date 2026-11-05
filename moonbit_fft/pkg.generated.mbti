@@ -90,6 +90,15 @@ pub fn FftComplex::ifft(Self, Array[Float], Array[Float]) -> Unit
 pub fn FftComplex::new(Int32) -> Self
 pub fn FftComplex::nfft(Self) -> Int32
 
+pub struct FftPlan {
+  // private fields
+}
+pub fn FftPlan::complex_to_complex(Self, Int32, Array[Float], Array[Float]) -> Unit
+pub fn FftPlan::complex_to_complex_buffers(Self, Int32, Array[Double], Array[Double]) -> Unit
+pub fn FftPlan::create(Int32) -> Self
+pub fn FftPlan::ifft(Self, Array[Float], Array[Float]) -> Unit
+pub fn FftPlan::nfft(Self) -> Int32
+
 pub struct FftReal {
   nfft : Int32
 }
