@@ -38,12 +38,14 @@ the hardware macros and the scalar fallback on `MOONBIT_V128_SSE2`, which
 fallback — that is the origin of the "v128 is 75x slower than scalar" figure
 measured earlier in this project, and not a property of the intrinsics.
 
-The gate is opened by passing the define through the package:
+The gate is opened by passing the define through the package — together with
+`/O2`, because `cc-flags` replaces the defaults instead of adding to them, see
+the trap below:
 
 ```
 options(
   is_main: true,
-  link: { "native": { "cc-flags": "/D__SSE2__" } },
+  link: { "native": { "cc-flags": "/O2 /utf-8 /wd4819 /D__SSE2__" } },
 )
 ```
 
@@ -94,91 +96,101 @@ those counts are zero and the program runs the scalar fallback.
    `uint64_t`) explicitly — but it does mean the fast paths are a property of
    the package translation unit alone.
 
-## The measurement: the vector butterfly is 1.25x slower
+## The trap that invalidated the first three numbers: `cc-flags` replaces the defaults
 
-`cmd/ab/main.mbt` runs `stage_r4_mu3` of `kernels.mbt` — a radix 4 stage, twist
-3, the shape of `16` floating point operations against `16` memory operations
-per group of four points — in two forms: the scalar original, and a two-lane
-rewrite whose lanes hold two consecutive groups, so that every operation of
-the group is elementwise and the constants are the shared ones. The indices
-of the second group are the same recurrence applied once more, so the index
-arithmetic is identical in both.
-
-Both sides run in one process, on the same data, alternating the order of the
-two in every round, and each round is kept separately, with segments sized to
-about 2 ms, because this machine drops by about a factor two after some
-seconds of load and numbers taken at different times are not comparable:
+Setting `link.native.cc-flags` does not *add* flags, it **replaces the flag set
+of the toolchain**, and the default set carries `-O2` (`/O2`).  Compare the two
+command lines of the same release build:
 
 ```
-PARITY : the two sides agree on all 32760 doubles
-PASS   : scalar 308 us, 6 passes per segment
-MEDIAN : vector/scalar = 1.2516 (below 1.0 is the vector side faster)
+with cc-flags   : cl ... /c /std:c11 /bigobj /nologo ... avx.c /arch:AVX2 /MT
+without         : cl ... /c /std:c11 /bigobj /utf-8 /wd4819 /nologo /O2 ... bl.c /MT
 ```
 
-All 16 round ratios: `1.344 1.286 1.298 1.095 1.212 1.137 1.309 1.476 1.169
-1.223 1.352 0.967 1.262 1.152 1.241 1.268`. One round of sixteen is below
-1.0; the median says the vector side needs a quarter more time than the
-scalar side for the same, bit for bit identical, result.
+The first one has no `/O2` at all, so every package that set a flag was
+compiled **unoptimised**, which this kernel pays for with a factor of nine:
+33.7 us per pass without a flag against 308.9 us with `/arch:AVX2` alone, stable
+across runs, with the unoptimised `stage` spilling every local to the stack
+(`sub rsp,408h`).  The measurements of this directory that came before this
+discovery were therefore taken in unoptimised binaries, and the ratio they
+report is not the ratio of optimised code.
 
-The disassembly holds the vector arithmetic — `addpd` 8, `subpd` 8, `mulpd`
-2 — so the fast path is the one that ran: the loss is not a fallback to
-scalar. What the lane interface costs is the traffic around it: eight
-`pair()` packs (`_mm_set1_pd` plus an insert) and sixteen
-`f64x2_extract_lane` unpacks per two groups, that is 24 operations of packing
-against the 14 arithmetic instructions the two-lane form saves. Only one
-`unpcklpd` survives in the whole image, so the compiler does not fold the
-packs into paired loads.
+The flag string that keeps the default: `/O2 /utf-8 /wd4819` plus whatever is
+being tested.  Everything below is measured that way.
 
-## The second measurement: packing removed, still 1.12x slower
+## The measurement, corrected: the vector butterfly is 1.68x slower
 
-Packing is not inherent to the language: `simd_memory.mbt` offers
-`v128_load(bytes : FixedArray[Byte], offset : Int32)` and `v128_store`, and
-the SSE2 branch of `moonbit_simd.h` turns them into `_mm_loadu_si128` and
-`_mm_storeu_si128` — one instruction per access, no lane interface, no bounds
-check. A kernel can therefor keep the complex numbers next to each other, one
-complex number per vector, lane 0 the real part and lane 1 the imaginary
-part, and read a point with a single instruction.
-
-`cmd/ab2/main.mbt` is that kernel. Two details were needed:
-
-* the rotation by 90 degrees, the one operation a radix 4 butterfly cannot
-  avoid, is a lane swap, and the SSE2 branch implements `i8x16_shuffle` only
-  under `#ifdef __SSSE3__` — a macro MSVC never defines. The package defines
-  it itself (`/D__SSE2__ /D__SSSE3__`), the CPU has SSSE3, and the swap
-  becomes one `pshufb`;
-* the byte offsets are carried pre-multiplied by 16 so that an access is an
-  addition. It made no difference (`1.1200` before, `1.1299` after), the
-  compiler had already folded the scaling into the addressing mode.
+`cmd/ab2/main.mbt` keeps the complex numbers next to each other, one complex
+number per vector, lane 0 the real part and lane 1 the imaginary part, so a
+point is read and written with one `v128_load` / `v128_store`, which the SSE2
+branch of `moonbit_simd.h` turns into `_mm_loadu_si128` / `_mm_storeu_si128` —
+one instruction per access, no lane interface, no bounds check.  The rotation
+by 90 degrees is one `pshufb` once the package defines `__SSSE3__`, which MSVC
+never defines and the CPU has.
 
 ```
 PARITY : the two sides agree on all 32760 complex numbers
-MEDIAN : vector/scalar = 1.1200   (pre-scaled offsets: 1.1299)
+PASS   : scalar 37.1 us, 53 passes per segment
+MEDIAN : vector/scalar = 1.6809  (before the /O2 fix, 1.1200)
 ```
 
-So: 4 loads, 4 stores and 11 vector arithmetic per group of four points, all
-with single instructions and a hardware shuffle, against 8 loads, 8 stores and
-16 scalar arithmetic — and the vector side is still one eighth slower.
+Bit for bit identical, and the vector side needs two thirds more time.  The
+same experiment without `/O2` had reported 1.12x: leaving the compiler out
+flatters the vector form, because the scalar code loses more to it.
+
+The earlier two-lane form over the `re` / `im` arrays (`cmd/ab`) reported
+1.2516x in the unoptimised build and has not been re-measured; the layout above
+is the one that removes the packing, so it is the one that bounds the
+question.
+
+## `/arch:AVX2` is worth 5.4 per cent, and it is free
+
+`cmd/avx/main.mbt` is the scalar kernel of `kernels.mbt` and nothing else, in
+the round format of `tools/ab_compare.py`.  The same source, built once with
+the default flags and once with `/O2 /utf-8 /wd4819 /arch:AVX2`, paired over 16
+rounds:
+
+```
+a median 35078 ns  min 33133  max 45588      (default flags)
+b median 33460 ns  min 30907  max 40310      (/arch:AVX2)
+per round ratio a/b: median 1.0541   n=256
+```
+
+5.4 per cent from the three operand encoding of VEX, with no source change at
+all.  The kernel is identical, so nothing else can explain the difference.  Two
+conditions come with it: the `/O2` above has to be written out explicitly, and
+the flag only reaches code that the C compiler compiles — a package with no
+`cc-flags` is emitted as a direct object by `moonc` and never sees the flag.
+
+## What was tried and did not help
+
+* **Branchless index advance**: the recurrence is `if p < limit { p += mr };
+  p += delta`, four times per group, data dependent.  Written as
+  `p + (mr & ((p - limit) >> 31)) + delta` the indices are identical (checked
+  bit for bit) and the kernel is 1.0551x *slower*, so the branch predictor is
+  not the problem.
+* **Specialisation of the call**: `stage(8190, 3, ...)` with literals against
+  the same numbers read out of an array at run time, in one binary: ratio
+  1.0105, that is no difference.
+* **More lanes**: `f32x4` would double the lanes and halve the arithmetic, but
+  the arithmetic is not what the loop is spending its cycles on (see below),
+  and it would abandon the double precision accumulation that `kernel.mbt`
+  documents.
 
 ## Why vectorising this kernel does not pay
 
-The three rewrites land at 1.25, 1.12 and 1.13 times the scalar time, which
-says the kernel is not limited by the number of instructions. The arithmetic
-agrees: the scalar pass takes 308 us for 8190 groups, that is 37.6 ns per
-group, or roughly 130 cycles at the clock of this machine, against about 34
-machine operations per group — an order of magnitude more cycles than the
-issue width needs. The loop is waiting on memory, not on execution units: a
-group touches four positions that the modular recurrence scatters over the
-524 KB of the two working buffers, twice the size of L1, and the transform
-walks them in that order thirteen times.
+At `/O2` the scalar pass takes 37.1 us for 8190 groups, 4.5 ns per group,
+roughly 14 cycles, against about 34 machine operations per group — the loop is
+already close to the two to three operations per cycle this core retires, so
+there is no idle execution unit left for the vector form to absorb, and the
+two-lane form adds the packing (or, in the layout above, the `pshufb` and the
+`v128_xor` of the rotation) on top.  That is why the ratio is above one and not
+below it.
 
-Two consequences, both of which the measurements support:
+The lever is therefore not vector width, and it is not memory locality either:
+the earlier claim of a latency bound came from the unoptimised numbers and does
+not survive them.
 
-* **More lanes would not help either.** `f32x4` would double the lanes and
-  halve the arithmetic, but the arithmetic is not the cost, and it would
-  abandon the double precision accumulation that `kernel.mbt` documents.
-* **The lever is locality, not width.** Blocking a stage so that the groups
-  it touches stay inside L1 is the change that addresses the 130 cycles; no
-  amount of SIMD touches it.
 
 
 For comparison, the hand written **C** SSE2 kernel of this same port measured
