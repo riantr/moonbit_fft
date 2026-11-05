@@ -5,3 +5,7 @@ import {
 }
 
 pkgtype(kind: "executable")
+
+options(
+  link: { "native": { "cc-flags": "/O2 /utf-8 /wd4819 /arch:AVX2" } },
+)
