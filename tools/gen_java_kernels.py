@@ -47,7 +47,7 @@ Two styles are available:
 
 Usage::
 
-    python tools/gen_java_kernels.py --out moonbit_fft2/kernels.mbt
+    python tools/gen_java_kernels.py --out moonbit_fft/kernels.mbt
     python tools/gen_java_kernels.py --out build/kernels_direct.mbt --style direct
     python tools/gen_java_kernels.py --out build/kernels_java.mbt --java build/jtsrc/src/edu/mines/jtk/dsp/Pfacc.java
 """

@@ -18,11 +18,11 @@
 ///    that both of them see.
 ///
 /// ```
-/// moon -C moonbit_fft2 run --release --target native ./benchab
+/// moon -C moonbit_fft run --release --target native ./benchab
 /// ```
 fn main {
   let n = 32_760
-  let fft = @moonbit_fft2.FftComplex::new(n)
+  let fft = @moonbit_fft.FftComplex::new(n)
   let cx = make_floats(2 * n)
   let cy = make_floats(2 * n)
 

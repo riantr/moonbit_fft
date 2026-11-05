@@ -1,4 +1,4 @@
-# moonbit_fft2
+# moonbit_fft
 
 A MoonBit port of the N-dimensional FFT algorithm of
 [`imglib2-fft`](https://github.com/imglib/imglib2-algorithm-fft)
@@ -29,13 +29,18 @@ at position `p` is `p[0] + p[1] * dims[0] + p[2] * dims[0] * dims[1] + ...`
 ### One dimensional transforms
 
 ```moonbit
-let fft = FftReal::new(8)          // real valued, 8 samples
-fft.real_to_complex(-1, rx, cy)     // rx: 8 reals, cy: 10 floats (5 bins)
-fft.complex_to_real(1, cy, ry)     // cy: 10 floats, ry: 8 reals
+let rfft = FftReal::new(8)          // real valued, 8 samples
+rfft.real_to_complex(-1, rx, cy)    // rx: 8 reals, cy: 10 floats (5 bins)
+rfft.complex_to_real(1, cy, ry)     // cy: 10 floats, ry: 8 reals
 
 let cfft = FftComplex::new(8)
 cfft.complex_to_complex(-1, cx, cy) // cx/cy: 16 floats (8 complex values)
+cfft.ifft(cy, cz)                   // the normalised inverse: cy in, cz out
 ```
+
+The transform objects are called `rfft` and `cfft` rather than `fft`, because
+`fft` is the name of one of the two functions of *Plain arrays* below and a
+local variable of that name would shadow it.
 
 `sign` selects the direction: `-1` is the forward transform
 `X[k] = sum_j x[j] * exp(-2*pi*i*j*k/n)`, `1` is the **unnormalised**
@@ -43,10 +48,40 @@ inverse `X[k] = sum_j x[j] * exp(+2*pi*i*j*k/n)`.  The inverse is not
 divided by `n`, exactly like `edu.mines.jtk.dsp.FftComplex`; the scaling is
 the job of the `scale` flag of the higher level functions.
 
+`ifft` is the one function of this section that the Java original does not
+have.  It computes what `complex_to_complex(1, ...)` computes and divides the
+result by `n`, so that it undoes the forward transform of the same length with
+no further scaling.  The naming follows
+[FFTW.jl](https://github.com/JuliaMath/FFTW.jl): its `fft` is the unscaled
+forward transform, its unnormalised inverse is `bfft`, and its `ifft` is that
+inverse divided by the length.  So `complex_to_complex(1, ...)` is the `bfft`
+and `ifft` is the `ifft`, and the two differ only by the factor `n`.
+
 `real_to_complex` produces the `nfft / 2 + 1` bins of the spectrum; the
 first and the last one are real.  `complex_to_real` expects such a half
 spectrum and returns `nfft` real samples, scaled by `nfft` (again because
 the inverse transform is unnormalised).
+
+### Plain arrays
+
+```moonbit
+fft(x) -> Array[Float]   // the forward transform, unscaled
+ifft(x) -> Array[Float]  // the inverse transform, scaled by 1 / n
+```
+
+This pair is the whole of the API that a caller who only holds a sequence of
+complex points needs.  The points are interleaved `(real, imaginary)` pairs,
+so `x` is `2 * n` floats long; `x` is left untouched and both functions return
+a new array of the same length.  They are the `fft` and the `ifft` of
+[FFTW.jl](https://github.com/JuliaMath/FFTW.jl), so `ifft(fft(x))` gives `x`
+back at every valid length.
+
+`n` has to be a valid transform length, and that is where this package differs
+from FFTW.jl, which transforms a sequence of any length: the 240 lengths of
+*Transform sizes* are the only ones, the largest power of two among them is
+**16**, and a length that is not one of them is refused with a message that
+names `nfft_small(n)`.  Round the length up with `nfft_small` or `nfft_fast`
+before the transform, not after it.
 
 ### Transform sizes
 
@@ -60,6 +95,20 @@ length is `2^a * 3^b * 5^c * 7^d * 11^e * 13^f` with `a <= 4`, `b <= 2` and
 `c, d, e, f <= 1`, which gives the 240 lengths of the original tables.
 `edu.mines.jtk.dsp.FftComplex` uses exactly this table, so `nfft_small` and
 `nfft_fast` are its `nfftSmall` and `nfftFast`.
+
+The `a <= 4` of the formula is the part that surprises callers: the largest
+power of two that the table holds is **16**, so **32, 64, 128, 256, 1024 and
+4096 are not valid complex lengths**.  A length of that shape only works when
+an odd factor carries it - 33, 36, 40, 44, 45 are valid, 32 and 64 are not.
+The helpers do not round silently into the table, so asking for one of them
+gives the nearest valid length instead of the length that was asked for:
+`nfft_small(32) == 33`, `nfft_fast(32) == 36`, `nfft_small(64) == 65`,
+`nfft_fast(64) == 72`, `nfft_small(4096) == 4290`.  The transforms themselves
+refuse the invalid lengths: `FftComplex::new(n)` aborts on one, and the per
+dimension transforms of *Per dimension transforms* answer `false` for one.
+A real transform of length `n` sits on the complex transform of `n / 2`, so
+its largest power of two is 32 (`nfft_valid_real(32)` is true,
+`nfft_valid_real(64)` is false, and `nfft_small_real(64) == 66`).
 
 `edu.mines.jtk.dsp.FftReal` does **not**: a real transform of length `n` is
 built on a half length complex transform, so it uses twice the length of
@@ -240,6 +289,21 @@ multiplications, of additions and of array accesses per element as the
 original.  The full comparison, including the spread of the measurements, is
 in [`../BENCHMARK.md`](../BENCHMARK.md).
 
+The package is also compared with the packages of the MoonBit ecosystem, every
+one of them measured through **its own fastest entry point** at the two lengths
+that the port can share with it, over <!--v:ECO_ROUNDS-->16<!--/v--> rounds with
+the order of the sides rotated.  The port is at **parity with the strongest of
+them**, `HK-SHAO/dsp` (<!--v:ECO_NEAR-->0.96x to 1.04x<!--/v-->), and
+<!--v:ECO_FAR-->37 to 119<!--/v--> times faster than every other side at the
+same length.  That comparison also turned up a defect of the ecosystem worth
+knowing before a dependency is picked: the radix-2 and radix-4 paths of
+`hwlxmm/dsp` do not compute the transform at any of the lengths 4, 8, 16, 64,
+256, 1024 and 4096, and its Bluestein path is the correct one.
+`tools/check_ecospectra.py` holds the set of correct sides to a double
+precision reference, so the claim cannot rot.  The numbers, the sides and the
+caveats are in *The best of the ecosystem* in
+[`../BENCHMARK.md`](../BENCHMARK.md).
+
 ## Deviations from the Java original
 
 1. **Transform kernel** - the prime factor algorithm of `Pfacc` with double
@@ -277,14 +341,26 @@ in [`../BENCHMARK.md`](../BENCHMARK.md).
    `FFTMethods.complexToComplex(data, dim, forward)` chooses the scaling
    from the direction (forward: no scaling, inverse: divide by the length).
    The port always takes the flag explicitly.
+7. **Two additions** - `FftComplex::ifft` and the pair `fft` / `ifft` on plain
+   arrays have no counterpart in the original, which never scales an inverse
+   transform.  They follow the naming and the scaling of
+   [FFTW.jl](https://github.com/JuliaMath/FFTW.jl) instead, and they are the
+   only functions of the module that are not a port.  Everything else in the
+   module keeps the behaviour of the original, including the unnormalised
+   inverse, which is what `complex_to_complex(1, ...)` still computes.
 
 ## Verification
 
-`moon test` runs three groups of tests, 685 in total:
+`moon test` runs four groups of tests, 691 in total:
 
 * `fft2_wbtest.mbt` - 28 hand written unit tests of the individual
   functions, including the two length tables and the refusal of the
   unsupported lengths.
+* `array_fft_wbtest.mbt` - 6 tests of the inverse and of the pair of
+  transforms on plain arrays: the normalised inverse has to undo the forward
+  transform at several lengths, it has to be the unnormalised inverse divided
+  by the length, it must not write past the points of the transform, the two
+  must leave the input alone, and the spectrum of a delta has to be flat.
 * `kernel_wbtest.mbt` - 6 tests of the transform kernel itself: it has to
   reproduce the direct `O(n^2)` evaluation of the transform for 90 lengths
   and for both directions, the forward and the inverse transform have to undo
@@ -350,10 +426,10 @@ java -cp "build\oracle;build\classes;tools\lib\imglib2-6.1.0.jar;tools\lib\mines
   Oracle build\cases\manifest.txt build\cases\java
 
 # 4. turn the golden data into a MoonBit test
-python tools\gen_parity.py --cases build\cases --out moonbit_fft2\parity_wbtest.mbt
+python tools\gen_parity.py --cases build\cases --out moonbit_fft\parity_wbtest.mbt
 
 # 5. run the tests and refresh the published interface file
-cd moonbit_fft2 ; moon fmt ; moon check --deny-warn ; moon test ; moon info
+cd moonbit_fft ; moon fmt ; moon check --deny-warn ; moon test ; moon info
 ```
 
 A fresh clone only needs the tracked files for `moon test`, because the

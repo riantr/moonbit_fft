@@ -28,7 +28,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKG = ROOT / "moonbit_fft2"
+PKG = ROOT / "moonbit_fft"
 SHADOW = ROOT / "build" / "deviationmodule"
 
 OLD = """    let allowed = tolerance * (scale + want.abs())

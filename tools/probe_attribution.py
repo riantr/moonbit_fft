@@ -45,7 +45,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-MODULE = ROOT / "moonbit_fft2"
+MODULE = ROOT / "moonbit_fft"
 SHADOWS = ROOT / "build"
 
 # The application of the twiddle factors, one pair of lines per input:

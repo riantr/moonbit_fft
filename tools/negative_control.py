@@ -1,4 +1,4 @@
-"""Negative control for the kernel tests of `moonbit_fft2/kernel_wbtest.mbt`.
+"""Negative control for the kernel tests of `moonbit_fft/kernel_wbtest.mbt`.
 
 It breaks the kernel on purpose and checks that the test suite turns red, so
 that a green suite is known to mean something.  Afterwards the files are
@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODULE = ROOT / "moonbit_fft2"
+MODULE = ROOT / "moonbit_fft"
 TARGET = MODULE / "mixed_radix.mbt"
 KERNELS = MODULE / "kernels.mbt"
 BACKUP = ROOT / "build" / "mixed_radix.mbt.negative_control_backup"

@@ -67,11 +67,13 @@ def live_values(body: str) -> int:
 
 
 def main() -> int:
-    kernels = (ROOT / "moonbit_fft2" / "kernels.mbt").read_text(encoding="utf-8")
+    kernels = (ROOT / "moonbit_fft" / "kernels.mbt").read_text(encoding="utf-8")
     print("the kernel of the port, the radix 13:")
     print("  stage_r13_mu1: %d values alive" % live_values(kernel_of(kernels, "fn stage_r13_mu1(")))
 
-    # The symmetric kernel of the previous generation is in the history.
+    # The symmetric kernel of the previous generation is in the history.  The
+    # path carries the **old** name of the module on purpose: that commit
+    # predates the rename of the directory to `moonbit_fft/`.
     old = subprocess.run(
         ["git", "show", "cd434fd:moonbit_fft2/kernels.mbt"],
         cwd=str(ROOT),

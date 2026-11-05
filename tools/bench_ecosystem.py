@@ -35,7 +35,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-MODULE = ROOT / "moonbit_fft2"
+MODULE = ROOT / "moonbit_fft"
 SHADOW = ROOT / "build" / "ecomodule"
 # The packages of the comparison: the harness that times the sides, and the probe
 # that dumps their spectra so that a reference can hold them to the right answer.

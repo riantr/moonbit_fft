@@ -23,7 +23,7 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 
 /**
- * Reference oracle for the moonbit_fft2 port.
+ * Reference oracle for the moonbit_fft port.
  *
  * <p>Drives the <em>original</em> {@code net.imglib2.algorithm.fft2} classes
  * (compiled bytecode shipped in {@code fft2/}) over deterministic test data and

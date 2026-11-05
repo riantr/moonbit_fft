@@ -20,9 +20,9 @@ Usage::
 
     python tools/ab_compare.py <exe_a> <exe_b> [rounds] [out.json]
 
-The two executables are the probes of `moonbit_fft2/benchab`, built with::
+The two executables are the probes of `moonbit_fft/benchab`, built with::
 
-    moon -C moonbit_fft2 build --release --target native ./benchab
+    moon -C moonbit_fft build --release --target native ./benchab
 """
 
 from __future__ import annotations

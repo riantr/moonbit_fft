@@ -2,7 +2,7 @@
 """Counts the operations of the Good-Thomas transform.
 
 The script counts the work of one butterfly of every radix on both sides of
-the port: the generated MoonBit kernels of `moonbit_fft2/kernels.mbt` and the
+the port: the generated MoonBit kernels of `moonbit_fft/kernels.mbt` and the
 kernels of the Java original, `edu.mines.jtk.dsp.Pfacc`.  From those numbers it
 derives the work of a whole transform of a given length.
 
@@ -44,7 +44,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_KERNELS = ROOT / "moonbit_fft2" / "kernels.mbt"
+DEFAULT_KERNELS = ROOT / "moonbit_fft" / "kernels.mbt"
 DEFAULT_JAVA = ROOT / "build" / "jtsrc" / "src" / "edu" / "mines" / "jtk" / "dsp" / "Pfacc.java"
 
 # The factors of the original, the order is the one of `Pfacc._kfac`.

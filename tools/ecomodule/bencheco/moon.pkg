@@ -1,5 +1,5 @@
 import {
-  "riantr/moonbit_fft2",
+  "riantr/moonbit_fft",
   "HK-SHAO/dsp" @hkdsp,
   "hwlxmm/dsp/src/fft" @hwlxmm,
   "hwlxmm/dsp/src/math" @hmath,

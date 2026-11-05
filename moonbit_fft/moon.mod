@@ -1,4 +1,4 @@
-name = "riantr/moonbit_fft2"
+name = "riantr/moonbit_fft"
 
 version = "0.1.0"
 

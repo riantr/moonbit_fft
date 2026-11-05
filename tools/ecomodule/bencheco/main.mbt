@@ -67,8 +67,8 @@ fn main raise {
   let small = 1_024
   let small_port = 1_008
 
-  let fft_big = @moonbit_fft2.FftComplex::new(big_port)
-  let fft_small = @moonbit_fft2.FftComplex::new(small_port)
+  let fft_big = @moonbit_fft.FftComplex::new(big_port)
+  let fft_small = @moonbit_fft.FftComplex::new(small_port)
   let cx_big = make_floats(2 * big_port)
   let cy_big = make_floats(2 * big_port)
   let cx_small = make_floats(2 * small_port)
@@ -185,7 +185,7 @@ fn main raise {
   }
 
   println("CHECKSUM \{sink}")
-  println("the port accepts \{big}: \{@moonbit_fft2.nfft_valid(big)}")
+  println("the port accepts \{big}: \{@moonbit_fft.nfft_valid(big)}")
   @hkdsp.slot_close(slot_big)
   @hkdsp.slot_close(slot_small)
 }
@@ -194,8 +194,8 @@ fn main raise {
 /// The transform of every side, the ones that need their samples put back
 /// included.
 fn warm_up(
-  fft_big : @moonbit_fft2.FftComplex,
-  fft_small : @moonbit_fft2.FftComplex,
+  fft_big : @moonbit_fft.FftComplex,
+  fft_small : @moonbit_fft.FftComplex,
   cx_big : Array[Float],
   cy_big : Array[Float],
   cx_small : Array[Float],
@@ -248,8 +248,8 @@ fn warm_up(
 /// depend on the values, so the sides are still measured on the same work.
 fn measure(
   which : Int32,
-  fft_big : @moonbit_fft2.FftComplex,
-  fft_small : @moonbit_fft2.FftComplex,
+  fft_big : @moonbit_fft.FftComplex,
+  fft_small : @moonbit_fft.FftComplex,
   cx_big : Array[Float],
   cy_big : Array[Float],
   cx_small : Array[Float],
@@ -356,7 +356,7 @@ fn repeats_for(ns : Double) -> Int32 {
 ///|
 /// The transform of the port, `repeats` times in a row.
 fn time_port(
-  fft : @moonbit_fft2.FftComplex,
+  fft : @moonbit_fft.FftComplex,
   cx : Array[Float],
   cy : Array[Float],
   repeats : Int32,

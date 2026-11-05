@@ -6,27 +6,27 @@ A MoonBit port of the `fft2` algorithm of
 images that is built on the legacy `edu.mines.jtk.dsp` JTransforms
 kernels.
 
-The port itself lives in [`moonbit_fft2/`](moonbit_fft2) and is a
+The port itself lives in [`moonbit_fft/`](moonbit_fft) and is a
 self-contained MoonBit module; its documentation, API description and
 list of deviations from the Java original are in
-[`moonbit_fft2/README.md`](moonbit_fft2/README.md).
+[`moonbit_fft/README.md`](moonbit_fft/README.md).
 
 ## Repository layout
 
 | Path | Content | Tracked |
 | --- | --- | --- |
 | `fft2/` | the **original** Java bytecode of `net.imglib2.algorithm.fft2` (`FFT`, `FFTMethods`), the oracle of this port | yes |
-| `moonbit_fft2/` | the MoonBit module `riantr/moonbit_fft2` | yes |
-| `moonbit_fft2/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
-| `moonbit_fft2/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
-| `moonbit_fft2/benchmachine/` | the transform of the port measured next to the clock and the memory system of the machine | yes |
+| `moonbit_fft/` | the MoonBit module `riantr/moonbit_fft` | yes |
+| `moonbit_fft/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
+| `moonbit_fft/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
+| `moonbit_fft/benchmachine/` | the transform of the port measured next to the clock and the memory system of the machine | yes |
 | `tools/java/Oracle.java` | harness that drives the original bytecode and dumps its results as golden data | yes |
 | `tools/java/Bench.java` | benchmark of the original Java implementation | yes |
 | `tools/gen_cases.py` | generates the deterministic test inputs and the manifest | yes |
 | `tools/gen_parity.py` | turns the golden data into the generated MoonBit parity test | yes |
 | `tools/measure_deviation.py` | measures the numerical margin between the port and the original | yes |
-| `tools/gen_tables.py` | generates `moonbit_fft2/tables.mbt` from the transform length tables of the original | yes |
-| `tools/gen_java_kernels.py` | translates the small radix butterflies of the original into `moonbit_fft2/kernels.mbt` | yes |
+| `tools/gen_tables.py` | generates `moonbit_fft/tables.mbt` from the transform length tables of the original | yes |
+| `tools/gen_java_kernels.py` | translates the small radix butterflies of the original into `moonbit_fft/kernels.mbt` | yes |
 | `tools/solve_constants.py` | solves the constants of the butterflies in double precision | yes |
 | `tools/verify_goodthomas.py` | checks the model of the prime factor algorithm of the original against `numpy.fft` | yes |
 | `tools/count_ops.py` | counts the multiplications, the additions and the accesses of both sides | yes |
@@ -50,12 +50,12 @@ list of deviations from the Java original are in
 | `tools/negative_control_benchmark.py` | breaks the numbers of the ecosystem table on purpose and checks that the gate turns red | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
-| `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation | yes |
+| `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation and against the packages of the MoonBit ecosystem | yes |
 | `bench/` | the measurements of the rounds, one file per round, so that the tables of `BENCHMARK.md` can be checked | yes |
 | `tools/_tmp/` | the upstream sources of `imglib2-fft`, fetched for reference | no, local only |
 | `build/` | generated artefacts: the compiled oracle, the test cases, the golden data, the decompiled sources | no, local only |
 
-The tracked `moonbit_fft2/parity_wbtest.mbt` carries every expectation of the
+The tracked `moonbit_fft/parity_wbtest.mbt` carries every expectation of the
 parity tests inline, so `moon test` works on a fresh clone without the
 generated data of `build/`.  The golden data itself is reproduced by the
 pipeline below.
@@ -87,10 +87,10 @@ from the bytecode:
 
 The port was then validated against the original: the oracle runs the
 original classes over deterministic inputs and writes the raw `float32`
-results, and the generated test `moonbit_fft2/parity_wbtest.mbt` replays
+results, and the generated test `moonbit_fft/parity_wbtest.mbt` replays
 them against the MoonBit implementation.  The suite currently holds 651
-parity cases, 28 hand written unit tests and 6 tests of the transform
-kernel, 685 in total; all of them pass.
+parity cases, 28 hand written unit tests, 6 tests of the transform
+kernel and 6 tests of the array transforms, 691 in total; all of them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
@@ -129,10 +129,10 @@ java -cp "build\oracle;build\classes;$lib\imglib2-6.1.0.jar;$lib\mines-jtk-20151
   Oracle build\cases\manifest.txt build\cases\java
 
 # generated parity test
-python tools\gen_parity.py --cases build\cases --out moonbit_fft2\parity_wbtest.mbt
+python tools\gen_parity.py --cases build\cases --out moonbit_fft\parity_wbtest.mbt
 
 # build and test the port
-cd moonbit_fft2
+cd moonbit_fft
 moon fmt
 moon check --deny-warn
 moon test
@@ -153,8 +153,8 @@ python tools\decompile.py
 and the kernels with
 
 ```powershell
-python tools\gen_java_kernels.py --out moonbit_fft2\kernels.mbt
-moon -C moonbit_fft2 fmt
+python tools\gen_java_kernels.py --out moonbit_fft\kernels.mbt
+moon -C moonbit_fft fmt
 ```
 
 Both scripts are needed by the tools that read the original, and they tell
@@ -208,6 +208,18 @@ multiplications, of additions and of array accesses per element as the
 original, so what is left of the gap is the price of the runtime: a single
 array element access costs about 0.67 ns in MoonBit, against about 0.15 ns on
 the JVM.
+
+The same document compares the port with the packages of the MoonBit ecosystem
+as well, every one of them measured through **its own fastest entry point** at
+the two lengths that the port can share with it, over
+<!--v:ECO_ROUNDS-->16<!--/v--> rounds with the order of the sides rotated.  The
+port is at **parity with the strongest of them**, `HK-SHAO/dsp`
+(<!--v:ECO_NEAR-->0.96x to 1.04x<!--/v-->), and <!--v:ECO_FAR-->37 to 119<!--/v-->
+times faster than every other side at the same length.  That comparison also
+turned up a defect of the ecosystem: the radix paths of `hwlxmm/dsp` do not
+compute the transform at any length, and its Bluestein path is the one that is
+correct.  See *The best of the ecosystem* in
+[`BENCHMARK.md`](BENCHMARK.md).
 
 ## License
 

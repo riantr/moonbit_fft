@@ -10,7 +10,7 @@ import net.imglib2.type.numeric.real.FloatType;
 
 /**
  * Benchmark of the original Java implementation, the counterpart of
- * {@code moonbit_fft2/benchmark}.
+ * {@code moonbit_fft/benchmark}.
  *
  * <p>The measurement protocol is identical on both sides:
  * <ol>

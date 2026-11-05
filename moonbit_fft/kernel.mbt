@@ -142,6 +142,32 @@ pub fn FftComplex::complex_to_complex(
 }
 
 ///|
+/// Transforms the `n` complex points of `cx` into the **normalised** inverse
+/// transform in `cy`, so that the inverse undoes a forward transform of the
+/// same length.
+///
+/// This is the `ifft` of FFTW.jl: the unnormalised inverse transform divided
+/// by `n`.  The Java original has no such function - its inverse is never
+/// scaled - so `complex_to_complex(1, ...)` is the `bfft` of FFTW.jl and this
+/// one is its `ifft`.  The two agree up to the factor `n`.
+pub fn FftComplex::ifft(
+  self : FftComplex,
+  cx : Array[Float],
+  cy : Array[Float],
+) -> Unit {
+  self.complex_to_complex(1, cx, cy)
+  // The transform has already written `2 * n` values into `cy`, and `cy` may
+  // be longer than that, so only that prefix is scaled.
+  let n = self.n
+  let divisor = Float::from_int(n)
+  let mut i = 0
+  while i < 2 * n {
+    cy[i] = cy[i] / divisor
+    i = i + 1
+  }
+}
+
+///|
 /// Real-to-complex and complex-to-real FFT of a fixed length.
 ///
 /// Mirrors `edu.mines.jtk.dsp.FftReal`.

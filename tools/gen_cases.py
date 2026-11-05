@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate deterministic test cases for the moonbit_fft2 port.
+"""Generate deterministic test cases for the moonbit_fft port.
 
 Each case is described by a small manifest file that both the Java oracle
 (the original net.imglib2.algorithm.fft2 classes) and the MoonBit port read,

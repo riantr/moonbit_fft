@@ -9,8 +9,8 @@ script turns those golden results into a white box MoonBit test so that
 
 Usage::
 
-    python tools/gen_parity.py --cases build/cases --out moonbit_fft2/parity_wbtest.mbt
-    cd moonbit_fft2 && moon fmt      # the generated file is not formatted yet
+    python tools/gen_parity.py --cases build/cases --out moonbit_fft/parity_wbtest.mbt
+    cd moonbit_fft && moon fmt      # the generated file is not formatted yet
 
 The generated file and the committed one are the same file, so a change of
 the generator shows up in a diff of the test and not only in a diff of the
@@ -127,7 +127,7 @@ def ident(name: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", default="build/cases")
-    parser.add_argument("--out", default="moonbit_fft2/parity_wbtest.mbt")
+    parser.add_argument("--out", default="moonbit_fft/parity_wbtest.mbt")
     args = parser.parse_args()
 
     cases_dir = Path(args.cases)

@@ -46,7 +46,7 @@ DOC = ROOT / "BENCHMARK.md"
 # The two documents of the repository that repeat the numbers of the
 # benchmark.  They are checked too, because a number that is corrected in
 # one document and left in the other is a drift of its own.
-READMES = (ROOT / "README.md", ROOT / "moonbit_fft2" / "README.md")
+READMES = (ROOT / "README.md", ROOT / "moonbit_fft" / "README.md")
 DATA = BENCH / "bench_compare.json"
 # The comparison of the kernels is a separate measurement.
 KERNEL_DATA = BENCH / "bench_kernels.json"

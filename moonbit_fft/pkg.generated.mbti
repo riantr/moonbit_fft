@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "riantr/moonbit_fft2"
+package "riantr/moonbit_fft"
 
 // Values
 pub fn complex_conjugate(ComplexImage) -> Unit
@@ -24,6 +24,8 @@ pub fn dimensions_real_to_complex_fast(Array[Int32], Array[Int32], Array[Int32])
 
 pub fn dimensions_real_to_complex_small(Array[Int32], Array[Int32], Array[Int32]) -> Unit
 
+pub fn fft(Array[Float]) -> Array[Float]
+
 pub fn fft_complex_to_complex_forward(ComplexImage) -> Unit
 
 pub fn fft_complex_to_complex_inverse(ComplexImage) -> Unit
@@ -39,6 +41,8 @@ pub fn fft_complex_to_real_unpad(ComplexImage, Array[Int32]) -> RealImage
 pub fn fft_real_to_complex(RealImage) -> ComplexImage
 
 pub fn fft_real_to_complex_with_fill(RealImage, Float) -> ComplexImage
+
+pub fn ifft(Array[Float]) -> Array[Float]
 
 pub fn linear_strides(Array[Int32]) -> Array[Int32]
 
@@ -82,6 +86,7 @@ pub struct FftComplex {
   n : Int32
 }
 pub fn FftComplex::complex_to_complex(Self, Int32, Array[Float], Array[Float]) -> Unit
+pub fn FftComplex::ifft(Self, Array[Float], Array[Float]) -> Unit
 pub fn FftComplex::new(Int32) -> Self
 pub fn FftComplex::nfft(Self) -> Int32
 

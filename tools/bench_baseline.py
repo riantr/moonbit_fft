@@ -28,6 +28,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHADOW = ROOT / "build" / "oldmodule"
 
+# The directories the module has had.  The published name was
+# `riantr/moonbit_fft2` before it was shortened, and the directory followed
+# the name, so a revision of the history holds one of the two.
+MODULE_DIRS = ("moonbit_fft", "moonbit_fft2")
+
 # The files of the benchmark harness, they are not part of the module.
 HARNESS = ("benchmark/main.mbt", "benchmark/moon.pkg")
 
@@ -43,19 +48,27 @@ def git(*args: str) -> bytes:
     return proc.stdout
 
 
-def module_files(rev: str) -> list[str]:
-    """The files of the module in a revision."""
-    out = git("ls-tree", "-r", "--name-only", rev, "moonbit_fft2").decode("utf-8")
-    names = []
-    for line in out.splitlines():
-        line = line.strip()
-        if not line or not line.startswith("moonbit_fft2/"):
-            continue
-        name = line[len("moonbit_fft2/") :]
-        if name.startswith("benchmark/"):
-            continue
-        names.append(name)
-    return names
+def module_files(rev: str) -> tuple[str, list[str]]:
+    """The directory and the files of the module in a revision.
+
+    The module was published as `riantr/moonbit_fft2` before its name was
+    shortened, so its directory is `moonbit_fft2/` in the older revisions and
+    `moonbit_fft/` from the rename on.  Both spellings have to be understood,
+    because this tool reads the module out of a revision of the history.
+    """
+    out = git("ls-tree", "-r", "--name-only", rev).decode("utf-8")
+    lines = [line.strip() for line in out.splitlines() if line.strip()]
+    for directory in MODULE_DIRS:
+        prefix = directory + "/"
+        names = [
+            line[len(prefix) :]
+            for line in lines
+            if line.startswith(prefix)
+            and not line[len(prefix) :].startswith("benchmark/")
+        ]
+        if names:
+            return directory, names
+    raise SystemExit("%s holds no module directory" % rev)
 
 
 def assemble(rev: str, shadow: pathlib.Path) -> None:
@@ -63,20 +76,21 @@ def assemble(rev: str, shadow: pathlib.Path) -> None:
     if shadow.exists():
         shutil.rmtree(shadow)
     shadow.mkdir(parents=True)
-    for name in module_files(rev):
-        data = git("show", f"{rev}:moonbit_fft2/{name}")
+    directory, names = module_files(rev)
+    for name in names:
+        data = git("show", f"{rev}:{directory}/{name}")
         # The output is written as bytes on purpose: a redirect of `git show`
         # in PowerShell writes UTF-16, which the compiler cannot read.
         target = shadow / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-        print(f"[{rev}] moonbit_fft2/{name} -> {target}")
+        print(f"[{rev}] {directory}/{name} -> {target}")
     for name in HARNESS:
-        source = ROOT / "moonbit_fft2" / name
+        source = ROOT / "moonbit_fft" / name
         target = shadow / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-        print(f"[harness] moonbit_fft2/{name} -> {target}")
+        print(f"[harness] moonbit_fft/{name} -> {target}")
 
 
 def main() -> int:

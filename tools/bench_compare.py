@@ -47,7 +47,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
-MODULE = ROOT / "moonbit_fft2"
+MODULE = ROOT / "moonbit_fft"
 LIB = ROOT / "tools" / "lib"
 
 LINE = re.compile(
@@ -193,7 +193,9 @@ def pre_kernel_revision() -> str:
 
     It is the parent of the commit that added `moonbit_fft2/mixed_radix.mbt`,
     which is the commit that replaced the direct evaluation of the discrete
-    Fourier transform by the mixed radix one.
+    Fourier transform by the mixed radix one.  The path carries the **old**
+    name of the module on purpose: it is the path in that commit, and the
+    directory was only renamed to `moonbit_fft/` long after it.
     """
     out = subprocess.run(
         [

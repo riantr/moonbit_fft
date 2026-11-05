@@ -58,7 +58,7 @@ KFAC = [16, 13, 11, 9, 8, 7, 5, 4, 3, 2]
 
 def valid_lengths() -> list[int]:
     """The valid lengths of the original, they are the ones of the table."""
-    text = (ROOT / "moonbit_fft2" / "tables.mbt").read_text(encoding="utf-8")
+    text = (ROOT / "moonbit_fft" / "tables.mbt").read_text(encoding="utf-8")
     body = re.search(r"let ntable : Array\[Int32\] = \[(.*?)\]", text, re.S).group(1)
     return [int(x) for x in re.findall(r"\d+", body)]
 

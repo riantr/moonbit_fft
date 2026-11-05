@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measures the transform of the port together with the state of the machine.
 
-The probe is `moonbit_fft2/benchmachine`: it runs the transform of the port
+The probe is `moonbit_fft/benchmachine`: it runs the transform of the port
 in rounds, and next to every round it measures two references, a loop of
 integer arithmetic and a sequential pass over a megabyte of doubles.  When
 the transform slows down and the references slow down with it, the machine
@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKG = ROOT / "moonbit_fft2" / "benchmachine"
+PKG = ROOT / "moonbit_fft" / "benchmachine"
 TXT = ROOT / "bench" / "bench_machine.txt"
 JSON = ROOT / "bench" / "bench_machine.json"
 
@@ -40,12 +40,12 @@ ROUND = re.compile(
 
 def build() -> pathlib.Path:
     subprocess.run(
-        ["moon", "-C", str(ROOT / "moonbit_fft2"), "build",
+        ["moon", "-C", str(ROOT / "moonbit_fft"), "build",
          "--release", "--target", "native", "./benchmachine"],
         check=True,
     )
     return (
-        ROOT / "moonbit_fft2" / "_build" / "native" / "release" / "build"
+        ROOT / "moonbit_fft" / "_build" / "native" / "release" / "build"
         / "benchmachine" / "benchmachine.exe"
     )
 
@@ -56,7 +56,7 @@ def main() -> int:
     args = parser.parse_args()
 
     exe = build() if not args.skip_build else (
-        ROOT / "moonbit_fft2" / "_build" / "native" / "release" / "build"
+        ROOT / "moonbit_fft" / "_build" / "native" / "release" / "build"
         / "benchmachine" / "benchmachine.exe"
     )
     if not exe.exists():

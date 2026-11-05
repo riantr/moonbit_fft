@@ -16,11 +16,11 @@
 /// the machine is the reason.
 ///
 /// ```
-/// moon -C moonbit_fft2 run --release --target native ./benchmachine
+/// moon -C moonbit_fft run --release --target native ./benchmachine
 /// ```
 fn main {
   let n = 32_760
-  let fft = @moonbit_fft2.FftComplex::new(n)
+  let fft = @moonbit_fft.FftComplex::new(n)
   let cx = make_floats(2 * n)
   let cy = make_floats(2 * n)
   let mem = Array::make(131_072, 1.0)

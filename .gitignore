@@ -1,7 +1,7 @@
 # generated artefacts: compiled oracle, test cases, golden data, decompiled sources
 build/
 # MoonBit build cache
-moonbit_fft2/_build/
+moonbit_fft/_build/
 tools/_build/
 # the byte code cache of the python tools
 __pycache__/

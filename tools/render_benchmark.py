@@ -67,11 +67,16 @@ GT_DATA = BENCH / "bench_goodthomas.json"
 # port of today against the port with the small transform in its direct form.
 DIRECT_DATA = BENCH / "bench_direct.json"
 
+# The comparison of the port with the packages of the ecosystem, written by
+# `tools/bench_ecosystem.py` and held to its reference by
+# `tools/check_ecospectra.py`.
+ECO_DATA = BENCH / "bench_ecosystem.json"
+
 # The documents that hold the numbers of the measurements.
 DOCUMENTS = (
     ROOT / "BENCHMARK.md",
     ROOT / "README.md",
-    ROOT / "moonbit_fft2" / "README.md",
+    ROOT / "moonbit_fft" / "README.md",
 )
 
 # The lower bound of a textbook radix-2 transform of n = 32768 on this
@@ -346,7 +351,37 @@ def replace_value(text: str, name: str, value: str) -> str:
     return text.replace("{{" + name + "}}", value)
 
 
-def values_of(data: dict, kernel_data: dict, gt_data: dict, direct_data: dict) -> dict[str, str]:
+def eco_values(eco: dict) -> dict[str, str]:
+    """The values of the placeholders of the ecosystem comparison.
+
+    `ECO_NEAR` is the range of the ratios of the one package that is in the
+    class of the port, `HK-SHAO/dsp`, over the two windows the two of them can
+    share; `ECO_FAR` is the range over every other side, rounded to whole
+    numbers, because a reader of a README wants the order of a difference and
+    not its third digit.
+    """
+    ratios = eco.get("ratios", {})
+    near: list[float] = []
+    far: list[float] = []
+    for window in ratios:
+        for name, value in ratios[window].items():
+            side = name.split("/")[0]
+            if side == "port":
+                continue
+            if side == "hkdsp":
+                near.append(value)
+            else:
+                far.append(value)
+    return {
+        "ECO_NEAR": ("%.2fx to %.2fx" % (min(near), max(near)))
+        if near else "not measured",
+        "ECO_FAR": ("%d to %d" % (round(min(far)), round(max(far))))
+        if far else "not measured",
+        "ECO_ROUNDS": str(eco.get("rounds", 0)),
+    }
+
+
+def values_of(data: dict, kernel_data: dict, gt_data: dict, direct_data: dict, eco_data: dict) -> dict[str, str]:
     """The values of the placeholders."""
     best = data.get("median") or data["best"]
     spread = data.get("spread", {})
@@ -497,6 +532,7 @@ def values_of(data: dict, kernel_data: dict, gt_data: dict, direct_data: dict) -
         "ORIG_LONG": orig_long_range,
         "DIRECT_RANGE": direct_range,
         "DIRECT_LONG": direct_long_range,
+        **eco_values(eco_data),
     }
 
 
@@ -528,7 +564,12 @@ def main() -> int:
         direct_data = json.loads(DIRECT_DATA.read_text(encoding="utf-8"))
     else:
         print(f"{DIRECT_DATA} does not exist, the table of the control is empty")
-    values = values_of(data, kernel_data, gt_data, direct_data)
+    eco_data = {}
+    if ECO_DATA.exists():
+        eco_data = json.loads(ECO_DATA.read_text(encoding="utf-8"))
+    else:
+        print(f"{ECO_DATA} does not exist, the ecosystem comparison is empty")
+    values = values_of(data, kernel_data, gt_data, direct_data, eco_data)
 
     out_of_sync = []
     for document in DOCUMENTS:

@@ -150,7 +150,7 @@ fn bench_complex() -> Double {
   let mut li = 0
   while li < lengths.length() {
     let n = lengths[li]
-    let fft = @moonbit_fft2.FftComplex::new(n)
+    let fft = @moonbit_fft.FftComplex::new(n)
     let cx = make_floats(2 * n)
     let cy = make_floats(2 * n)
     let ns = measure(fn() { fft.complex_to_complex(-1, cx, cy) })
@@ -168,7 +168,7 @@ fn bench_real() -> Double {
   let mut li = 0
   while li < lengths.length() {
     let n = lengths[li]
-    let fft = @moonbit_fft2.FftReal::new(n)
+    let fft = @moonbit_fft.FftReal::new(n)
     let rx = make_floats(n)
     let cy = make_floats(n + 2)
     let ns = measure(fn() { fft.real_to_complex(-1, rx, cy) })
@@ -186,10 +186,10 @@ fn bench_api() -> Double {
   let mut li = 0
   while li < lengths.length() {
     let n = lengths[li]
-    let input = @moonbit_fft2.RealImage::from_data([n], make_floats(n))
-    let output = @moonbit_fft2.ComplexImage::new([n / 2 + 1])
+    let input = @moonbit_fft.RealImage::from_data([n], make_floats(n))
+    let output = @moonbit_fft.ComplexImage::new([n / 2 + 1])
     let ns = measure(fn() {
-      let _ = @moonbit_fft2.real_to_complex(input, output, None, 0, false)
+      let _ = @moonbit_fft.real_to_complex(input, output, None, 0, false)
     })
     checksum = checksum + report("api", n, ns, output.data)
     li = li + 1

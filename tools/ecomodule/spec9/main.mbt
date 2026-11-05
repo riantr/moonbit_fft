@@ -69,13 +69,13 @@ fn write(
 
 ///|
 fn dump_port(n : Int32, out_dir : String) -> Unit raise {
-  if !@moonbit_fft2.nfft_valid(n) {
+  if !@moonbit_fft.nfft_valid(n) {
     println("the port refuses \{n}")
     return
   }
   let cx = make_floats(2 * n)
   let cy = make_floats(2 * n)
-  let fft = @moonbit_fft2.FftComplex::new(n)
+  let fft = @moonbit_fft.FftComplex::new(n)
   fft.complex_to_complex(-1, cx, cy)
   let lines : Array[String] = []
   let mut i = 0
