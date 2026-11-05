@@ -177,6 +177,39 @@ the flag only reaches code that the C compiler compiles — a package with no
   and it would abandon the double precision accumulation that `kernel.mbt`
   documents.
 
+## `/arch:AVX2` on the port: 7.6 per cent end to end
+
+The flag was then applied to the two programs that measure the port and
+measured again, `moonbit_fft/benchab` against itself through
+`tools/ab_compare.py`, 336 paired rounds of the complex to complex transform
+at `n = 32760`:
+
+```
+a (default flags)  median 378033 ns  min 357131  max 521001
+b (/arch:AVX2)     median 353734 ns  min 332372  max 465071
+per round ratio a/b: median 1.0755   n=336
+```
+
+7.6 per cent, more than the 5.4 per cent of the isolated stage, and the
+checksum of the same binary is unchanged — `-7829.640045009777` with and
+without the flag — so nothing about the results moved.
+
+**Where the flag has to go.** On the executable package, not on the library:
+
+* the kernels are compiled into the merged translation unit of the *program*
+  (`benchab.c` is 3.6 MB and holds the constants of the butterflies;
+  `moonbit_fft.c` is 22 KB and holds none), and a library package's
+  `link.native.cc-flags` does not reach that unit;
+* setting them on the library is not merely useless, it breaks the build:
+  `failed to make executable riantr/moonbit_fft (native) ... LNK1561: entry
+  point must be defined`, because the link section makes the toolchain treat
+  the package as a program.
+
+So the gain is available to whoever compiles a *program* that calls the port;
+a user of the library who sets nothing still gets the default encoding, and
+the numbers of `BENCHMARK.md`, which were measured that way, keep describing
+the default build.
+
 ## Why vectorising this kernel does not pay
 
 At `/O2` the scalar pass takes 37.1 us for 8190 groups, 4.5 ns per group,
