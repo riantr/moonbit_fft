@@ -27,13 +27,15 @@ The two executables are the probes of `moonbit_fft/benchab`, built with::
 
 from __future__ import annotations
 
-import json
 import pathlib
 import statistics
 import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+
+import cpu_flags  # noqa: E402
 
 
 def run(exe: str) -> list[float]:
@@ -117,9 +119,9 @@ def main() -> int:
     }
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(
-            json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        # The file carries the identity of the machine, so that a number of
+        # this directory can be told from a number of another machine.
+        cpu_flags.write(out_path, result)
         print("wrote %s" % out_path)
     return 0
 

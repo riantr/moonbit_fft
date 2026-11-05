@@ -19,11 +19,17 @@ answer was cross checked against a CPUID probe (see `tools/v128probe/README.md`
 for the probe and for the one bit it got wrong, RDRAND, which is why this file
 records the source next to the bits).
 
+A measurement of `bench/` is written through `write()`, which puts this
+identity on the file, so that a number always says which machine it belongs
+to.  `stamp()` does the same for a measurement that was taken before the field
+existed: it records where the numbers came from, it does not measure anything.
+
 Usage::
 
     python tools/cpu_flags.py           # the identity, for a reader
     python tools/cpu_flags.py --json    # the identity, for a script
     python tools/cpu_flags.py --suggest # the cc-flags this CPU deserves
+    python tools/cpu_flags.py --stamp bench/bench_copy.json ...  # record it
 """
 
 from __future__ import annotations
@@ -33,6 +39,7 @@ import ctypes
 import hashlib
 import json
 import os
+import pathlib
 import platform
 import sys
 
@@ -150,13 +157,52 @@ def summary(identity: dict) -> str:
     )
 
 
+def write(path: pathlib.Path, payload: dict) -> dict:
+    """Writes a measurement of `bench/` with the identity of this machine.
+
+    Every measurement goes through here, so that no file of the directory can
+    be told from a number whose machine is unknown.  The payload is written in
+    the one shape the other measurements use: sorted keys, two spaces, and one
+    line feed at the end.
+    """
+    stamped = dict(payload)
+    identity = detect()
+    stamped["cpu"] = identity
+    path.write_text(
+        json.dumps(stamped, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return identity
+
+
+def stamp(path: pathlib.Path) -> dict:
+    """Records the identity in a measurement that has none, without measuring."""
+    return write(path, json.loads(path.read_text(encoding="utf-8")))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="print the identity as JSON")
     parser.add_argument(
         "--suggest", action="store_true", help="print only the cc-flags to use"
     )
+    parser.add_argument(
+        "--stamp",
+        nargs="+",
+        metavar="JSON",
+        help="record the identity in these measurements, without measuring again",
+    )
     args = parser.parse_args()
+    if args.stamp:
+        paths = [pathlib.Path(name) for name in args.stamp]
+        absent = [str(path) for path in paths if not path.exists()]
+        if absent:
+            print("%s does not exist, measure first" % ", ".join(absent))
+            return 1
+        for path in paths:
+            identity = stamp(path)
+            print("stamped %s" % path)
+        print("cpu: %s" % summary(identity))
+        return 0
     identity = detect()
     if args.suggest:
         print(identity["suggested_cc_flags"])

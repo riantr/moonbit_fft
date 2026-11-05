@@ -1,5 +1,26 @@
 {
   "checksum": "-116.87905992171727",
+  "cpu": {
+    "fingerprint": "ebdad1757173d388",
+    "identifier": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+    "isa": {
+      "avx": true,
+      "avx2": true,
+      "avx512f": false,
+      "sse": true,
+      "sse2": true,
+      "sse3": true,
+      "sse4_1": true,
+      "sse4_2": true,
+      "ssse3": true
+    },
+    "logical_cores": 20,
+    "machine": "AMD64",
+    "name": "12th Gen Intel(R) Core(TM) i7-12700",
+    "source": "IsProcessorFeaturePresent",
+    "suggested_cc_flags": "/O2 /utf-8 /wd4819 /arch:AVX2",
+    "system": "Windows"
+  },
   "ecosystem": [
     {
       "entry": "slot_open then forward, plan and slot cached",

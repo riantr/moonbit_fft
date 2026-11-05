@@ -19,7 +19,6 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 import re
 import subprocess
@@ -72,13 +71,7 @@ def main() -> int:
         if not JSON.exists():
             print("%s does not exist, measure first" % JSON)
             return 1
-        recorded = json.loads(JSON.read_text(encoding="utf-8"))
-        identity = cpu_flags.detect()
-        recorded["cpu"] = identity
-        JSON.write_text(
-            json.dumps(recorded, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        identity = cpu_flags.stamp(JSON)
         print("stamped %s" % cpu_flags.summary(identity))
         return 0
 
@@ -112,13 +105,7 @@ def main() -> int:
     # return and a line feed already, and a text mode would add a second line
     # feed to them.
     TXT.write_bytes(out.encode("utf-8"))
-    identity = cpu_flags.detect()
-    JSON.write_text(
-        json.dumps(
-            {"cpu": identity, "rounds": rounds}, indent=2, sort_keys=True
-        ) + "\n",
-        encoding="utf-8",
-    )
+    identity = cpu_flags.write(JSON, {"rounds": rounds})
     for r in rounds:
         print("round %2d transform %9.0f ns | clock %8.0f us | memory %.3f ns/elem" % (
             r["round"], r["transform"], r["clock"], r["memory"]))

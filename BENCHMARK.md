@@ -402,6 +402,17 @@ other.**  The tool of this document, `moonbit_fft/benchab/`, reports the
 rounds of the transform one by one, so that a drift is visible, and it is
 what the comparison of two builds is built on.
 
+Every measurement of `bench/` therefore carries that identity in a `cpu`
+field: the name of the processor, the identifier the platform reports, the
+number of logical cores, the extension bits and the fingerprint.  All of them
+name the same machine, and `tools/check_benchmark.py` refuses a file that
+carries none and a file that names another machine than
+`bench_machine.json`, so that no number of this directory can be read without
+knowing where it came from.  The writers of the measurements put the field on
+by themselves, through `tools/cpu_flags.py`; for a measurement that was taken
+before the field existed, `tools/cpu_flags.py --stamp <file>` records the
+identity and leaves the numbers as they are.
+
 ### Native vectorisation: what it is worth
 
 Three ways of making the kernel vectorised were measured, and none of them is

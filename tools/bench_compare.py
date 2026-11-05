@@ -37,7 +37,6 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 import re
 import shutil
@@ -46,6 +45,10 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+
+import cpu_flags  # noqa: E402
+
 BUILD = ROOT / "build"
 MODULE = ROOT / "moonbit_fft"
 LIB = ROOT / "tools" / "lib"
@@ -488,7 +491,9 @@ def main() -> int:
         },
     }
     json_path = args.out.with_suffix(".json")
-    json_path.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+    # The file carries the identity of the machine, so that a number of this
+    # directory can be told from a number of another machine.
+    cpu_flags.write(json_path, data)
     print(f"written to {json_path}")
     return 0
 

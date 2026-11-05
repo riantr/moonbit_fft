@@ -25,7 +25,6 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import pathlib
 import re
@@ -35,6 +34,10 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+
+import cpu_flags  # noqa: E402
+
 MODULE = ROOT / "moonbit_fft"
 SHADOW = ROOT / "build" / "ecomodule"
 # The packages of the comparison: the harness that times the sides, and the probe
@@ -480,8 +483,9 @@ def main() -> int:
         "checksum": checksum,
     }
     json_path = args.out.with_suffix(".json")
-    json_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n",
-                         encoding="utf-8")
+    # The file carries the identity of the machine, so that a number of this
+    # directory can be told from a number of another machine.
+    cpu_flags.write(json_path, data)
     # The rounds themselves are kept next to the median, so that the spread of
     # a reading can be told from a change of the programs.
     rounds_path = args.out.with_name(args.out.stem + "_rounds.txt")

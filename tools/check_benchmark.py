@@ -81,6 +81,22 @@ TARGET_DATA = BENCH / "bench_target.json"
 # The comparison of the port with the best package of the ecosystem.
 ECO_DATA = BENCH / "bench_ecosystem.json"
 
+# Every measurement of the directory.  Each one carries the identity of the
+# machine it was taken on, because a number of one machine next to a number of
+# another one is not a comparison.  A measurement that is added here without
+# the field is red, and a measurement of a second machine is red as well.
+MEASUREMENTS = (
+    DATA,
+    KERNEL_DATA,
+    GT_DATA,
+    DIRECT_DATA,
+    COPY_DATA,
+    TARGET_DATA,
+    ECO_DATA,
+    AVX2_DATA,
+    MACHINE_DATA,
+)
+
 # A row of the tables of the workloads:
 #
 #   | n | Java ns/op | before ns/op | after ns/op | speedup | after / Java | spread |
@@ -299,6 +315,7 @@ def main() -> int:
 
     problems: list[str] = []
     checked = 0
+    machines = 0
     workload = None
     in_kernels = False
     in_goodthomas = False
@@ -424,6 +441,51 @@ def main() -> int:
                 print("warning: " + message)
             else:
                 problems.append(message)
+
+    # Each file of the directory names the machine it came from, and they all
+    # name the same one.  The check above asks whether the measurement belongs
+    # to this machine; this one asks whether every file carries a machine at
+    # all, so that a measurement can not slip in without one and a number of a
+    # second machine can not sit next to these.
+    anchor = cpu.get("fingerprint") if isinstance(cpu, dict) else None
+    for path in MEASUREMENTS:
+        if not path.exists():
+            problems.append(f"{path} does not exist, measure first")
+            continue
+        try:
+            recorded = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            problems.append(f"{path.name} is not JSON: {error}")
+            continue
+        machines += 1
+        identity = recorded.get("cpu")
+        if not isinstance(identity, dict):
+            problems.append(
+                f"{path.name} carries no cpu field, run "
+                f"python tools/cpu_flags.py --stamp {path}"
+            )
+            continue
+        lacking = [
+            key
+            for key in ("name", "identifier", "logical_cores", "isa", "fingerprint")
+            if key not in identity
+        ]
+        if lacking:
+            problems.append(
+                f"the cpu field of {path.name} lacks {', '.join(lacking)}"
+            )
+            continue
+        if identity["fingerprint"] != cpu_flags.fingerprint(identity):
+            problems.append(
+                f"the fingerprint of {path.name} does not match the fields that "
+                "it summarises"
+            )
+        if anchor is not None and identity["fingerprint"] != anchor:
+            problems.append(
+                f"{path.name} was measured on the machine of fingerprint "
+                f"{identity['fingerprint']}, bench_machine.json on the machine "
+                f"of {anchor}"
+            )
 
     for line in DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("### "):
@@ -985,6 +1047,11 @@ def main() -> int:
         for problem in problems:
             print("  " + problem)
         return 1
+    if machines:
+        print(
+            f"OK: the {machines} measurements of bench/ name the same machine, "
+            f"fingerprint {anchor}"
+        )
     print(f"OK: the {checked} rows of BENCHMARK.md agree with the measurements")
     return 0
 

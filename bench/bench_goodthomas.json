@@ -103,6 +103,27 @@
     "moonbit": "-62107.00744685416",
     "old": "-62107.00744686906"
   },
+  "cpu": {
+    "fingerprint": "ebdad1757173d388",
+    "identifier": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+    "isa": {
+      "avx": true,
+      "avx2": true,
+      "avx512f": false,
+      "sse": true,
+      "sse2": true,
+      "sse3": true,
+      "sse4_1": true,
+      "sse4_2": true,
+      "ssse3": true
+    },
+    "logical_cores": 20,
+    "machine": "AMD64",
+    "name": "12th Gen Intel(R) Core(TM) i7-12700",
+    "source": "IsProcessorFeaturePresent",
+    "suggested_cc_flags": "/O2 /utf-8 /wd4819 /arch:AVX2",
+    "system": "Windows"
+  },
   "median": {
     "head": {
       "api/10920": 277784.3249773482,
