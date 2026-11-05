@@ -3,6 +3,8 @@ build/
 # MoonBit build cache
 moonbit_fft/_build/
 tools/_build/
+tools/v128probe/_build/
+tools/v128probe/disasm.txt
 # the byte code cache of the python tools
 __pycache__/
 
