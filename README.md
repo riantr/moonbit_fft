@@ -1,5 +1,7 @@
 # moonbit_fft
 
+[![CI](https://github.com/riantr/moonbit_fft/actions/workflows/ci.yml/badge.svg)](https://github.com/riantr/moonbit_fft/actions/workflows/ci.yml)
+
 A MoonBit port of the `fft2` algorithm of
 [`imglib2-fft`](https://github.com/imglib/imglib2-algorithm-fft)
 (`net.imglib2.algorithm.fft2`), the N-dimensional FFT of `net.imglib2`
@@ -21,6 +23,7 @@ list of deviations from the Java original are in
 | `moonbit_fft/benchmark/` | the benchmark of the port, the counterpart of `tools/java/Bench.java` | yes |
 | `moonbit_fft/benchab/` | the paired A/B of two builds of the port, used to measure a change against the revision before it | yes |
 | `moonbit_fft/benchmachine/` | the transform of the port measured next to the clock and the memory system of the machine | yes |
+| `.github/workflows/ci.yml` | the continuous integration: the formatting, the checks, the four backends, the gates of `BENCHMARK.md` and the negative controls | yes |
 | `tools/java/Oracle.java` | harness that drives the original bytecode and dumps its results as golden data | yes |
 | `tools/java/Bench.java` | benchmark of the original Java implementation | yes |
 | `tools/gen_cases.py` | generates the deterministic test inputs and the manifest | yes |
@@ -145,6 +148,18 @@ moon info          # refresh the published interface file
 
 Requires a JDK 11 (the original classes are Java 8), Python with NumPy
 and the MoonBit toolchain (`moon` 0.1.20261012 or newer).
+
+The same verification runs on every push and on every pull request, in
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml): the formatting, the
+type check and the js, wasm and wasm-gc backends on Ubuntu, and the native
+backend of every package together with the gates of `BENCHMARK.md` and the
+negative controls on Windows.  The split is not arbitrary - the native build
+of the benchmark harnesses passes the flags of MSVC, so on Linux only the
+library packages are built for the native backend, where the C compiler is
+`cc`, and the gate that reads the identity of the machine uses `winreg`.
+`tools/negative_control_cpu.py` is not part of it: it proves that the gate
+catches a measurement of another machine, and that proof needs the machine the
+measurements were taken on, so it runs here and not there.
 
 The butterflies of the port are generated, not written by hand: they are the
 factorisations of the original, translated out of the decompiled `Pfacc.java`.

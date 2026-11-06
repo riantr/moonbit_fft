@@ -1,0 +1,129 @@
+name: CI
+
+# The verification of this repository is `moon fmt --check`, `moon check
+# --deny-warn`, `moon test` on every backend, the freshness of the published
+# interface file, and the gates that hold `BENCHMARK.md` to the measurements.
+#
+# It is split over two machines for two reasons.  The native build of the
+# benchmark harnesses passes the flags of MSVC (`/O2 ... /arch:AVX2`, see
+# `moonbit_fft/benchab/moon.pkg`), which only the Windows toolchain accepts,
+# so the Linux job tests the library packages alone (`moonbit_fft` and
+# `moonbit_fft/window`), where the native backend runs on `cc`.  And the gate
+# that reads the identity of the machine uses `winreg`, so the document gates
+# run on the Windows job.
+#
+# `tools/negative_control_cpu.py` is deliberately not run here: it proves that
+# the gate catches a measurement of another machine, and that proof needs the
+# machine the measurements were taken on.  Run it on that machine.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The gate of the document refuses a measurement taken on another machine,
+  # which is the point of it on the machine that took the measurement.  The
+  # runner of GitHub is never that machine, so the check is downgraded to a
+  # warning here; every other check of the gate - the rows of the document,
+  # the tables of the ecosystem, the identity of every measurement - still
+  # runs.
+  MOONBIT_FFT_OTHER_MACHINE: '1'
+
+jobs:
+  portable:
+    name: js, wasm, wasm-gc, and the formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Use a Node that runs the js and the wasm-gc backends
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          test -x "$HOME/.moon/bin/moon"
+
+      - name: Show the toolchain
+        run: moon version --all
+
+      - name: The sources are formatted
+        working-directory: moonbit_fft
+        run: moon fmt --check
+
+      - name: The module type checks without a warning
+        working-directory: moonbit_fft
+        run: moon check --deny-warn
+
+      - name: Test the native backend of the library, which is compiled by cc
+        working-directory: moonbit_fft
+        run: moon test --release --target native . ./window
+
+      - name: Test the js backend
+        working-directory: moonbit_fft
+        run: moon test --release --target js
+
+      - name: Test the wasm backend
+        working-directory: moonbit_fft
+        run: moon test --release --target wasm
+
+      - name: Test the wasm-gc backend
+        working-directory: moonbit_fft
+        run: moon test --release --target wasm-gc
+
+      - name: The published interface file is the one of the sources
+        working-directory: moonbit_fft
+        run: |
+          moon info
+          git diff --exit-code
+
+  native:
+    name: native, the document gates and the negative controls
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install the MoonBit toolchain
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
+          $bin = Join-Path $env:USERPROFILE '.moon\bin'
+          if (-not (Test-Path $bin)) { throw "the installer did not create $bin" }
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Show the toolchain
+        run: moon version --all
+
+      - name: Test the native backend of every package
+        working-directory: moonbit_fft
+        run: moon test --release --target native
+
+      - name: The document agrees with the measurements
+        run: |
+          python tools/check_benchmark.py
+          python tools/render_benchmark.py --check
+          python tools/render_ecosystem_table.py --check
+
+      - name: The gates turn red when the document is broken
+        run: python tools/negative_control_benchmark.py
+
+      - name: The suite turns red when the kernel is broken
+        run: python tools/negative_control.py
