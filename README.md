@@ -53,7 +53,7 @@ list of deviations from the Java original are in
 | `tools/negative_control.py` | breaks the kernel of the transform on purpose and checks that the test suite turns red | yes |
 | `tools/negative_control_benchmark.py` | breaks the numbers of the ecosystem table on purpose and checks that the gate turns red | yes |
 | `tools/negative_control_cpu.py` | breaks the machine identity of the measurement on purpose and checks that the gate turns red | yes |
-| `tools/cpu_flags.py` | identifies the CPU a measurement was taken on, and prints the cc-flags that CPU deserves | no |
+| `tools/cpu_flags.py` | identifies the CPU a measurement was taken on, and prints the cc-flags that CPU deserves | yes |
 | `tools/lib/` | the jars the oracle needs: `imglib2-6.1.0.jar`, `mines-jtk-20151125.jar` and the decompiler `cfr-0.152.jar` | yes |
 | `javap_*.txt` | the disassembly of the original classes and of the JTransforms kernels | yes |
 | `BENCHMARK.md` | the runtime comparison of the port against the original Java implementation and against the packages of the MoonBit ecosystem | yes |
@@ -96,8 +96,8 @@ original classes over deterministic inputs and writes the raw `float32`
 results, and the generated test `moonbit_fft/parity_wbtest.mbt` replays
 them against the MoonBit implementation.  The suite currently holds 651
 parity cases, 28 hand written unit tests, 6 tests of the transform kernel, 6
-tests of the array transforms and 15 tests of the windows, 706 in total; all of
-them pass.
+tests of the array transforms, 8 tests of the kept plan and 15 tests of the
+windows, 714 in total; all of them pass.
 
 Two details of the original are worth pointing out, because both are easy to
 get wrong and neither is visible in the upstream sources:
